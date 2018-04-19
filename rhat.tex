@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath}
 \usepackage{amsfonts,epsfig}
 \usepackage[hyphens]{url}
 \usepackage{hyperref}
@@ -47,15 +48,17 @@
 \makeatother
 
 
-\title{\bf Monitoring mixing of iterative simulation using split R-hat and effective sample size\footnote{We thank the National Science Foundation, Office of Naval Research, Institute for Education Sciences, and Sloan Foundation for partial support of this work. Much of the material in this paper is copied from Gelman et al.\ (2013).}\vspace{.1in}}
-\author{Andrew Gelman\footnote{Department of Statistics and Department of Political Science, Columbia University.} \and Bob Carpenter\footnote{Institute for Social and Economic Research and Policy, Columbia University.} \and Michael Betancourt\footnote{Institute for Social and Economic Research and Policy, Columbia University.}\vspace{.1in}}
-\date{27 July 2017\vspace{-.1in}}
+\title{\bf Monitoring mixing of iterative simulation using split R-hat and effective sample size\footnote{We thank the National Science Foundation, Office of Naval Research, Institute for Education Sciences, Sloan Foundation, and Academy of Finland (grant 313122) for partial support of this work. Much of the material in this paper is copied from Gelman et al.\ (2013).}\vspace{.1in}}
+\author{Andrew Gelman\footnote{Department of Statistics and Department of Political Science, Columbia University.} \and Bob Carpenter\footnote{Institute for Social and Economic Research and Policy, Columbia University.} \and Aki Vehtari\footnote{Helsinki Institute for Information Technology HIIT,
+           Department of Computer Science, Aalto University,
+           Finland}}
+\date{19 April 2018\vspace{-.1in}}
 \begin{document}\sloppy
 \maketitle
 \thispagestyle{empty}
 
 \begin{abstract}
-We review split-$\widehat{R}$ and effective sample size, two tools we use to routinely monitor the convergence of iterative simulations.  These methods have already been published in the Stan manual and the third edition of {\em Bayesian Data Analysis} but it is convenient to have them here in a short article.  We also briefly discuss other diagnostics for Hamiltonian Monte Carlo.
+We review split-$\widehat{R}$ and effective sample size, two tools we use to routinely monitor the convergence of iterative simulations.  These methods have already been published in the Stan manual and the third edition of {\em Bayesian Data Analysis} but it is convenient to have them here in a short article. This article includes some additional details and corrections. 
 \end{abstract}
 
 \section{The problem}\label{intro}
