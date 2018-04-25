@@ -89,6 +89,7 @@ The other relevant point is that we are often fitting models with large numbers 
 
 
 \section{Splitting each sequence into two parts}
+\label{splitting}
 
 We diagnose convergence by splitting each chain in half and checking that all the resulting half-sequences have
 mixed.  This simultaneously tests mixing (if all the chains have
@@ -127,6 +128,8 @@ is appropriately overdispersed, but is {\em unbiased} under
 stationarity (that is, if the starting distribution equals the target
 distribution), or
 in the limit $n\rightarrow\infty$.
+To have overdispersed starting distribution, independent Markov chains
+should be initialized with diffuse starting values for the parameters.
 
 Meanwhile, for any finite $n$, the ``within'' variance
 $W$ should be an {\em underestimate}
@@ -146,8 +149,12 @@ $n\rightarrow\infty$.  This potential scale reduction is estimated for monitorin
 \end{equation}
 which declines to 1 as $n\rightarrow\infty$.
 
-We call this {\em split}-$\widehat{R}$ because we are applying it to chains that have already been split in half, as described in Section \ref{split}.  Without splitting, $\widehat{R}$ would get fooled by nonstationary chains such as those in Figure \ref{converge.challenge}b.
+We call this {\em split}-$\widehat{R}$ because we are applying it to chains that have already been split in half, as described in Section \ref{splitting}.  Without splitting, $\widehat{R}$ would get fooled by nonstationary chains such as those in Figure \ref{converge.challenge}b.
 
+{\em Split}-$\widehat{R}$ assumes that the quantities being considered
+have finite variance and it is more stable more finite higher moments
+exist. There is a problem that sometimes further derived quantities may have less existing finite moments. For example, if $\theta_1$ and $\theta_2$ are distributed as ${\mathrm N}(0,1^2)$ all higher moments exist and {\em split}-$\widehat{R}$ is stable, but ratio $\theta_1/\theta_2$ has Cauchy distribution which has undefined mean and infinite variance, and thus {\em split}-$\widehat{R}$ is not well defined. Given finite number of draws {\em split}-$\widehat{R}$ may seem to converge also in this case, but it's meaning is not clear.
+% expectations of fractional moments of absolute values (or sqrt(1+x^2))?
 
 \section{Effective sample size}
 If the $n$ simulation draws within each sequence were truly
@@ -158,39 +165,113 @@ sequences.  In general, however, the simulations of $\psi$ within each
 sequence will be autocorrelated, and $B$ will be larger than $\mbox{var}(\psi|y)$,
 in expectation.
 
+A nice introductory reference for analyzing MCMC results in general
+and effective sample size in particular is (Geyer, 2011).  The
+particular calculations used by Stan follow those for split-$\hat{R}$,
+which involve both cross-chain (mean) and within-chain calculations
+(autocorrelation); they were introduced in Stan manual and explained
+in more detail in Gelman et al. (2013).
+
 One way to define effective sample size for correlated simulation draws is to consider the statistical efficiency of the average of the simulations $\bar{\psi}_{..}$, as an estimate of the posterior mean, $\mbox{E}(\psi|y)$.  This can be a reasonable baseline even though is not the only possible summary and might be inappropriate, for example, if there is particular interest in accurate representation of low-probability events in the tails of the distribution.
 
-Continuing with this definition, it is usual to compute effective sample size using the following asymptotic formula for the variance of the average of a correlated sequence:
-\begin{equation}\label{essdef}
-\lim_{n\rightarrow\infty} mn \,\mbox{var}(\overline{\psi}_{..}) \,=\,\left(1 + 2\sum_{t=1}^{\infty}\rho_t\right) \mbox{var}(\psi|y),
+The effective sample size of a sequence is defined in terms of the
+autocorrelations within the sequence at different lags.  The
+autocorrelation $\rho_t$ at lag $t \geq 0$ for a chain with joint
+probability function $p(\theta)$ with mean $\mu$ and variance
+$\sigma^2$ is defined to be
+\begin{equation}
+\rho_t
+=
+\frac{1}{\sigma^2} \, \int_{\Theta} (\theta^{(n)} - \mu)
+(\theta^{(n+t)} - \mu) \, p(\theta) \, d\theta.
 \end{equation}
-where $\rho_t$ is the autocorrelation of the sequence $\psi$ at lag $t$.  If the $n$ simulation draws from each of the $m$ chains were independent, then $\mbox{var}(\bar{\psi}_{..})$ would simply be $\frac{1}{mn}\mbox{var}(\psi|y)$ and the sample size would be $mn$.  In the presence of correlation we then define the {\em effective sample size} as
-\begin{equation}\label{essdef2}
-n_{\rm eff} = \frac{mn}{1 + 2\sum_{t=1}^{\infty}\rho_t}.
+This is just the correlation between the two chains offset by $t$
+positions.  Because we know $\theta^{(n)}$ and $\theta^{(n+t)}$ have
+the same marginal distribution in an MCMC setting, multiplying the
+two difference terms and reducing yields
+\begin{equation}
+\rho_t
+=
+\frac{1}{\sigma^2} \, \int_{\Theta} \theta^{(n)} \, \theta^{(n+t)} \, p(\theta) \, d\theta.
 \end{equation}
-The asymptotic nature of (\ref{essdef})--(\ref{essdef2}) might seem disturbing given that in reality we will only have a finite simulation, but this should not be a problem given that we already want to run the simulations long enough for approximate convergence to the (asymptotic) target distribution.
 
-To compute the effective sample size we need an estimate of the sum of the correlations $\rho$, for which we use information within and between sequences.  We start by computing the total variance using the estimate $\widehat{\mbox{var}}^+$ from (\ref{hatsig}); we then estimate the correlations by first computing the {\em variogram} $V_t$ at each lag $t$:
-$$
-V_t = \frac{1}{m(n-t)} \sum_{j=1}^m\sum_{i=t+1}^n (\psi_{i,j} - \psi_{i\!-\!t,j})^2.
-$$
-We then estimate the correlations by inverting the formula, $\mbox{E}(\psi_i - \psi_{i-t})^2 = 2(1-\rho_t)\mbox{var}(\psi)$:
-\begin{equation}\label{rhohat}
-\widehat{\rho}_t = 1- \frac{V_t}{2\widehat{\mbox{var}}^+}.
+The effective sample size of $N$ samples generated by a process with
+autocorrelations $\rho_t$ is defined by
+\begin{equation}
+N_{\mbox{\scriptsize eff}}
+\ = \
+\frac{N}{\sum_{t = -\infty}^{\infty} \rho_t}
+\ = \
+\frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
 \end{equation}
-Unfortunately we cannot simply sum all of these to estimate $n_{\rm eff}$ in (\ref{essdef2}); the difficulty is that for large values of $t$ the sample correlation is too noisy.  Instead we follow Geyer (2011) and compute a partial sum, starting from lag 0 and continuing until the sum of autocorrelation estimates for two successive lags $\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}$ is negative.  We use this positive partial sum as our estimate of $\sum_{t=1}^{\infty}\rho_t$ in (\ref{essdef2}).  Putting this all together yields the estimate,
-\begin{equation}\label{essdef3}
-\hat{n}_{\rm eff} = mn*\mbox{min}\left(\frac{1}{1 + 2\sum_{t=1}^{T}\widehat{\rho}_t}, \,1\right),
-\end{equation}
-where the estimated autocorrelations $\widehat{\rho}_t $ are computed from formula (\ref{rhohat}) and $T$ is the first odd positive integer for which $\widehat{\rho}_{T+1}+\widehat{\rho}_{T+2}$ is negative.  We include $\mbox{min}(,1)$ in expression (\ref{essdef3}) for practical reasons because the point estimate can be noisy and we realistically do not expect iterative simulation algorithms to be more efficient than simple random sampling from the target distribution.
 
-Our $\hat{n}_{\rm eff}$ is slightly different from similar formulas in the literature in that we use between-sequence variance in the ratio of (\ref{rhohat}) which typically gives us more conservative claims (lower values of $n_{\rm eff}$) compared to purely between-sequence estimates, especially when mixing is poor.
+Effective sample size $N_{\mbox{\scriptsize eff}}$ can be larger than
+$N$ in case of antithetic Markov chains, which have negative
+autocorrelations on odd lags. Dynamic Hamiltonian algorithm used in Stan can
+produce $N_{\mbox{\scriptsize eff}}>N$ for parameters which have close
+to Gaussian posterior with low dependency on other parameters.
+
+\subsection{Estimation of Effective Sample Size}
+
+In practice, the probability function in question cannot be tractably
+integrated and thus the autocorrelation cannot be calculated, nor the
+effective sample size.  Instead, these quantities must be estimated
+from the samples themselves.  The rest of this section describes a
+autocorrelations and split-$\hat{R}$ based effective sample
+size estimator, based on multiple chains. For simplicity, each chain
+$\theta_m$ will be assumed to be of length $N$.
+
+Stan carries out the autocorrelation computations for all lags
+simultaneously using Eigen's fast Fourier transform (FFT) package with
+appropriate padding; see (Geyer, 2011) for more detail on using
+FFT for autocorrelation calculations.
+%
+The autocorrelation estimates $\hat{\rho}_{t,m}$ at lag $t$ from
+multiple chains $m \in (1,\ldots,M)$ are combined with within-sample variance estimate $W$ 
+and multi-chain variance estimate
+$\widehat{\mbox{var}}^{+}$ introduced in the previous section to compute the combined autocorrelation at lag $t$ as
+\begin{equation}
+\hat{\rho}_t
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M \hat{\rho}_{t,m}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+\end{equation}
+If the chains have not converged, the variance estimator
+$\widehat{\mbox{var}}^{+}$ will overestimate variance, leading to an
+overestimate of autocorrelation and an underestimate effective sample
+size.
+
+Because of the noise in the correlation estimates $\hat{\rho}_t$ as
+$t$ increases, typical truncated sum of $\hat{\rho}_t$ is used.
+Negative autocorrelations can happen only on odd lags and by summing
+over pairs starting from lag 0, the paired autocorrelation is
+guaranteed to be positive, monotone and convex modulo estimator noise
+(Geyer, 1992; Geyer, 2011).  Stan uses Geyer's initial monotone
+sequence criterion. The effective sample size estimator is defined as
+\begin{equation}
+\hat{N}_{\mbox{\scriptsize eff}}
+=
+\frac{MN}
+     {\hat{\tau}},
+\end{equation}
+%
+where
+\begin{equation}
+\hat{\tau} = 1 + 2 \sum_{t=1}^{2m+1} \hat{\rho}_t = -1 + 2 \sum_{t'=0}^{m} \hat{P}_{t'},
+\end{equation}
+where $\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}$. Initial
+positive sequence estimators is obtained by choosing the largest $m$
+such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,m$. The initial monotone
+sequence is obtained by further reducing $\hat{P}_{t'}$ to the minimum
+of the preceding ones so that the estimated sequence is monotone.
+
+
+Our $\hat{n}_{\rm eff}$ is slightly different from similar formulas in the literature in that we use also between-sequence variance in the ratio of (\ref{rhohat}) which typically gives us more conservative claims (lower values of $n_{\rm eff}$) compared to purely between-sequence estimates, especially when mixing is poor. If the chains are not mixing at all (e.g. the posterior is multimodal and the chains are stuck in different modes), then our $\hat{n}_{\rm eff}$ is close to the number of chains.
 
 \section{Diagnostics based on Metropolis and HMC dynamics}
 
-$\widehat{R}$ and $n_{\rm eff}$ are entirely based on empirical output and treat the target distribution and the simulation algorithm as black boxes.
+$\widehat{R}$ and $n_{\rm eff}$ are entirely based on empirical output and treat the target distribution and the simulation algorithm as black boxes. There are well known cases where {\em split}-$\widehat{R}$ indicates convergence, but all chains have difficulties of reaching some part of the parameter space leading to biased estimates.
 
 Another way to proceed is to monitor convergence to known properties of the target distribution.  Fan, Brooks, and Gelman (2006) suggest an approach based on the score statistic, $U(\theta) = d\log(p(\theta|y))/d\theta$, which has expectation zero under the target distribution.  Thus, it should be possible to diagnose poor convergence if the empirical average of the score statistic computed from the simulation draws is not close to zero.  A related idea is to compare the marginal distribution of a parameter estimated using empirical simulation draws to the estimate from path sampling.  Again, the potential advantage of these methods is they are is using additional information---the gradient of the logarithm of the target density---which is not used by $\widehat{R}$ and $n_{\rm eff}$.  In practice we have not found these diagnostics to be useful, but given that Stan is already computing the gradient in question, maybe it's worth trying them out.
+%TODO: not for this paper? remove?
 
 Another direction in diagnostics is to use information such as acceptance rates, jumping distances, and Hamiltonian trajectories that are specific to the simulation algorithm, either with the goal of computing invariants and comparing them to their value under convergence, or monitoring them to detect potential inefficiencies.  It seems natural to examine this sort of diagnostics, given that we are already using the relevant information when tuning the algorithms.  Betancourt (2016, 2017) presents some ideas for Hamiltonian Monte Carlo diagnostics using tree depth, the Bayesian fraction of missing information, and divergences.
 
@@ -208,11 +289,74 @@ Although computation of split-$\widehat{R}$ appears computationally intensive, o
 
 After split-$\widehat{R}$ has been calculated, the marginal posterior of the estimand, $\widehat{\mathrm{var}}^+(\psi | y)$, will be available.  This leaves only the lagged autocorrelations $\rho_t$, which must be computed for a large number of lags $t$. This can all be carried out with a discrete fast Fourier transform (FFT) by applying the the (discrete) correlation theorem to autocorrelation (Brigham 1974).
 
+\subsection{Generalized $\hat{R}$ for Ragged Chains}
+
+Now suppose that each chain may have a different number of samples.
+Let $N_m$ be the number of samples in chain $m$.  Now the formula for
+the within-chain mean for chain $m$ uses the size of the chain, $N_m$,
+\[
+\bar{\theta}_m^{(\bullet)}
+= \frac{1}{N_m} \sum_{n = 1}^N \theta^{(m)}_n,
+\]
+as does the within-chain variance estimate,
+\[
+s_m^2 = \frac{1}{N_m-1} \, \sum_{n=1}^{N_m} (\theta^{(n)}_m - \bar{\theta}^{(\bullet)}_m)^2.
+\]
+The terms that average over chains, such as
+$\bar{\theta}^{(\bullet)}_{\bullet}$, $B$, and $W$, have the same
+definition as before to ensure that each chain has the same effect on
+the estimate.  If the averages were weighted by size, a single long
+chain would dominate the statistics and defeat the purpose of
+monitoring convergence with multiple chains.
+
+Because it contains the term $N$, the estimate $\widehat{var}^{+}$
+must be generalized.  By expanding the first term,
+\[
+\frac{N-1}{N}\, W \,
+\ = \
+\frac{N-1}{N} \frac{1}{M} \, \sum_{m=1}^M
+\frac{1}{N-1} \, \sum_{n=1}^N (\theta^{(n)}_m -
+\bar{\theta}^{(\bullet)}_m)^2
+\ = \
+\frac{1}{M}
+\sum_{m=1}^M
+\frac{1}{N}
+\sum_{n=1}^N (\theta^{(n)}_m -
+\bar{\theta}^{(\bullet)}_m)^2,
+\]
+and the second term,
+\[
+\frac{1}{N}\, B
+\ = \
+\frac{1}{M-1} \, \sum_{m=1}^M (\bar{\theta}^{(\bullet)}_{m} - \bar{\theta}^{(\bullet)}_{\bullet})^2.
+\]
+the variance estimator naturally generalizes to
+\[
+\widehat{\mbox{var}}^{+}\!(\theta|y)
+=
+\frac{1}{M}
+\sum_{m=1}^M
+\frac{1}{N_m}
+\sum_{n=1}^{N_m} (\theta^{(n)}_m -
+\bar{\theta}^{(\bullet)}_m)^2
++
+\frac{1}{M-1} \, \sum_{m=1}^M (\bar{\theta}^{(\bullet)}_{m} -
+\bar{\theta}^{(\bullet)}_{\bullet})^2.
+\]
+%
+If the chains are all the same length, this definition is equivalent
+to the one in the last section.  This generalized variance estimator
+and the within-chains variance estimates may be plugged directly into
+the formula for $\hat{R}$ from the previous section.
+
 \section{Related issues and open questions}
 
 \label{warmup}Algorithms such as Metropolis and Hamiltonian Monte Carlo require tuning, and these tuning operations typically destroy the conditions under which the stationary distribution of the algorithm equals the target distribution.  Se we discard the simulations obtained during this {\em warmup} period.  A practical question then arises:  how long should the warm-up period be, and how long should we run the simulations after warmup?  By default Stan currently runs 4 parallel chains from different starting points, with 1000 warmup iterations in which there is adaptation of the Hamiltonian Monte Carlo mass matrix, followed by 1000 more iterations on each chain.  The result is then 4 chains of 1000 saved iterations each, which after splitting yield 8 chains each of length 500 for the computation of $\widehat{R}$.
 
 Some questions for further research include the possibility of the length of the warmup itself being adaptive, and also the possibility of choosing how long to run the computation based on wall time rather than a fixed number of iterations.  One minor complication is that this leads to ``ragged'' arrays of simulations, with different chains of different lengths, so that the formulas for $\widehat{R}$ and $n_{\rm eff}$ must be altered slightly.  Options then arise as to how to weight the various chains, with extremes being chains weighted equally and draws weighted equally; see Stan Development Team (2017).
+
+
+
 
 For models with many parameters, the computations of $\widehat{R}$ and $n_{\rm eff}$ are not free.  There may be more efficient ways to compute these than just using the simple formulas above.  Another challenge is computing these as the algorithm is running.  Suppose, for example, one wanted to run the simulations until $\widehat{R}<1.05$ for all parameters.  It could be expensive to recompute this every step.  While $\widehat{R}$ is easy to compute as draws come in using Welford's algorithm.  The splitting introduces a complication in that, with every two new iterations in a chain, we need to transfer one iteration from the second half to the first half;  it is still possible to compute online, but it requires at least half the chain to be buffered.
 
@@ -244,12 +388,16 @@ Yet another direction is to use graphical diagnostics, including traceplots of m
 
 \bibitem Gabry, S. (2017).  ShinyStan:  Analysis \& visualization GUI for MCMC.  \url{http://mc-stan.org/users/interfaces/shinystan.html}
 
+\bibitem Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., and Gelman, A. (2018). Visualization in Bayesian workflow. {\em Journal of the Royal Statistical Society Series A}, accepted for publication.
+  
 \bibitem Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and Rubin, D. B. (2013). {\em Bayesian Data Analysis}, third edition. London:  CRC Press.
 
 \bibitem Gelman, A., and Rubin, D. B. (1992a).  A single sequence from the Gibbs sampler gives a false sense of security.
 In {\em Bayesian Statistics 4}, ed.\ J. M. Bernardo, J. O. Berger, A. P. Dawid, and A. F. M. Smith, 625--631.  Oxford University Press.
 
 \bibitem Gelman, A., and Rubin, D. B. (1992b).   Inference from iterative simulation using multiple sequences (with discussion).  {\em Statistical Science} {\bf 7}, 457--511.
+
+\bibitem Geyer, C. J. (1992). Practical {Markov} Chain {Monte} {Carlo} (with discussion). {\em Statistical Science}, {\bf 7}, 473--483.
 
 \bibitem Geyer, C. J. (2011). Introduction to Markov chain Monte Carlo. In {\em Handbook of Markov Chain Monte Carlo}, ed.\ Brooks, S., Gelman, A., Jones, G. L., and Meng, X. L., 3--48.  London:  CRC Press.
 
