@@ -151,10 +151,28 @@ which declines to 1 as $n\rightarrow\infty$.
 
 We call this {\em split}-$\widehat{R}$ because we are applying it to chains that have already been split in half, as described in Section \ref{splitting}.  Without splitting, $\widehat{R}$ would get fooled by nonstationary chains such as those in Figure \ref{converge.challenge}b.
 
+\paragraph{Rank normalization}
+
 {\em Split}-$\widehat{R}$ assumes that the quantities being considered
-have finite variance and it is more stable more finite higher moments
-exist. There is a problem that sometimes further derived quantities may have less existing finite moments. For example, if $\theta_1$ and $\theta_2$ are distributed as ${\mathrm N}(0,1^2)$ all higher moments exist and {\em split}-$\widehat{R}$ is stable, but ratio $\theta_1/\theta_2$ has Cauchy distribution which has undefined mean and infinite variance, and thus {\em split}-$\widehat{R}$ is not well defined. Given finite number of draws {\em split}-$\widehat{R}$ may seem to converge also in this case, but it's meaning is not clear.
-% expectations of fractional moments of absolute values (or sqrt(1+x^2))?
+have finite mean and variance.  It is also more stable close to
+Gaussian the distribution is.  Target distribution can be far from
+normal and for example Cauchy distribution has undefined mean and
+infinite variance, and thus {\em split}-$\widehat{R}$ is not well
+defined. To alleviate thos we propose to compute {\em Split}-$\widehat{R}$
+using rank normalized values.
+
+Explain rank-normalization here.
+
+\paragraph{Folded split}
+
+{\em Split}-$\widehat{R}$ can miss if chains have different scales but
+have the same location. To alleviate this we propose to to compute
+{\em Split}-$\widehat{R}$ also for folded rank normalized values.
+
+Folded values are obtained by transformation
+\begin{equation}
+  {\mathrm abs}(y-{\mathrm median}(y)).
+\end{equation}
 
 \section{Effective sample size}
 If the $n$ simulation draws within each sequence were truly
@@ -265,6 +283,13 @@ of the preceding ones so that the estimated sequence is monotone.
 
 
 Our $\hat{n}_{\rm eff}$ is slightly different from similar formulas in the literature in that we use also between-sequence variance in the ratio of (\ref{rhohat}) which typically gives us more conservative claims (lower values of $n_{\rm eff}$) compared to purely between-sequence estimates, especially when mixing is poor. If the chains are not mixing at all (e.g. the posterior is multimodal and the chains are stuck in different modes), then our $\hat{n}_{\rm eff}$ is close to the number of chains.
+
+\paragraph{Rank normalization}
+
+Variance and autocovariance estimates assume also finite mean and variance, and thus as for 
+{\em Split}-$\widehat{R}$, we propose to use rank normalization. Effective sample size estimate has been used to adjust the Monte Carlo error estimate of the expectation. We now intentionally separate MCMC diagnostic based on generic and stable rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte Carlo error estimates for the desired expectations, which would require also estimation whether mean and variance exist.
+
+We also propose local relative efficiency.
 
 \section{Diagnostics based on Metropolis and HMC dynamics}
 
