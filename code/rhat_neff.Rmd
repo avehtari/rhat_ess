@@ -1,0 +1,863 @@
+---
+title: "Rank-normalized split-Rhat and relative efficiency"
+author: "Aki Vehtari"
+date: "May 2018"
+output:
+  html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(comment=NA)
+```
+
+*Load libraries*
+```{r, comment=NA, message=FALSE, warning=FALSE}
+library(rstan)
+rstan_options(auto_write = TRUE)
+library(bayesplot)
+library(gridExtra)
+source('monitornew.R')
+```
+
+# Introduction
+
+This note books has experiments for Rank-normalized split-Rhat and -r_eff, where r_reff is the relative efficiency of MCMC sample.
+
+In the code and figures I use abbreviations
+
+ - Rhat = classic no-split-Rhat
+ - sRhat = classic split-Rhat
+ - zsRhat = rank-normalized split-Rhat
+ - fzsRhat = folded rank-normalized split-Rhat
+ - neff = no-split effective sample size using Geyer's monotonic truncation rule
+ - reff = neff / N
+ - zsneff = rank-normalized split effective sample size using Geyer's monotonic truncation rule
+ - zsreff = zsneff / N
+ 
+The proposal is to switch 
+
+ - from sRhat to max(zsRhat, fzsRhat)
+ - from neff to zsreff
+ 
+Rank normalization makes zsRhat and zsreff well defined and more stable than sRhat and neff. Adding folded version fzsRhat helps to detect differences in scale.
+
+I also propose following warning thresholds
+
+ - 1.01 for new Rhat max(zsRhat, fzsRhat)
+ - 0.1 for new relative efficiency (zsreff)
+
+I have plotted dashed lines based on these thresholds (in continuous plots, a dashed line at  1.005 is plotted instead of 1.01, as values larger than that are usually rounded in our summaries to 1.1).
+
+In addition a local efficiency plot is introduced.
+
+# Independent draws from normal distribution with additional trend, shift or scaling 
+
+This part focus on diagnostics for
+
+ - all chains have a trend and similar marginal distribution
+ - one of the chains has different mean
+ - one of the chains has lower marginal variance
+ 
+To focus on these, independent draws are used as a proxy for very efficient MCMC. In addition the draws are from normal distribution and we discuss the behavior for non-Gaussian distributions later.
+
+## Trend: All chains from the same $N(0,1)$ distribution plus linear trend added to all
+```{r}
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+chains=4
+for (iters in c(250, 1000, 4000)) {
+  for (a in c(0, 0.25, 0.5, 0.75, 1)) {
+    for (irep in 1:10) {
+      r <- array(rnorm(iters*chains), c(iters,chains))
+      r <- r + seq(-a, a, length.out=iters)
+      rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
+      res<-rbind(res,data.frame(iters=iters,trend=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+    }
+  }
+}
+```
+
+If we don't split chains, Rhat misses trends if all chains still have similar marginal distribution.
+```{r}
+ggplot(data=res, aes(y=Rhat, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Rhat without splitting chains')
+```
+
+Split-Rhat can detect trends, even if the marginals of chains are similar.
+```{r}
+ggplot(data=res, aes(y=zsRhat, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
+```
+
+*Result:* Split-Rhat is useful for detecting non-stationarity in chains. If we use threshold 1.01, we can detect trends which have variance 2% from the marginal variance. If we use threshold 1.1, we can detect trends which have variance 30% from the marginal variance.
+
+Relative efficiency (effective sample size divided by the number of draws) is based on split Rhat and autocorrelations.
+```{r}
+ggplot(data=res, aes(y=zsreff, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
+```
+
+*Result:* Split-Rhat is more sensitive to trends in small sample sizes, but relative efficiency is more sensitive with larger samples sizes (as autocorrelations can be estimated more accurately).
+
+*Advice:* If in doubt, run longer chains for more accurate estimates.
+
+## Shifted: Three chains from $N(0,1)$ and one chain from $N(a,1)$
+
+Next we investigate the sensitivity to detect if one of the chains has not converged to the same distribution as the others, but has a different mean.
+
+```{r}
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+chains=4
+for (iters in c(250, 1000, 4000)) {
+  for (a in c(0, 0.25, 0.5, 0.75, 1)) {
+    for (irep in 1:10) {
+r <- array(rnorm(iters*chains), c(iters,chains))
+r[,1] <- r[,1] + a
+rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
+res<-rbind(res,data.frame(iters=iters,shift=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+  }
+  }
+}
+```
+
+```{r}
+ggplot(data=res, aes(y=zsRhat, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
+```
+
+*Result:* If we use threshold 1.01, we can detect shift with magnitude one third of marginal standard deviation. If we use threshold 1.1, we can detect shift with the magnitude equal to marginal standard deviation.
+
+```{r}
+ggplot(data=res, aes(y=zsreff, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
+```
+
+*Result:* The relative efficiency is not as sensitive, but a shift with magnitude half of the marginal standard deviation will lead to very low efficiency when sample size increases.
+
+## Scaled: Three chains from $N(0,1)$ and one chain from $N(0,a)$*
+
+Next we investigate the sensitivity to detect if one of the chains has not converged to the same distribution as the others but has lower marginal variance.
+
+```{r}
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+chains=4
+for (iters in c(250, 1000, 4000)) {
+  for (a in c(0, 0.25, 0.5, 0.75, 1)) {
+    for (irep in 1:10) {
+r <- array(rnorm(iters*chains), c(iters,chains))
+r[,1] <- r[,1]*a
+rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
+res<-rbind(res,data.frame(iters=iters,scale=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+  }
+  }
+}
+```
+
+```{r}
+ggplot(data=res, aes(y=zsRhat, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
+```
+
+*Result:* Split-Rhat is not able to detect differences in scale.
+
+```{r}
+ggplot(data=res, aes(y=fzsRhat, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Folded-split-Rhat')
+```
+
+*Result:* Folded-Split-Rhat focuses instead to scales, and can detect scale differences.
+
+*Result:* If we use threshold 1.01, we can detect a chain with scale less than 3/4 of the scale of the others. If we use threshold 1.1, we can detect a chain with scale less than 1/4 of the scale of the others.
+
+```{r}
+ggplot(data=res, aes(y=zsreff, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
+```
+
+*Result:* The relative efficiency does not see a problem as it focuses on location.
+
+# Cauchy: mean and variance not finite
+
+Classic Rhat is based on calculating within and between chain variances. If the marginal distribution of the chain is such that variance is not defined classic Rhat is not well justified. Next we use Cauchy as an example of such distribution. Also in cases where mean and variance are finite, the distribution can be far from Gaussian and especially distributions with very long tails cause instability for variance and autocorrelation estimates. To alleviate these problems we Split-Rhat for rank-normalized draws. Ranks are computed by using average for ties, as it is deterministic and constant chains are mapped to constant chains.
+
+The following Cauchy models are originally from Michael Betancourt's case study [Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html)
+
+## Nominal parameterization of Cauchy
+
+The the nominal model with direct parameterization is as follows.
+```{r}
+writeLines(readLines("cauchy_nom.stan"))
+```
+
+### Default Stan options
+
+Run the nominal model
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_nom <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0)
+```
+
+The diagnostics warn about very large number of transitions after warmup that exceeded the maximum treedepth, which is likely due to very long tail of Cauchy. All chains have low estimated Bayesian Fraction of Missing Information indicating also slow mixing. 
+
+MCMC trace for the first parameter looks wild with occasional large values
+```{r}
+samp<-as.array(fit_nom)
+mcmc_trace(samp[,,1])
+```
+
+Let's check Rhat and relative efficiency diagnostics.
+
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic Split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(c(.99 ,1.26))
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank normalized split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(c(.99,1.26))
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Folded rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(c(.99,1.26))
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+For one parameter Rhats exceed the classic threshold 1.1. Depending on Rhat, a few others exceed the threshold 1.01. The interpretation of classic Rhat is however not well defined. The rank normalized split-Rhat have several values over 1.01.
+
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+grid.arrange(p1, p2, nrow = 1)
+```
+
+Both classic and rank normalized relative efficiency estimates have several near zero values, and the overall samples shouldn't be trusted.
+
+*Result:* Relative efficiency is more sensitive than (rank-normalized) split-Rhat to detect problems of slow mixing.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+Relative efficiency for lp__ is worryingly low.
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is empirical $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$. Each interval has $5%$ of draws, and the efficiency measures autocorrelation of an indicator function which indicates when the values are inside the specific interval. This gives us local efficiency measure which is does not depend on the shape of the distribution.
+```{r}
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+We see that MCMC is less efficient in tails.
+
+### Default Stan options + `max_treedepth=20`
+
+We can try to improve the performance by increasing the maximum treedepth.
+
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_nom_td20 <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0, control = list(max_treedepth=20))
+```
+
+
+MCMC trace for the first parameter looks wild with occasional large values
+```{r}
+samp<-as.array(fit_nom_td20)
+mcmc_trace(samp[,,1])
+```
+
+Treedepth exceedence and Bayesian Fraction of Missing Information are HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and relative efficiency can detect. Check the diagnostics for all $x$'s.
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic Split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.045)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank normalized split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.045)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Folded rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.045)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats are below 1.1, but many are over 1.01. Classic Rhat has more variation than the rank normalized (and the classic is not well defined). The folded rank normalized Rhat shows that there is still more variation in scale than location between different chains.
+
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.5)) 
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.5))
+grid.arrange(p1, p2, nrow = 1)
+```
+
+Some classic relative efficiencies (reffs) are close to zero. If we wouldn't realize that the variance is infinite, we might try to run longer chains, but in case of infinite variance zero is the true value and longer chains don't help. However other quantities can be well defined, and that's why it can be useful also to look at the rank normalized version as a generic transformation with finite mean and variance. The smallest rank-normalized r_eff are around 0.25, which is not that bad. There is still large variation between parameters although they all have the same distribution.
+
+*Result:* Rank normalized relative efficiency is more stable than not-rank-normalized which is not well defined for Cauchy.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+Although increasing max treedepth improved diagnostics for x, the efficiency for I and lp__ didn't change.
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+Increasing max treedepth improved the efficiency slightly in the tails.
+
+### Default Stan options + `max_treedepth=20` + 8 times longer sampling
+
+Let's try running longer chain
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_nom_td20l <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0, control = list(max_treedepth=20), warmup=1000, iter = 9000)
+```
+
+MCMC trace for the first parameter looks wild with occasional large values
+```{r}
+samp<-as.array(fit_nom_td20l)
+mcmc_trace(samp[,,1])
+```
+
+Treedepth exceedence and Bayesian Fraction of Missing Information are HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and relative efficiency can detect. Check the diagnostics for all $x$'s.
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(.999, 1.009)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank norm. split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(.999, 1.009)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Fold. rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(.999, 1.009)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats are below 1.01. Classic Rhat has more variation than the rank normalized (but the classic is not well defined).
+
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+Most classic relative efficiencies (reffs) are close to zero. If we wouldn't realize that the variance is infinite, we might try to run longer chains, but in case of infinite variance zero is the true value and longer chains don't help. However other quantities can be well defined, and that's why it can be useful also to look at the rank normalized version as a generic transformation with finite mean and variance. The rank-normalized r_eff's start to concentrate around 0.6, which is quite good. There is still some variation between parameters.
+
+*Result:* Rank normalized relative efficiency is more stable than not-rank-normalized which is not well defined for Cauchy.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','reff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+Increasing chain length did not seem to change the relative efficiency.
+With more draws from the longer chains we can use also finer resolution for the local efficiency estimates.
+```{r}
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .99, by=0.01)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+The efficiency far in tails is worryingly low.
+
+
+## 1st alternative parameterization of Cauchy
+
+Next we examine alternative parameterization and consider Cauchy as a scale mixture of Gaussian distributions. The model has two parameters and the Cauchy distributed x's can be computed from those. In addition of improved sampling performance, the example illustrates that focus of diagnostics matter.
+
+```{r}
+writeLines(readLines("cauchy_alt_1.stan"))
+```
+
+Run the alternative model
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_1 <- stan(file='cauchy_alt_1.stan', seed=7878, refresh = 0)
+```
+
+There are no warnings, and the sampling is much faster.
+
+```{r}
+samp<-as.array(fit_1)
+res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank norm. split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Fold. rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for Cauchy distributed.
+
+```{r}
+res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,151:152], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+The relative efficiency for these are also much better than with nominal parameterization.
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+samp <- as.array(fit_1)
+zsreffs <- double()
+parami <- 101
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency is good in all parts of the posterior.
+
+
+```{r}
+res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+res1<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+res2<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']),2), '\n')
+cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
+cat('Mean r_eff for x_bs = ' , round(mean(res2[,'zsreff']),2), '\n')
+```
+
+*Result:* We see that, the relative efficiency of the interesting x, can be different from the relative efficiency of the parameters that used to compute it. Also r_eff we are computing is for rank normalized and to compute Monte Carlo errors, the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+
+## Another alternative parameterization of Cauchy
+
+Another alternative parameterization is univariate transformation as shown in the following code.
+```{r}
+writeLines(readLines("cauchy_alt_3.stan"))
+```
+
+## 2nd alternative parameterization of Cauchy
+
+Run the alternative model (3rd alternative in Michael Betancourt's case study)
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_3 <- stan(file='cauchy_alt_3.stan', seed=7878, refresh = 0)
+```
+
+There are no warnings, and the sampling is much faster than for the nominal model.
+
+```{r}
+samp<-as.array(fit_3)
+res<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.007)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank norm. split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.007)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Fold. rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.007)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats except some folded Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for Cauchy distributed.
+
+```{r}
+res<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Rank normalized r_eff's are slightly larger than 1, which is possible for antithetic Markov chains which have negative correlation for odd lags.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,101:102], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+The relative efficiency for these are also much better than with nominal parameterization.
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+samp <- as.array(fit_3)
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency in tails is worse than for the first alternative parameterization, although it's still better than for the nominal model.
+
+```{r}
+res<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+res1<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']),2), '\n')
+cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
+
+```
+
+*Result:* When the transformation is univariate and bijective the rank normalized Rhat and r_eff are transformation invariant. 
+
+Naturally when computing the desired expectations the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+
+## Half-Cauchy with nominal parameterization
+
+Half-Cauchy priors are common and, for example, in Stan usually set apparently using the nominal parameterization. However, when the constraint `<lower=0>` is used, Stan does the sampling automatically in the unconstrained `log(x)` space, which changes the geometry crucially.
+```{r}
+writeLines(readLines("half_cauchy_nom.stan"))
+```
+
+Run the half-Cauchy with nominal parameterization (and positive constraint)
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_half_nom <- stan(file='half_cauchy_nom.stan', seed=7878, refresh = 0)
+```
+
+There are no warnings, and the sampling is much faster than for the Cauchy nominal model.
+
+```{r}
+samp<-as.array(fit_half_nom)
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank norm. split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Fold. rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for half-Cauchy distribution.
+
+```{r}
+res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Rank normalized r_eff's are much larger than 1, which is possible for antithetic Markov chains which have negative correlation for odd lags.
+
+Due to constraint '<lower=0>' the sampling was made in `log(x)` space, and we can also check the performance in that space.
+```{r}
+res<-monitornew(log(samp[,,1:50]), warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+$log(x)$ is quite close to Gaussian, and thus classic r_eff is also close to rank normalized r_eff which is exactly same as for $x$ as the rank normalized version is invariant to bijective transformations.
+
+*Result:* Rank normalized r_eff is close to classic r_eff for transformations which make the distribution close to Gaussian.
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+*Result:* Relative efficiency for $p(x_1<1)$ is larger than 1. This is possible for antithetic Markov chains, which have negative correlation for odd lags.
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+samp <- as.array(fit_half_nom)
+zsreffs <- double()
+parami <- 1
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency is good overall, with only a small dip in tails.
+
+```{r}
+writeLines(readLines("half_cauchy_alt.stan"))
+```
+
+## Alternative parameterization of half-Cauchy
+
+Run half-Cauchy with alternative parameterization
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_half_reparam <- stan(file='half_cauchy_alt.stan', seed=7878, refresh = 0)
+```
+
+There are no warnings, and the sampling is as fast for the half-Cauchy nominal model.
+
+```{r}
+samp<-as.array(fit_half_reparam)
+res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsRhat`)) + geom_point() + ggtitle('Rank norm. split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() + ggtitle('Fold. rank split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1)
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for half-Cauchy distribution.
+
+```{r}
+res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
+grid.arrange(p1, p2, nrow = 1)
+```
+
+*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Based on rank normalized r_eff the alternative parameterization has much lower efficiency than the nominal parameterization with constraint `<lower=0>`.
+
+
+We also check the indicator function = and `lp__`
+```{r}
+res<-monitornew(samp[,,151:152], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
+cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
+cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+```
+
+We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+```{r}
+samp <- as.array(fit_half_reparam)
+zsreffs <- double()
+parami <- 101
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency near zero is much worse than for the half-Cauchy with nominal parameterization and constraint `<lower=0>`.
+
+# Hierarchical model: Eight Schools
+
+The models are from Michael Betancourt's case study on [Diagnosing Biased Inference with Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
+
+## A Centered Eight Schools model
+
+```{r, comment=NA}
+writeLines(readLines("eight_schools_cp.stan"))
+```
+
+### Centered parameterization default MCMC options
+
+Run centered parameterization model with default MCMC options.
+```{r, cache=TRUE, comment=NA, results='hide'}
+input_data <- read_rdump("eight_schools.data.R")
+fit_cp <- stan(file='eight_schools_cp.stan', data=input_data,
+            iter=2000, chains=4, seed=483892929, refresh=0)
+```
+We do observe divergent transitions, which is sensitive diagnostic for this model and we observer also low BFMI, but let's assume we were investigating a MCMC algorithm without such diagnostic.
+
+```{r}
+res<-monitornew(fit_cp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+Some rank-normalized split-Rhats are larger than 1.01. Relative efficiencies for tau and lp__ are less than 10%, which is worry-some and longer chains should be run.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_cp)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+
+### Centered parameterization longer chains
+
+Low r_eff can be sometimes compensated with longer chains. Let's check 10 times longer chain.
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_cp2 <- stan(file='eight_schools_cp.stan', data=input_data,
+            iter=20000, chains=4, seed=483892929, refresh=0)
+```
+
+```{r}
+res<-monitornew(fit_cp2, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+Some rank-normalized split-Rhats are still larger than 1.01. Relative efficiencies for tau and lp__ are around 1%. Drop in the relative efficiency when the the sample size was increased indicates serious problems in mixing.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_cp2)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .975, by=0.025)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.025),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.025), zsreff=c(zsreffs,zsreffs[40])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+We see that MCMC has difficulties in exploring small tau values.  As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+
+We can examine also other parameters, like mu in the following plot.
+```{r}
+samp <- as.array(fit_cp2)
+zsreffs <- double()
+parami <- 1
+delta <- 1/40
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[1/delta])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+There are gaps of poor efficiency which indicates sticking of MCMC, but the sticking doesn't happen for any specific values of mu.
+
+### Centered parameterization very long chains
+
+And for further evidence let's check 100 times longer chains than the default.
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_cp3 <- stan(file='eight_schools_cp.stan', data=input_data,
+            iter=200000, chains=4, seed=483892929, refresh=0)
+```
+
+```{r}
+res<-monitornew(fit_cp3, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+Some rank-normalized split-Rhats are still larger than 1.01. Relative efficiencies for tau and lp__ are around 0% and relative efficiencies for other parameters are also getting smaller. Drop in the relative efficiency when the the sample size was increased indicates serious problems in mixing.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_cp3)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .99, by=0.01)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+```
+
+We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+
+## Non-centered Eight Schools model
+
+For hierarchical models, non-centered parameterization often works better
+```{r, comment=NA}
+writeLines(readLines("eight_schools_ncp.stan"))
+```
+
+### Non-centered parameterization default MCMC options
+
+Run non-centered parameterization model with default options.
+```{r, cache=TRUE, comment=NA, results='hide'}
+input_data <- read_rdump("eight_schools.data.R")
+
+fit_ncp <- stan(file='eight_schools_ncp.stan', data=input_data,
+            iter=2000, chains=4, seed=483892929, refresh=0)
+```
+We still observe some divergent transitions with the default adapt_delta and no divergences with adapt_delta=0.95. Let's analyze both samples. 
+
+```{r}
+res<-monitornew(fit_ncp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+All Rhats are close to 1, and relative efficiencies are good.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_ncp)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
+
+Next we examine the same model but with higher `adapt_delta=0.95`.
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_ncp2 <- stan(file='eight_schools_ncp.stan', data=input_data,
+            iter=2000, chains=4, control=list(adapt_delta=0.95), seed=483892929, refresh=0)
+```
+We get zero divergences with adapt_delta=0.95.
+
+```{r}
+res<-monitornew(fit_ncp2, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+All Rhats are close to 1, and relative efficiencies are good and slightly better than with the default adapt_delta.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_ncp2)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .95, by=0.05)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+Check also with a finer resolution
+```{r}
+samp <- as.array(fit_ncp2)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .975, by=0.025)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.025),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.025), zsreff=c(zsreffs,zsreffs[40])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+Also with a finer resolution the efficiency of MCMC is good for different values of tau.
+
+If in doubt, we can run longer chains.
+```{r, cache=TRUE, comment=NA, results='hide'}
+input_data <- read_rdump("eight_schools.data.R")
+
+fit_ncp3 <- stan(file='eight_schools_ncp.stan', data=input_data,
+            iter=20000, chains=4, control=list(adapt_delta=0.95), seed=483892929, refresh=0)
+```
+
+```{r}
+res<-monitornew(fit_ncp3, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+All Rhats are close to 1, and relative efficiencies are good and slightly better than with the default adapt_delta. Relative efficiency is similar as for shorter chain, which means that running longer chains is giving us higher effective sample size.
+
+We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+```{r}
+samp <- as.array(fit_ncp3)
+zsreffs <- double()
+parami <- 2
+for (alpha in seq(0, .99, by=0.01)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+# Original Computing Environment
+
+```{r, comment=NA}
+writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
+```
+
+```{r, comment=NA}
+devtools::session_info("rstan")
+```
