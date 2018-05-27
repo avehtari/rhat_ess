@@ -231,11 +231,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 ```{r}
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 We see that MCMC is less efficient in tails.
@@ -290,11 +292,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 ```{r}
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 Increasing max treedepth improved the efficiency slightly in the tails.
@@ -345,11 +349,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 ```{r}
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 Increasing chain length did not seem to change the relative efficiency.
@@ -357,11 +363,13 @@ With more draws from the longer chains we can use also finer resolution for the 
 ```{r}
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .99, by=0.01)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 100
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 The efficiency far in tails is worryingly low.
@@ -416,11 +424,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 samp <- as.array(fit_1)
 zsreffs <- double()
 parami <- 101
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 The relative efficiency is good in all parts of the posterior.
@@ -487,11 +497,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 samp <- as.array(fit_3)
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 The relative efficiency in tails is worse than for the first alternative parameterization, although it's still better than for the nominal model.
@@ -568,11 +580,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 samp <- as.array(fit_half_nom)
 zsreffs <- double()
 parami <- 1
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 The relative efficiency is good overall, with only a small dip in tails.
@@ -623,11 +637,13 @@ We can also examine the relative efficiency in different parts of the posterior,
 samp <- as.array(fit_half_reparam)
 zsreffs <- double()
 parami <- 101
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 The relative efficiency near zero is much worse than for the half-Cauchy with nominal parameterization and constraint `<lower=0>`.
@@ -663,11 +679,13 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_cp)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
@@ -691,11 +709,13 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_cp2)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .975, by=0.025)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.025),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 50
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.025), zsreff=c(zsreffs,zsreffs[40])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 We see that MCMC has difficulties in exploring small tau values.  As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
@@ -705,12 +725,13 @@ We can examine also other parameters, like mu in the following plot.
 samp <- as.array(fit_cp2)
 zsreffs <- double()
 parami <- 1
-delta <- 1/40
+nalpha <- 40
+delta <- 1/nalpha
 for (alpha in seq(0, 1-delta, by=delta)) {
   rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[1/delta])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 There are gaps of poor efficiency which indicates sticking of MCMC, but the sticking doesn't happen for any specific values of mu.
@@ -734,11 +755,13 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_cp3)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .99, by=0.01)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 100
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
 ```
 
 We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
@@ -772,11 +795,13 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_ncp)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
@@ -801,11 +826,13 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_ncp2)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .95, by=0.05)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.05),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 20
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.05), zsreff=c(zsreffs,zsreffs[20])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
@@ -815,11 +842,13 @@ Check also with a finer resolution
 samp <- as.array(fit_ncp2)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .975, by=0.025)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.025),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 50
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.025), zsreff=c(zsreffs,zsreffs[40])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 Also with a finer resolution the efficiency of MCMC is good for different values of tau.
@@ -843,14 +872,101 @@ We examine the relative efficiency of probabilities between quantiles (0, 0.05, 
 samp <- as.array(fit_ncp3)
 zsreffs <- double()
 parami <- 2
-for (alpha in seq(0, .99, by=0.01)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+0.01),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+nalpha <- 100
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
   zsreffs <- c(zsreffs, rs[1,'zsreff'])
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=0.01), zsreff=c(zsreffs,zsreffs[100])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+# NUTS and effective sample size
+
+We have already seen that the relatice efficiency of HMC/NUTS can be higher than with independent draws. The next example illustrates interesting relative efficiency phenomea due to properties of  HMC/NUTS algorithm.
+
+```{r}
+writeLines(readLines("normal.stan"))
+```
+
+```{r, cache=TRUE, comment=NA, results='hide'}
+fit_n <- stan(file='normal.stan', data=data.frame(J=16),
+            iter=20000, chains=4, seed=483892929, refresh=0)
+```
+
+```{r}
+samp<-as.array(fit_n)
+res<-monitornew(samp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+
+The relative efficiency for all $x$ is larger than 2. The relative
+efficiency for `lp__` is however only 0.35. If look at the all Stan
+examples in this notebook, we see that the relative efficiency for
+`lp__` is always below 0.5. `lp__` correlates strongly with the total
+energy in HMC, and that total energy is sampled using random walk
+proposal once per iteration and thus it's likely that `lp__` has some
+random walk behavior leading to autocorrelation and relative
+efficiency below 1. On the other hand, no-U-turn behavior and sampling
+from the trajectory makes the Markov chain to be antithetic with
+negative odd lag correlation and relative efficiency higher than 1.
+
+Let's check the local relative efficiency
+```{r}
+zsreffs <- double()
+parami <- 1
+nalpha <- 100
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency for probability estimate for a small interval is close to 1 with a slight drop in the tails. This is a good reault, but far from the relative efficiency for mean estimate.
+
+The total energy of HMC should affect how far in the tails a chain in one iteration can go. Far tails of the target have high energy, and only chains with high total energy can then reach there. This will suggest that, the random walk in total energy would cause random walk in variance of $x$. Let's check the second moment of $x$.
+```{r}
+samp<-as.array(fit_n)^2
+res<-monitornew(samp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+```
+
+Mean of the relative efficiencies for $x[j]^2$ is 0.4, which is quite close 
+to the relative efficiency for `lp__`. This is not that surprising as the potential energy in normal model is relative to $\sum_{j=1}^J x_j^2$.
+
+Let's check the local relative efficiency
+```{r}
+zsreffs <- double()
+parami <- 1
+nalpha <- 100
+delta <- 1/nalpha
+for (alpha in seq(0, 1-delta, by=delta)) {
+  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+}
+ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+```
+
+The relative efficiency is mostly a bit below 1, but for the right tail of $x[1]^2$ the relative efficiency drops. This likely due to only some iterations have high enough total energy to obtain draws from the high energy part of the tail. 
+
+We can see the correlation between `lp__` and magnitude of $x[1]$ in the following plot.
+```{r}
+samp<-as.array(fit_n)
+qplot(as.vector(samp[,,17]),abs(as.vector(samp[,,1]))) + xlab('lp__') + ylab('x[1]')
+```
+
+Low `lp__` corresponds to high energy and more variation in $x$, and high `lp__` corresponds to low energy and small variation in $x$.
+
+Finally $\sum_{j=1}^J x_j^2$ is perfectly correlated with `lp__`.
+```{r}
+qplot(as.vector(samp[,,17]),as.vector(apply(samp[,,1:16]^2,c(1,2),sum))) + xlab('lp__') + ylab('sum(x^2)')
+```
+
+This shows that even if we get high relative efficiency estimates for parameters, it is important to look at the relative efficiency of `lp__` as it can indicate problems of sampling in tails, which would affect the accuracy of variance and tail quantile estimates.
 
 # Original Computing Environment
 
