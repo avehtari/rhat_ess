@@ -1,9 +1,15 @@
 ---
 title: "Rank-normalized split-Rhat and relative efficiency"
 author: "Aki Vehtari"
-date: "May 2018"
+date: "June 2018"
 output:
-  html_document
+  html_document:
+    fig_caption: yes
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -120,13 +126,24 @@ res<-rbind(res,data.frame(iters=iters,shift=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs
 ggplot(data=res, aes(y=zsRhat, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
 ```
 
-*Result:* If we use threshold 1.01, we can detect shift with magnitude one third of marginal standard deviation. If we use threshold 1.1, we can detect shift with the magnitude equal to marginal standard deviation.
+*Result:* If we use threshold 1.01, we can detect shift with magnitude one third of marginal standard deviation. If we use threshold 1.1, we can detect shift with the magnitude equal to marginal standard deviation. The rank plot can be used to visualize where the problem is.
 
 ```{r}
 ggplot(data=res, aes(y=zsreff, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
 ```
 
 *Result:* The relative efficiency is not as sensitive, but a shift with magnitude half of the marginal standard deviation will lead to very low efficiency when sample size increases.
+
+Rank plot visualisation for a case with 4 chains and 250 draws per chain, and shift = 0.5. 
+```{r}
+iters=250;chains=4;a=0.5;
+r <- array(rnorm(iters*chains), c(iters,chains))
+r[,1] <- r[,1] + a
+colnames(r)<-c('1','2','3','4');
+mcmc_hist(r_scale(r), breaks = seq(0,iters*chains,by=iters*chains/20)+0.5)
+```
+
+Rhat is less than 1.05, but the rank plot clearly shows where the problem is.
 
 ## Scaled: Three chains from $N(0,1)$ and one chain from $N(0,a)$*
 
@@ -166,6 +183,17 @@ ggplot(data=res, aes(y=zsreff, x=scale)) + geom_point() + geom_jitter() + facet_
 ```
 
 *Result:* The relative efficiency does not see a problem as it focuses on location.
+
+Rank plot visualisation for a case with 4 chains and 250 draws per chain, and one chains has scale 0.75. 
+```{r}
+iters=250;chains=4;a=0.75;
+r <- array(rnorm(iters*chains), c(iters,chains))
+r[,1] <- r[,1]*a
+colnames(r)<-c('1','2','3','4');
+mcmc_hist(r_scale(r), breaks = seq(0,iters*chains,by=iters*chains/20)+0.5)
+```
+
+Folded Rhat is 1.06, but the rank plot clearly shows where the problem is.
 
 # Cauchy: mean and variance not finite
 
@@ -229,18 +257,40 @@ Relative efficiency for lp__ is worryingly low.
 
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is empirical $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$. Each interval has $5%$ of draws, and the efficiency measures autocorrelation of an indicator function which indicates when the values are inside the specific interval. This gives us local efficiency measure which is does not depend on the shape of the distribution.
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
+plot_local_reff <- function(samp = NULL, parami = NULL, nalpha=NULL) {
+  zsreffs <- double()
+  delta <- 1/nalpha
+  for (alpha in seq(0, 1-delta, by=delta)) {
+    rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+    zsreffs <- c(zsreffs, rs[1,'zsreff'])
+  }
+  df <- data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha]))
+  ggplot(data=df, aes(x=quantile, y=zsreff)) + 
+    geom_step() + 
+    geom_hline(yintercept = c(0,1)) + 
+    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    scale_x_continuous(breaks=seq(0,1, by=0.1)) + 
+    scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
 }
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 We see that MCMC is less efficient in tails.
+
+Rank plot visualisation of x[1], which has relative efficiency 0.39
+```{r}
+mcmc_hist(r_scale(samp[,,1]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Chains have clearly different
+
+Rank plot visualisation of x[7], which has relative efficiency 0.02
+```{r}
+mcmc_hist(r_scale(samp[,,7]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+There are clear problems with mixing.
+
 
 ### Default Stan options + `max_treedepth=20`
 
@@ -290,18 +340,25 @@ Although increasing max treedepth improved diagnostics for x, the efficiency for
 
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 Increasing max treedepth improved the efficiency slightly in the tails.
+
+
+Rank plot visualisation of x[38], which has the smallest relative efficiency 0.23 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,38]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Clear problems.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.06.
+```{r}
+mcmc_hist(r_scale(samp[,,52]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Doesn't look so good.
 
 ### Default Stan options + `max_treedepth=20` + 8 times longer sampling
 
@@ -347,33 +404,30 @@ cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 Increasing chain length did not seem to change the relative efficiency.
 With more draws from the longer chains we can use also finer resolution for the local efficiency estimates.
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 100
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
-The efficiency far in tails is worryingly low.
+The efficiency far in the tails is worryingly low.
 
+Rank plot visualisation of x[34], which has the smallest relative efficiency 0.22 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,34]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Still problems at the edges.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.04.
+```{r}
+mcmc_hist(r_scale(samp[,,52]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+There seems to be slight problems also in mixing for energy.
 
 ## 1st alternative parameterization of Cauchy
 
@@ -422,15 +476,7 @@ The relative efficiency for these are also much better than with nominal paramet
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_1)
-zsreffs <- double()
-parami <- 101
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 101, nalpha = 20)
 ```
 
 The relative efficiency is good in all parts of the posterior.
@@ -446,6 +492,20 @@ cat('Mean r_eff for x_bs = ' , round(mean(res2[,'zsreff']),2), '\n')
 ```
 
 *Result:* We see that, the relative efficiency of the interesting x, can be different from the relative efficiency of the parameters that used to compute it. Also r_eff we are computing is for rank normalized and to compute Monte Carlo errors, the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+
+Rank plot visualisation of x[9], which has the smallest relative efficiency 0.85 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,109]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Looks better than for the nominal parameterization.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.33.
+```{r}
+mcmc_hist(r_scale(samp[,,152]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Looks better than for the nominal parameterization. It would be useful to have the reference plotted.
 
 ## Another alternative parameterization of Cauchy
 
@@ -495,15 +555,7 @@ The relative efficiency for these are also much better than with nominal paramet
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_3)
-zsreffs <- double()
-parami <- 1
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 The relative efficiency in tails is worse than for the first alternative parameterization, although it's still better than for the nominal model.
@@ -519,6 +571,21 @@ cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
 *Result:* When the transformation is univariate and bijective the rank normalized Rhat and r_eff are transformation invariant. 
 
 Naturally when computing the desired expectations the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+
+Rank plot visualisation of x[13], which has the smallest relative efficiency 1.0 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,63]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Nothing special.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.33.
+```{r}
+mcmc_hist(r_scale(samp[,,102]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Nothing special.
+
 
 ## Half-Cauchy with nominal parameterization
 
@@ -578,24 +645,30 @@ cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_half_nom)
-zsreffs <- double()
-parami <- 1
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 The relative efficiency is good overall, with only a small dip in tails.
 
+Rank plot visualisation of x[32], which has the smallest relative efficiency 1.0 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,32]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Looks like there are differences in scale of chains.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.33.
+```{r}
+mcmc_hist(r_scale(samp[,,52]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Maybe small differences in scales, but it's difficult to know whether small variation from uniform is relevant.
+
+## Alternative parameterization of half-Cauchy
+
 ```{r}
 writeLines(readLines("half_cauchy_alt.stan"))
 ```
-
-## Alternative parameterization of half-Cauchy
 
 Run half-Cauchy with alternative parameterization
 ```{r, cache=TRUE, comment=NA, results='hide'}
@@ -635,18 +708,24 @@ cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_half_reparam)
-zsreffs <- double()
-parami <- 101
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 101, nalpha = 20)
 ```
 
 The relative efficiency near zero is much worse than for the half-Cauchy with nominal parameterization and constraint `<lower=0>`.
+
+Rank plot visualisation of x[15], which has the smallest relative efficiency 0.30 among x's.
+```{r}
+mcmc_hist(r_scale(samp[,,115]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Varies from uniform, which is expected with lower relative efficiency, but would require a reference.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.24.
+```{r}
+mcmc_hist(r_scale(samp[,,152]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Varies from uniform, which is expected with lower relative efficiency, but would require a reference.
 
 # Hierarchical model: Eight Schools
 
@@ -677,18 +756,24 @@ Some rank-normalized split-Rhats are larger than 1.01. Relative efficiencies for
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_cp)
-zsreffs <- double()
-parami <- 2
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
 We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.05 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Clear problems.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.05.
+```{r}
+mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Clear problems.
 
 ### Centered parameterization longer chains
 
@@ -707,15 +792,7 @@ Some rank-normalized split-Rhats are still larger than 1.01. Relative efficienci
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_cp2)
-zsreffs <- double()
-parami <- 2
-nalpha <- 50
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 50)
 ```
 
 We see that MCMC has difficulties in exploring small tau values.  As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
@@ -723,18 +800,24 @@ We see that MCMC has difficulties in exploring small tau values.  As the efficie
 We can examine also other parameters, like mu in the following plot.
 ```{r}
 samp <- as.array(fit_cp2)
-zsreffs <- double()
-parami <- 1
-nalpha <- 40
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 1, nalpha = 40)
 ```
 
-There are gaps of poor efficiency which indicates sticking of MCMC, but the sticking doesn't happen for any specific values of mu.
+There are gaps of poor efficiency which indicates sticking of MCMC, but the sticking doesn't occus for any specific range of values of mu.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.01 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Clear problems to sample small values of tau.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.01.
+```{r}
+mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Now clear problems sampling different energy levels.
 
 ### Centered parameterization very long chains
 
@@ -753,18 +836,25 @@ Some rank-normalized split-Rhats are still larger than 1.01. Relative efficienci
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_cp3)
-zsreffs <- double()
-parami <- 2
-nalpha <- 100
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + ylim(c(0,1)) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1))
+plot_local_reff(samp = samp, parami = 2, nalpha = 100)
 ```
 
 We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.00 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Clear problems to sample small values of tau and even with 100000 draws per chain, the plots don't get crowded as traceplots would.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.01.
+```{r}
+mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Now clear problems sampling different energy levels.
+
 
 ## Non-centered Eight Schools model
 
@@ -793,18 +883,25 @@ All Rhats are close to 1, and relative efficiencies are good.
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp)
-zsreffs <- double()
-parami <- 2
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.57 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+I think these show problems to sample small values of tau.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.01.
+```{r}
+mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
+```
+
+Now clear problems sampling different energy levels.
+
 
 ### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
 
@@ -824,15 +921,7 @@ All Rhats are close to 1, and relative efficiencies are good and slightly better
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp2)
-zsreffs <- double()
-parami <- 2
-nalpha <- 20
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
@@ -840,18 +929,26 @@ Small tau values are still more difficult to explore, but the relative efficienc
 Check also with a finer resolution
 ```{r}
 samp <- as.array(fit_ncp2)
-zsreffs <- double()
-parami <- 2
-nalpha <- 50
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 50)
 ```
 
 Also with a finer resolution the efficiency of MCMC is good for different values of tau.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.62 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Higher adapt_delta seems to have improved sampling of small values.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.44.
+```{r}
+mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+```
+
+Now clear problems sampling different energy levels.
+
+### Non-centered parameterization default MCMC options plus `adapt_delta=0.95` and longer chains
 
 If in doubt, we can run longer chains.
 ```{r, cache=TRUE, comment=NA, results='hide'}
@@ -870,18 +967,25 @@ All Rhats are close to 1, and relative efficiencies are good and slightly better
 We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp3)
-zsreffs <- double()
-parami <- 2
-nalpha <- 100
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 2, nalpha = 100)
 ```
 
 Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+
+Rank plot visualisation of tau, which has the smallest relative efficiency 0.64 among parameters.
+```{r}
+mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/200)+0.5)
+```
+
+Higher adapt_delta seems to have improved sampling of small values.
+
+Rank plot visualisation of lp__, which has relative efficiency 0.41.
+```{r}
+mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/200)+0.5)
+```
+
+Now clear problems sampling different energy levels.
+
 
 # NUTS and effective sample size
 
@@ -915,15 +1019,7 @@ negative odd lag correlation and relative efficiency higher than 1.
 
 Let's check the local relative efficiency
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 100
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
 The relative efficiency for probability estimate for a small interval is close to 1 with a slight drop in the tails. This is a good reault, but far from the relative efficiency for mean estimate.
@@ -940,15 +1036,7 @@ to the relative efficiency for `lp__`. This is not that surprising as the potent
 
 Let's check the local relative efficiency
 ```{r}
-zsreffs <- double()
-parami <- 1
-nalpha <- 100
-delta <- 1/nalpha
-for (alpha in seq(0, 1-delta, by=delta)) {
-  rs <- monitornew(samp[,,parami]>=quantile(samp[,,parami],alpha)&samp[,,parami]<quantile(samp[,,parami],alpha+delta),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
-  zsreffs <- c(zsreffs, rs[1,'zsreff'])
-}
-ggplot(data=data.frame(quantile=seq(0, 1, by=delta), zsreff=c(zsreffs,zsreffs[nalpha])), aes(x=quantile, y=zsreff))+ geom_step() + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_x_continuous(breaks=seq(0,1, by=0.1)) + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
 The relative efficiency is mostly a bit below 1, but for the right tail of $x[1]^2$ the relative efficiency drops. This likely due to only some iterations have high enough total energy to obtain draws from the high energy part of the tail. 

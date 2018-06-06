@@ -78,6 +78,15 @@ u_scale <- function(a){
     return(array(u, dim = dim(a), dimnames = dimnames(a)))
 }
 
+r_scale <- function(a){
+  n <- length(a)
+  r <- rank(a, ties.method = 'average')
+  if (is.null(dim(a))) # assume it's a vector
+    return(r)
+  else # assume it's an array or matrix
+    return(array(r, dim = dim(a), dimnames = dimnames(a)))
+}
+
 ess_rfun <- function(sims) {
   # Compute the effective sample size for samples of several chains 
   # for one parameter; see the C++ code of function  
@@ -234,7 +243,7 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
     cat("Inference for the input samples (")
     cat(dim_sims[2], " chains: each with iter=", dim_sims[1], "; warmup=", warmup, "):\n\n", sep = "")
     # round n_eff to integers
-    summary[, 'neff'] <- round(summary[, 'n_eff'], 0)
+    summary[, 'neff'] <- round(summary[, 'neff'], 0)
     summary[, 'sneff'] <- round(summary[, 'sneff'], 0)
     summary[, 'zneff'] <- round(summary[, 'zneff'], 0)
     summary[, 'zsneff'] <- round(summary[, 'zsneff'], 0)
