@@ -1,7 +1,7 @@
 ---
-title: "Rank-normalized split-Rhat and relative efficiency"
-author: "Aki Vehtari"
-date: "June 2018"
+title: "Rank-normalized split-Rhat and relative efficiency estimates"
+author: "Aki Vehtari, Daniel Simpson, Andrew Gelman"
+date: "August 2018"
 output:
   html_document:
     fig_caption: yes
@@ -13,62 +13,190 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(comment=NA)
-```
-
-*Load libraries*
-```{r, comment=NA, message=FALSE, warning=FALSE}
-library(rstan)
-rstan_options(auto_write = TRUE)
-library(bayesplot)
-library(gridExtra)
-source('monitornew.R')
+knitr::opts_chunk$set(comment=NA, cache=TRUE)
 ```
 
 # Introduction
 
-This note books has experiments for Rank-normalized split-Rhat and -r_eff, where r_reff is the relative efficiency of MCMC sample.
+$\widehat{R}$ (Gelman and Rubin, 1992; Brooks and Gelman, 1998) and
+split-$\widehat{R}$ (Gelman et al.\, 2013) are based on the ratio of
+between and within-sequence marginal variances of the
+simulations. Effective sample size estimate ($N_{\mbox{eff}}$) by Gelman et al. (2013) is based on marginal variance and
+autocorrelation estimates from split chains. If a marginal
+distribution of some parameter does not have finite mean and variance,
+$\widehat{R}$, split-$\widehat{R}$ and $N_{\mbox{eff}}$
+for that parameter are not well defined.
 
-In the code and figures I use abbreviations
+To have a well defined MCMC convergence diagnostic and generic
+relative MCMC efficiency estimate, we propose to compute
+split-$\widehat{R}$ and $R_{\mbox{eff}}=N_{\mbox{eff}}/N$ for rank normalized
+simulations. For marginals with finite mean and variance, Monte Carlo
+error estimates for the desired expectations can be computed as
+before. In addition we propose two local efficiency measures based on
+relative efficiency of quantiles and small interval probabilities.
+
+## Rank normalization
+
+Rank normalization is commonly used in Spearman's rank correlation
+coefficient, but also quite commonly used to transform predictor
+values in epidemiology.
+
+Rank normalization computes ranks for draws from all chains combined,
+applies z-transformation to ranks, and reconstructs the chains. Rank
+normalization makes the subsequent computations well defined and
+bijective invariant.  This means that we get same results, for
+example, if we use unconstrained or constrained parameter. Furthermore
+to improve sensitivity to scale differences between chains, we
+consider folded rank-normalization which uses rank distance from the
+median.
+
+## Relative efficiency of median and other quantile estimates
+
+Classic $N_{\mbox{eff}}$ focused on posterior mean, but as it can be non-finite, we may prefer to report median and other
+quantiles by default.  If median is $x'$, then $p(x < x')=0.5$. We can't
+present this as a simple expectation, but probability $p(x < x')$ can be
+estimated as $\frac{1}{S}\sum I_{x<x'}$. The indicator function
+transforms simulation draws to 0's and 1's, and thus the subsequent computations are
+bijective invariant. Instead of estimating the efficiency of median
+directly, we can estimate the efficiency of $p(x < \hat{Q}_{0.5})$,
+where $\hat{Q}_{0.5}$ is the empirical median from combined
+draws. This should be good approximation, if the efficiency for $p(x <
+\hat{Q}_{\alpha})$ is smoothly changing when $\alpha$ is close to
+$0.5$.
+
+We can compute approximative relative efficiency for median absolute
+deviation based scale estimate (MAD_SD), by computing the relative
+efficiency for median of absolute deviations from median of all draws.
+
+We can compute relative efficiency for other quantiles than median. We
+observe that often the relative efficiency for tail quantiles is lower
+than for mean or median.
+
+## Relative efficiency of small interval probability estimates
+
+Next examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+\delta})$, where $\hat{Q}_\alpha$ is empirical
+$\alpha$-quantile, $delta=1/M$ is the length of the interval with some
+positive integer $M$, and $\alpha \in
+(0,\delta,\ldots,1-\delta)$. Each interval has $N/M$ draws, and the
+efficiency measures autocorrelation of an indicator function which
+indicates when the values are inside the specific interval. This gives
+us local efficiency measure which does not depend on the shape of the
+distribution. We demonstrate it's usefulness as a diagnostic tool and
+educational tool to teach that why expectations of different
+functionals may have different $N_{\mbox{eff}}$.
+
+## Rank plots
+
+We illustrate that rank plots can be used as more compact alternative
+to trace plots.
+
+## Finite mean and variance of a marginal
+
+There will be a separate case study for diagnostics to check when
+certain marginal has finite mean and variance needed in order to
+report posterior mean and MCSE.
+
+## Abbreviations
+
+In the code and figures the following abbreviations have been used
 
  - Rhat = classic no-split-Rhat
  - sRhat = classic split-Rhat
  - zsRhat = rank-normalized split-Rhat
+   - all draws are jointly ranked, z-transformed and put back to the chains
+   - can detect differences in location and trends
  - fzsRhat = folded rank-normalized split-Rhat
- - neff = no-split effective sample size using Geyer's monotonic truncation rule
+   - all draws are jointly "folded" by computing absolute deviation
+     from median, ranked, z-transformed and put back to the chains
+   - can detect differences in scales
+ - neff = no-split effective sample size
  - reff = neff / N
- - zsneff = rank-normalized split effective sample size using Geyer's monotonic truncation rule
+ - zsneff = rank-normalized split effective sample size
+   - estimates the efficiency of mean estimate for rank normalized values
  - zsreff = zsneff / N
- 
-The proposal is to switch 
+ - fzsneff = folded rank-normalized split effective sample size
+   - estimates the efficiency of rank normalized *mean* absolute deviation
+ - fzsreff = fzsneff / N
+ - medsneff = median split effective sample size
+   - estimates the efficiency of median
+   - approximated using efficiency for $p(x < \hat{Q}_{0.5})$
+ - medsreff = medsneff / N
+ - madsneff = mad split effective sample size
+   - estimates the efficiency of median absolute deviation
+ - madsreff = madsneff / N
 
- - from sRhat to max(zsRhat, fzsRhat)
- - from neff to zsreff
- 
-Rank normalization makes zsRhat and zsreff well defined and more stable than sRhat and neff. Adding folded version fzsRhat helps to detect differences in scale.
+## Proposed change in Stan
 
-I also propose following warning thresholds
+The proposal is to switch in Stan
 
- - 1.01 for new Rhat max(zsRhat, fzsRhat)
- - 0.1 for new relative efficiency (zsreff)
+ - from split-$\widehat{R}$ (sRhat) to maximum of rank-normalized-split-$\widehat{R}$ and folded-rank-normalized-split-$\widehat{R}$ (max(zsRhat, fzsRhat))
+ - from classic effective sample size estimate (neff, which currently doesn't use chain splitting) to rank-normalized-split-$R_{\mbox{eff}}$ (zsreff) and folded-rank-normalized-split-$R_{\mbox{eff}}$ (fzsreff)
+ - if computing median and MAD_SD, report corresponding $R_{\mbox{eff}}$'s (medsreff, madsreff)
 
-I have plotted dashed lines based on these thresholds (in continuous plots, a dashed line at  1.005 is plotted instead of 1.01, as values larger than that are usually rounded in our summaries to 1.1).
+Justifications for the change are
 
-In addition a local efficiency plot is introduced.
+- Rank normalization makes zsRhat and zsreff well defined for all
+  distributions, bijective transformation invariant and more stable
+  than sRhat and neff. Adding folded version fzsRhat helps to detect
+  differences in scale.
+
+- CDF based medsreff and masreff are well defined for all
+  distributions, bijective transformation invariant, more stable than
+  neff, and focuses on the median and mad_sd we are reporting.
+
+In displays we propose eventually to use Rhat to denote the new
+version, but to make it more clear that rank-normalized efficiency is
+different we would switch to use R_eff and display relative
+efficiency. The relative efficiency is also easier to check for the
+low values as we don't need to check the total sample size.
+
+## Warning thresholds
+
+Based on the experiments, more strict convergence diagnostic and
+relative efficiency warning limits could be used.
+
+We propose following warning thresholds, although additional
+experiments would be useful:
+
+ - 1.01 or 1.02 for new Rhat max(zsRhat, fzsRhat)
+ - 0.1 for new relative efficiency (zsreff, fzsreff, medsreff, madsreff)
+
+Plots have dashed lines based on these thresholds (in continuous
+plots, a dashed line at 1.005 is plotted instead of 1.01, as values
+larger than that are usually rounded in our summaries to 1.01).
+
+# Setup
+
+**Load libraries**
+```{r, comment=NA, message=FALSE, warning=FALSE, results='hide'}
+library(rstan)
+rstan_options(auto_write = TRUE)
+library(bayesplot)
+library(grid)
+library(gridExtra)
+source('monitornew.R')
+blank <- grid.rect(gp=gpar(col="white"))
+```
 
 # Independent draws from normal distribution with additional trend, shift or scaling 
 
-This part focus on diagnostics for
+This part focuses on diagnostics for
 
  - all chains have a trend and similar marginal distribution
  - one of the chains has different mean
  - one of the chains has lower marginal variance
  
-To focus on these, independent draws are used as a proxy for very efficient MCMC. In addition the draws are from normal distribution and we discuss the behavior for non-Gaussian distributions later.
+To simplify, in this part independent draws are used as a proxy for
+very efficient MCMC. In addition the draws are from normal
+distribution and we discuss the behavior for non-Gaussian
+distributions later.
 
-## Trend: All chains from the same $N(0,1)$ distribution plus linear trend added to all
+## Trend: All chains from the same $N(0,1)$ distribution plus linear trend added to all chains.
+
 ```{r}
-res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),neff=integer(),zsneff=integer())
 chains=4
 for (iters in c(250, 1000, 4000)) {
   for (a in c(0, 0.25, 0.5, 0.75, 1)) {
@@ -76,13 +204,14 @@ for (iters in c(250, 1000, 4000)) {
       r <- array(rnorm(iters*chains), c(iters,chains))
       r <- r + seq(-a, a, length.out=iters)
       rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
-      res<-rbind(res,data.frame(iters=iters,trend=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+      res<-rbind(res,data.frame(iters=iters,trend=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
     }
   }
 }
 ```
 
-If we don't split chains, Rhat misses trends if all chains still have similar marginal distribution.
+If we don't split chains, Rhat misses trends if all chains still have
+similar marginal distribution.
 ```{r}
 ggplot(data=res, aes(y=Rhat, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Rhat without splitting chains')
 ```
@@ -92,23 +221,32 @@ Split-Rhat can detect trends, even if the marginals of chains are similar.
 ggplot(data=res, aes(y=zsRhat, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
 ```
 
-*Result:* Split-Rhat is useful for detecting non-stationarity in chains. If we use threshold 1.01, we can detect trends which have variance 2% from the marginal variance. If we use threshold 1.1, we can detect trends which have variance 30% from the marginal variance.
+**Result:** Split-Rhat is useful for detecting non-stationarity in
+ chains. If we use threshold 1.01, we can detect trends which have
+ variance 2% from the marginal variance. If we use threshold 1.1, we
+ can detect trends which have variance 30% from the marginal variance.
 
-Relative efficiency (effective sample size divided by the number of draws) is based on split Rhat and autocorrelations.
+Relative efficiency (effective sample size divided by the number of
+draws) is based on split Rhat and autocorrelations.
+
 ```{r}
 ggplot(data=res, aes(y=zsreff, x=trend)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
 ```
 
-*Result:* Split-Rhat is more sensitive to trends in small sample sizes, but relative efficiency is more sensitive with larger samples sizes (as autocorrelations can be estimated more accurately).
+**Result:** Split-Rhat is more sensitive to trends in small sample
+ sizes, but relative efficiency is more sensitive with larger samples
+ sizes (as autocorrelations can be estimated more accurately).
 
-*Advice:* If in doubt, run longer chains for more accurate estimates.
+**Advice:** If in doubt, run longer chains for more accurate estimates.
 
 ## Shifted: Three chains from $N(0,1)$ and one chain from $N(a,1)$
 
-Next we investigate the sensitivity to detect if one of the chains has not converged to the same distribution as the others, but has a different mean.
+Next we investigate the sensitivity to detect if one of the chains has
+not converged to the same distribution as the others, but has a
+different mean.
 
 ```{r}
-res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),neff=integer(),zsneff=integer())
 chains=4
 for (iters in c(250, 1000, 4000)) {
   for (a in c(0, 0.25, 0.5, 0.75, 1)) {
@@ -116,7 +254,7 @@ for (iters in c(250, 1000, 4000)) {
 r <- array(rnorm(iters*chains), c(iters,chains))
 r[,1] <- r[,1] + a
 rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
-res<-rbind(res,data.frame(iters=iters,shift=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+res<-rbind(res,data.frame(iters=iters,shift=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
   }
   }
 }
@@ -126,15 +264,22 @@ res<-rbind(res,data.frame(iters=iters,shift=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs
 ggplot(data=res, aes(y=zsRhat, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
 ```
 
-*Result:* If we use threshold 1.01, we can detect shift with magnitude one third of marginal standard deviation. If we use threshold 1.1, we can detect shift with the magnitude equal to marginal standard deviation. The rank plot can be used to visualize where the problem is.
+**Result:** If we use threshold 1.01, we can detect shift with
+  magnitude one third of marginal standard deviation. If we use
+  threshold 1.1, we can detect shift with the magnitude equal to
+  marginal standard deviation. The rank plot can be used to visualize
+  where the problem is.
 
 ```{r}
 ggplot(data=res, aes(y=zsreff, x=shift)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
 ```
 
-*Result:* The relative efficiency is not as sensitive, but a shift with magnitude half of the marginal standard deviation will lead to very low efficiency when sample size increases.
+**Result:** The relative efficiency is not as sensitive, but a shift
+  with magnitude half of the marginal standard deviation will lead to
+  very low efficiency when sample size increases.
 
-Rank plot visualisation for a case with 4 chains and 250 draws per chain, and shift = 0.5. 
+Rank plot visualisation for a case with 4 chains and 250 draws per
+chain, and shift = 0.5.
 ```{r}
 iters=250;chains=4;a=0.5;
 r <- array(rnorm(iters*chains), c(iters,chains))
@@ -147,10 +292,12 @@ Rhat is less than 1.05, but the rank plot clearly shows where the problem is.
 
 ## Scaled: Three chains from $N(0,1)$ and one chain from $N(0,a)$*
 
-Next we investigate the sensitivity to detect if one of the chains has not converged to the same distribution as the others but has lower marginal variance.
+Next we investigate the sensitivity to detect if one of the chains has
+not converged to the same distribution as the others but has lower
+marginal variance.
 
 ```{r}
-res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),f2zsRhat=double,neff=integer(),zsneff=integer())
+res <- data.frame(iters=integer(),trend=double(),rep=integer(),sRhat=double(),zsRhat=double(),fzsRhat=double(),neff=integer(),zsneff=integer())
 chains=4
 for (iters in c(250, 1000, 4000)) {
   for (a in c(0, 0.25, 0.5, 0.75, 1)) {
@@ -158,7 +305,7 @@ for (iters in c(250, 1000, 4000)) {
 r <- array(rnorm(iters*chains), c(iters,chains))
 r[,1] <- r[,1]*a
 rs <- monitornew(r, warmup=0, digits_summary = 2, probs=c(0.5), print = FALSE)
-res<-rbind(res,data.frame(iters=iters,scale=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],f2zsRhat=rs[,'f2zsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff']))
+res<-rbind(res,data.frame(iters=iters,scale=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs[,'sRhat'],zsRhat=rs[,'zsRhat'],fzsRhat=rs[,'fzsRhat'],neff=rs[,'neff'],zsneff=rs[,'zsneff'],reff=rs[,'reff'],zsreff=rs[,'zsreff'],fzsreff=rs[,'fzsreff']))
   }
   }
 }
@@ -168,23 +315,35 @@ res<-rbind(res,data.frame(iters=iters,scale=a,rep=irep,Rhat=rs[,'Rhat'],sRhat=rs
 ggplot(data=res, aes(y=zsRhat, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Split-Rhat')
 ```
 
-*Result:* Split-Rhat is not able to detect differences in scale.
+**Result:** Split-Rhat is not able to detect differences in scale.
 
 ```{r}
 ggplot(data=res, aes(y=fzsRhat, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ggtitle('Folded-split-Rhat')
 ```
 
-*Result:* Folded-Split-Rhat focuses instead to scales, and can detect scale differences.
+**Result:** Folded-Split-Rhat focuses instead to scales, and can detect scale differences.
 
-*Result:* If we use threshold 1.01, we can detect a chain with scale less than 3/4 of the scale of the others. If we use threshold 1.1, we can detect a chain with scale less than 1/4 of the scale of the others.
+**Result:** If we use threshold 1.01, we can detect a chain with scale
+  less than 3/4 of the scale of the others. If we use threshold 1.1,
+  we can detect a chain with scale less than 1/4 of the scale of the
+  others.
 
 ```{r}
 ggplot(data=res, aes(y=zsreff, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Relative efficiency (zsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
 ```
 
-*Result:* The relative efficiency does not see a problem as it focuses on location.
+**Result:** The relative efficiency does not see a problem as it
+  focuses on location.
 
-Rank plot visualisation for a case with 4 chains and 250 draws per chain, and one chains has scale 0.75. 
+```{r}
+ggplot(data=res, aes(y=fzsreff, x=scale)) + geom_point() + geom_jitter() + facet_grid(. ~ iters) + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ggtitle('Folded relative efficiency (fzsreff)') + scale_y_continuous(breaks = seq(0,1,by=0.25))
+```
+
+**Result:** The relative efficiency of sd does see the problem as it
+  focuses on scale .
+
+Rank plot visualisation for a case with 4 chains and 250 draws per
+chain, and one chains has scale 0.75.
 ```{r}
 iters=250;chains=4;a=0.75;
 r <- array(rnorm(iters*chains), c(iters,chains))
@@ -197,9 +356,19 @@ Folded Rhat is 1.06, but the rank plot clearly shows where the problem is.
 
 # Cauchy: mean and variance not finite
 
-Classic Rhat is based on calculating within and between chain variances. If the marginal distribution of the chain is such that variance is not defined classic Rhat is not well justified. Next we use Cauchy as an example of such distribution. Also in cases where mean and variance are finite, the distribution can be far from Gaussian and especially distributions with very long tails cause instability for variance and autocorrelation estimates. To alleviate these problems we Split-Rhat for rank-normalized draws. Ranks are computed by using average for ties, as it is deterministic and constant chains are mapped to constant chains.
+Classic Rhat is based on calculating within and between chain
+variances. If the marginal distribution of the chain is such that
+variance is not defined classic Rhat is not well justified. Next we
+use Cauchy as an example of such distribution. Also in cases where
+mean and variance are finite, the distribution can be far from
+Gaussian and especially distributions with very long tails cause
+instability for variance and autocorrelation estimates. To alleviate
+these problems we Split-Rhat for rank-normalized draws. Ranks are
+computed by using average for ties, as it is deterministic and
+constant chains are mapped to constant chains.
 
-The following Cauchy models are originally from Michael Betancourt's case study [Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html)
+The following Cauchy models are from Michael Betancourt's case study
+[Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html)
 
 ## Nominal parameterization of Cauchy
 
@@ -215,7 +384,10 @@ Run the nominal model
 fit_nom <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0)
 ```
 
-The diagnostics warn about very large number of transitions after warmup that exceeded the maximum treedepth, which is likely due to very long tail of Cauchy. All chains have low estimated Bayesian Fraction of Missing Information indicating also slow mixing. 
+The diagnostics warn about very large number of transitions after
+warmup that exceeded the maximum treedepth, which is likely due to
+very long tail of Cauchy. All chains have low estimated Bayesian
+Fraction of Missing Information indicating also slow mixing.
 
 MCMC trace for the first parameter looks wild with occasional large values
 ```{r}
@@ -233,20 +405,28 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-For one parameter Rhats exceed the classic threshold 1.1. Depending on Rhat, a few others exceed the threshold 1.01. The interpretation of classic Rhat is however not well defined. The rank normalized split-Rhat have several values over 1.01.
+For one parameter Rhats exceed the classic threshold 1.1. Depending on
+Rhat, a few others exceed the threshold 1.01. The interpretation of
+classic Rhat is however not well defined. The rank normalized
+split-Rhat have several values over 1.01.
 
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
-p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
-p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
-grid.arrange(p1, p2, nrow = 1)
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic rel. efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1)) 
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=fzsreff)) + geom_point() + ggtitle('Folded rel. efficiency (fzsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-Both classic and rank normalized relative efficiency estimates have several near zero values, and the overall samples shouldn't be trusted.
+Both classic and rank normalized relative efficiency estimates have
+several near zero values, and the overall samples shouldn't be
+trusted.
 
-*Result:* Relative efficiency is more sensitive than (rank-normalized) split-Rhat to detect problems of slow mixing.
+**Result:** Relative efficiency is more sensitive than (rank-normalized) split-Rhat to detect problems of slow mixing.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
@@ -255,7 +435,15 @@ cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 
 Relative efficiency for lp__ is worryingly low.
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is empirical $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$. Each interval has $5%$ of draws, and the efficiency measures autocorrelation of an indicator function which indicates when the values are inside the specific interval. This gives us local efficiency measure which is does not depend on the shape of the distribution.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is empirical
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$. Each interval
+has $5%$ of draws, and the efficiency measures autocorrelation of an
+indicator function which indicates when the values are inside the
+specific interval. This gives us local efficiency measure which is
+does not depend on the shape of the distribution.
+
 ```{r}
 plot_local_reff <- function(samp = NULL, parami = NULL, nalpha=NULL) {
   zsreffs <- double()
@@ -277,12 +465,43 @@ plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 
 We see that MCMC is less efficient in tails.
 
+Alternative way to examine the relative efficiency in different parts
+of the posterior, is to compute relative efficiency for $p(x <
+\hat{Q}_{\alpha})$, where $\hat{Q}_\alpha$ is empirical
+$\alpha$-quantile and $\alpha \in (0.025,\ldots,0.975)$. This is
+related to the efficiency of quantile estimates. Each interval has
+specified proportion of draws, and the efficiency measures
+autocorrelation of an indicator function which indicates when the
+values are inside the specific interval. This gives us local
+efficiency measure which is does not depend on the shape of the
+distribution.
+
+```{r}
+plot_quantile_reff <- function(samp = NULL, parami = NULL, nalpha=NULL) {
+  zsreffs <- double()
+  delta <- 1/nalpha
+  for (alpha in seq(delta, 1-delta, by=delta)) {
+    rs <- monitornew(samp[,,parami]<quantile(samp[,,parami],alpha),warmup = 0, probs = 0.5, digits_summary = 2, print = FALSE)
+    zsreffs <- c(zsreffs, rs[1,'zsreff'])
+  }
+  df <- data.frame(quantile=seq(delta, 1-delta, by=delta), zsreff=zsreffs)
+  ymax<-max(1,round(max(zsreffs)+0.15,1))
+  ggplot(data=df, aes(x=quantile, y=zsreff)) + 
+    geom_point() + 
+    geom_hline(yintercept = c(0,1)) + 
+    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    scale_x_continuous(breaks=seq(0,1, by=0.1)) + 
+    scale_y_continuous(breaks = seq(0,ymax,by=0.25), limits = c(0,ymax))
+}
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 40)
+```
+
 Rank plot visualisation of x[1], which has relative efficiency 0.39
 ```{r}
 mcmc_hist(r_scale(samp[,,1]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Chains have clearly different
+Chains have clearly different rank plots.
 
 Rank plot visualisation of x[7], which has relative efficiency 0.02
 ```{r}
@@ -307,7 +526,11 @@ samp<-as.array(fit_nom_td20)
 mcmc_trace(samp[,,1])
 ```
 
-Treedepth exceedence and Bayesian Fraction of Missing Information are HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and relative efficiency can detect. Check the diagnostics for all $x$'s.
+Treedepth exceedence and Bayesian Fraction of Missing Information are
+HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and
+relative efficiency can detect.
+
+Check the diagnostics for all $x$'s.
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic Split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(0.999, 1.045)
@@ -316,37 +539,65 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats are below 1.1, but many are over 1.01. Classic Rhat has more variation than the rank normalized (and the classic is not well defined). The folded rank normalized Rhat shows that there is still more variation in scale than location between different chains.
+All Rhats are below 1.1, but many are over 1.01. Classic Rhat has more
+variation than the rank normalized (and the classic is not well
+defined). The folded rank normalized Rhat shows that there is still
+more variation in scale than location between different chains.
 
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
-p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.5)) 
-p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.5))
-grid.arrange(p1, p2, nrow = 1)
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic rel. efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') +  scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.1)) 
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.1))
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=fzsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1.5,by=0.25), limits = c(0,1.1))
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-Some classic relative efficiencies (reffs) are close to zero. If we wouldn't realize that the variance is infinite, we might try to run longer chains, but in case of infinite variance zero is the true value and longer chains don't help. However other quantities can be well defined, and that's why it can be useful also to look at the rank normalized version as a generic transformation with finite mean and variance. The smallest rank-normalized r_eff are around 0.25, which is not that bad. There is still large variation between parameters although they all have the same distribution.
+Some classic relative efficiencies (reffs) are close to zero. If we
+wouldn't realize that the variance is infinite, we might try to run
+longer chains, but in case of infinite variance, zero efficiency is
+the truth and longer chains don't help. However other quantities can
+be well defined, and that's why it is useful also to look at the
+rank normalized version as a generic transformation with finite mean
+and variance. The smallest rank-normalized r_eff are around 0.25,
+which is not that bad. There is still large variation between
+parameters although they all have the same distribution.
 
-*Result:* Rank normalized relative efficiency is more stable than not-rank-normalized which is not well defined for Cauchy.
+**Result:** Rank normalized relative efficiency is more stable than
+  not-rank-normalized which is not well defined for Cauchy.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-Although increasing max treedepth improved diagnostics for x, the efficiency for I and lp__ didn't change.
+Although increasing max treedepth improved diagnostics for x, the
+efficiency for I and lp__ didn't change.
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
 Increasing max treedepth improved the efficiency slightly in the tails.
 
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(x <
+\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
+and $\alpha \in (0,0.025,\ldots,0.975)$.
+```{r}
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 40)
+```
 
-Rank plot visualisation of x[38], which has the smallest relative efficiency 0.23 among x's.
+
+Rank plot visualisation of x[38], which has the smallest relative
+efficiency 0.23 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,38]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
@@ -373,7 +624,9 @@ samp<-as.array(fit_nom_td20l)
 mcmc_trace(samp[,,1])
 ```
 
-Treedepth exceedence and Bayesian Fraction of Missing Information are HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and relative efficiency can detect. Check the diagnostics for all $x$'s.
+Treedepth exceedence and Bayesian Fraction of Missing Information are
+HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and
+relative efficiency can detect. Check the diagnostics for all $x$'s.
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`sRhat`)) + geom_point() + ggtitle('Classic split-Rhat') + geom_hline(yintercept = 1.005, linetype = 'dashed') + geom_hline(yintercept = 1) + ylim(.999, 1.009)
@@ -382,40 +635,63 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats are below 1.01. Classic Rhat has more variation than the rank normalized (but the classic is not well defined).
+All Rhats are below 1.01. Classic Rhat has more variation than the
+rank normalized (but the classic is not well defined).
 
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
-p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
-p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
-grid.arrange(p1, p2, nrow = 1)
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic rel. efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1.1)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1.1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=fzsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1.1)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(breaks = seq(0,1,by=0.25), limits = c(0,1.1))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-Most classic relative efficiencies (reffs) are close to zero. If we wouldn't realize that the variance is infinite, we might try to run longer chains, but in case of infinite variance zero is the true value and longer chains don't help. However other quantities can be well defined, and that's why it can be useful also to look at the rank normalized version as a generic transformation with finite mean and variance. The rank-normalized r_eff's start to concentrate around 0.6, which is quite good. There is still some variation between parameters.
+Most classic relative efficiencies (reffs) are close to zero. If we
+wouldn't realize that the variance is infinite, we might try to run
+longer chains, but in case of infinite variance zero is the true value
+and longer chains don't help. However other quantities can be well
+defined, and that's why it can be useful also to look at the rank
+normalized version as a generic transformation with finite mean and
+variance. The rank-normalized r_eff's start to concentrate around 0.6,
+which is quite good. There is still some variation between parameters.
 
-*Result:* Rank normalized relative efficiency is more stable than not-rank-normalized which is not well defined for Cauchy.
+**Result:** Rank normalized relative efficiency is more stable than
+  not-rank-normalized which is not well defined for Cauchy.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','reff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 ```
 
-Increasing chain length did not seem to change the relative efficiency.
-With more draws from the longer chains we can use also finer resolution for the local efficiency estimates.
+Increasing chain length did not seem to change the relative
+efficiency.  With more draws from the longer chains we can use
+finer resolution for the local efficiency estimates.
 ```{r}
 plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
 The efficiency far in the tails is worryingly low.
 
-Rank plot visualisation of x[34], which has the smallest relative efficiency 0.22 among x's.
+The alternative local relative efficiency.
+```{r}
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 100)
+```
+
+
+Rank plot visualisation of x[34], which has the smallest relative
+efficiency 0.22 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,34]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
@@ -431,7 +707,11 @@ There seems to be slight problems also in mixing for energy.
 
 ## 1st alternative parameterization of Cauchy
 
-Next we examine alternative parameterization and consider Cauchy as a scale mixture of Gaussian distributions. The model has two parameters and the Cauchy distributed x's can be computed from those. In addition of improved sampling performance, the example illustrates that focus of diagnostics matter.
+Next we examine alternative parameterization and consider Cauchy as a
+scale mixture of Gaussian distributions. The model has two parameters
+and the Cauchy distributed x's can be computed from those. In addition
+of improved sampling performance, the example illustrates that focus
+of diagnostics matter.
 
 ```{r}
 writeLines(readLines("cauchy_alt_1.stan"))
@@ -453,27 +733,35 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for Cauchy distributed.
+All Rhats are below 1.01. Classic Rhat's look also good even if the
+classic is not well defined for Cauchy distributed.
 
 ```{r}
 res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
-p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
-p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
-grid.arrange(p1, p2, nrow = 1)
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=reff)) + geom_point() + ggtitle('Classic rel. efficiency (reff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=zsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=fzsreff)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + ylim(0,3.4)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,3.4))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,3.4))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy.
+**Result:** Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,151:152], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-The relative efficiency for these are also much better than with nominal parameterization.
+The relative efficiency for these are also much better than with
+nominal parameterization.
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_1)
 plot_local_reff(samp = samp, parami = 101, nalpha = 20)
@@ -481,19 +769,38 @@ plot_local_reff(samp = samp, parami = 101, nalpha = 20)
 
 The relative efficiency is good in all parts of the posterior.
 
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(x <
+\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
+and $\alpha \in (0,0.025,\ldots,0.975)$.
+```{r}
+samp <- as.array(fit_1)
+plot_quantile_reff(samp = samp, parami = 101, nalpha = 40)
+```
+
 
 ```{r}
 res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 res1<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 res2<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']),2), '\n')
+cat('Mean fr_eff for xs = ' , round(mean(res[,'fzsreff']),2), '\n')
 cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
 cat('Mean r_eff for x_bs = ' , round(mean(res2[,'zsreff']),2), '\n')
 ```
 
-*Result:* We see that, the relative efficiency of the interesting x, can be different from the relative efficiency of the parameters that used to compute it. Also r_eff we are computing is for rank normalized and to compute Monte Carlo errors, the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+**Result:** We see that, the relative efficiency of the interesting x,
+  can be different from the relative efficiency of the parameters that
+  used to compute it. Also r_eff we are computing is for rank
+  normalized and to compute Monte Carlo errors, the final target
+  function should be taken into account, but we just want to avoid the
+  complication of the potentially non-existing moments at this point,
+  and come back later in other paper how to use Pareto diagnostic to
+  check whether necessary moments exist to compute the desired
+  expectations and their Monte Carlo errors.
 
-Rank plot visualisation of x[9], which has the smallest relative efficiency 0.85 among x's.
+Rank plot visualisation of x[9], which has the smallest relative
+efficiency 0.85 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,109]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
@@ -505,11 +812,13 @@ Rank plot visualisation of lp__, which has relative efficiency 0.33.
 mcmc_hist(r_scale(samp[,,152]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Looks better than for the nominal parameterization. It would be useful to have the reference plotted.
+Looks better than for the nominal parameterization. It would be useful
+to have the reference plotted.
 
 ## Another alternative parameterization of Cauchy
 
-Another alternative parameterization is univariate transformation as shown in the following code.
+Another alternative parameterization is univariate transformation as
+shown in the following code.
 ```{r}
 writeLines(readLines("cauchy_alt_3.stan"))
 ```
@@ -521,7 +830,8 @@ Run the alternative model (3rd alternative in Michael Betancourt's case study)
 fit_3 <- stan(file='cauchy_alt_3.stan', seed=7878, refresh = 0)
 ```
 
-There are no warnings, and the sampling is much faster than for the nominal model.
+There are no warnings, and the sampling is much faster than for the
+nominal model.
 
 ```{r}
 samp<-as.array(fit_3)
@@ -532,47 +842,77 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats except some folded Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for Cauchy distributed.
+All Rhats except some folded Rhats are below 1.01. Classic Rhat's look
+also good even if the classic is not well defined for Cauchy
+distributed.
 
 ```{r}
 res<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
-p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
-p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
-grid.arrange(p1, p2, nrow = 1)
+p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic rel. efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
+p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsreff`)) + geom_point() + ggtitle('New rel. efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,3.4)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,3.4))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,3.4))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Rank normalized r_eff's are slightly larger than 1, which is possible for antithetic Markov chains which have negative correlation for odd lags.
+**Result:** Rank normalized r_eff's have less variation than classic
+  one which is not well defined for Cauchy. Rank normalized r_eff's
+  are slightly larger than 1, which is possible for antithetic Markov
+  chains which have negative correlation for odd lags.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,101:102], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-The relative efficiency for these are also much better than with nominal parameterization.
+The relative efficiency for these are also much better than with
+nominal parameterization.
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_3)
-plot_local_reff(samp = samp, parami = 1, nalpha = 20)
+plot_local_reff(samp = samp, parami = 51, nalpha = 20)
 ```
 
-The relative efficiency in tails is worse than for the first alternative parameterization, although it's still better than for the nominal model.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(x <
+\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
+and $\alpha \in (0,0.025,\ldots,0.975)$.
+```{r}
+samp <- as.array(fit_3)
+plot_quantile_reff(samp = samp, parami = 51, nalpha = 40)
+```
 
+The relative efficiency in tails is worse than for the first
+alternative parameterization, although it's still better than for the
+nominal model.
 ```{r}
 res<-monitornew(samp[,,51:100], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 res1<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']),2), '\n')
+cat('Mean fr_eff for xs = ' , round(mean(res[,'fzsreff']),2), '\n')
 cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
 
 ```
 
-*Result:* When the transformation is univariate and bijective the rank normalized Rhat and r_eff are transformation invariant. 
+**Result:** When the transformation is univariate and bijective the
+  rank normalized Rhat and r_eff are transformation invariant.
 
-Naturally when computing the desired expectations the final target function should be taken into account, but we just want to avoid the complication of the potentially non-existing moments at this point, and come back later in other paper how to use Pareto diagnostic to check whether necessary moments exist to compute the desired expectations and their Monte Carlo errors.
+Naturally when computing the desired expectations the final target
+function should be taken into account, but we just want to avoid the
+complication of the potentially non-existing moments at this point,
+and come back later in other paper how to use Pareto diagnostic to
+check whether necessary moments exist to compute the desired
+expectations and their Monte Carlo errors.
 
-Rank plot visualisation of x[13], which has the smallest relative efficiency 1.0 among x's.
+Rank plot visualisation of x[13], which has the smallest relative
+efficiency 1.0 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,63]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
@@ -589,7 +929,11 @@ Nothing special.
 
 ## Half-Cauchy with nominal parameterization
 
-Half-Cauchy priors are common and, for example, in Stan usually set apparently using the nominal parameterization. However, when the constraint `<lower=0>` is used, Stan does the sampling automatically in the unconstrained `log(x)` space, which changes the geometry crucially.
+Half-Cauchy priors are common and, for example, in Stan usually set
+apparently using the nominal parameterization. However, when the
+constraint `<lower=0>` is used, Stan does the sampling automatically
+in the unconstrained `log(x)` space, which changes the geometry
+crucially.
 ```{r}
 writeLines(readLines("half_cauchy_nom.stan"))
 ```
@@ -599,7 +943,8 @@ Run the half-Cauchy with nominal parameterization (and positive constraint)
 fit_half_nom <- stan(file='half_cauchy_nom.stan', seed=7878, refresh = 0)
 ```
 
-There are no warnings, and the sampling is much faster than for the Cauchy nominal model.
+There are no warnings, and the sampling is much faster than for the
+Cauchy nominal model.
 
 ```{r}
 samp<-as.array(fit_half_nom)
@@ -610,39 +955,58 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for half-Cauchy distribution.
+All Rhats are below 1.01. Classic Rhat's look also good even if the
+classic is not well defined for half-Cauchy distribution.
 
 ```{r}
 res<-monitornew(samp[,,1:50], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
 p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
-grid.arrange(p1, p2, nrow = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,2.2))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,2.2))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Rank normalized r_eff's are much larger than 1, which is possible for antithetic Markov chains which have negative correlation for odd lags.
+**Result:** Rank normalized r_eff's have less variation than classic
+  one which is not well defined for Cauchy. Rank normalized r_eff's
+  are much larger than 1, which is possible for antithetic Markov
+  chains which have negative correlation for odd lags.
 
-Due to constraint '<lower=0>' the sampling was made in `log(x)` space, and we can also check the performance in that space.
+Due to constraint '<lower=0>' the sampling was made in `log(x)` space,
+and we can also check the performance in that space.
 ```{r}
 res<-monitornew(log(samp[,,1:50]), warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
 p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
-grid.arrange(p1, p2, nrow = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,2.2)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,2.2))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,2.2))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-$log(x)$ is quite close to Gaussian, and thus classic r_eff is also close to rank normalized r_eff which is exactly same as for $x$ as the rank normalized version is invariant to bijective transformations.
+$log(x)$ is quite close to Gaussian, and thus classic r_eff is also
+close to rank normalized r_eff which is exactly same as for $x$ as the
+rank normalized version is invariant to bijective transformations.
 
-*Result:* Rank normalized r_eff is close to classic r_eff for transformations which make the distribution close to Gaussian.
+**Result:** Rank normalized r_eff is close to classic r_eff for
+  transformations which make the distribution close to Gaussian.
 
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,51:52], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-*Result:* Relative efficiency for $p(x_1<1)$ is larger than 1. This is possible for antithetic Markov chains, which have negative correlation for odd lags.
+**Result:** Relative efficiency for $p(x_1<1)$ is larger than 1. This
+  is possible for antithetic Markov chains, which have negative
+  correlation for odd lags.
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_half_nom)
 plot_local_reff(samp = samp, parami = 1, nalpha = 20)
@@ -650,7 +1014,17 @@ plot_local_reff(samp = samp, parami = 1, nalpha = 20)
 
 The relative efficiency is good overall, with only a small dip in tails.
 
-Rank plot visualisation of x[32], which has the smallest relative efficiency 1.0 among x's.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(x <
+\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
+and $\alpha \in (0,0.025,\ldots,0.975)$.
+```{r}
+samp <- as.array(fit_half_nom)
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 40)
+```
+
+Rank plot visualisation of x[32], which has the smallest relative
+efficiency 1.0 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,32]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
@@ -662,7 +1036,8 @@ Rank plot visualisation of lp__, which has relative efficiency 0.33.
 mcmc_hist(r_scale(samp[,,52]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Maybe small differences in scales, but it's difficult to know whether small variation from uniform is relevant.
+Maybe small differences in scales, but it's difficult to know whether
+small variation from uniform is relevant.
 
 ## Alternative parameterization of half-Cauchy
 
@@ -675,7 +1050,8 @@ Run half-Cauchy with alternative parameterization
 fit_half_reparam <- stan(file='half_cauchy_alt.stan', seed=7878, refresh = 0)
 ```
 
-There are no warnings, and the sampling is as fast for the half-Cauchy nominal model.
+There are no warnings, and the sampling is as fast for the half-Cauchy
+nominal model.
 
 ```{r}
 samp<-as.array(fit_half_reparam)
@@ -686,50 +1062,73 @@ p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsRhat`)) + geom_point() +
 grid.arrange(p1, p2, p3, nrow = 1)
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the classic is not well defined for half-Cauchy distribution.
+All Rhats are below 1.01. Classic Rhat's look also good even if the
+classic is not well defined for half-Cauchy distribution.
 
 ```{r}
 res<-monitornew(samp[,,101:150], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 p1 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`reff`)) + geom_point() + ggtitle('Classic relative efficiency (reff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
 p2 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`zsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
-grid.arrange(p1, p2, nrow = 1)
+p3 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=`fzsreff`)) + geom_point() + ggtitle('New relative efficiency (zsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + ylim(0,1)
+p4 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=medsreff)) + geom_point() + ggtitle('Rel.eff. of median (medsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,1))
+p5 <- ggplot(data=as.data.frame(res), aes(x=1:50, y=madsreff)) + geom_point() + ggtitle('Rel.eff. of mad (madsreff)') + geom_hline(yintercept = c(0,1)) + geom_hline(yintercept = 0.1, linetype = 'dashed') + scale_y_continuous(limits = c(0,1))
+grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 ```
 
-*Result:* Rank normalized r_eff's have less variation than classic one which is not well defined for Cauchy. Based on rank normalized r_eff the alternative parameterization has much lower efficiency than the nominal parameterization with constraint `<lower=0>`.
+**Result:** Rank normalized r_eff's have less variation than classic
+  one which is not well defined for Cauchy. Based on rank normalized
+  r_eff the alternative parameterization has much lower efficiency
+  than the nominal parameterization with constraint `<lower=0>`.
 
-
-We also check the indicator function = and `lp__`
+We check the indicator function = and `lp__`
 ```{r}
 res<-monitornew(samp[,,151:152], warmup=0, digits_summary = 2, probs=0.5, print = FALSE);
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
 
-We can also examine the relative efficiency in different parts of the posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
+$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
 ```{r}
 samp <- as.array(fit_half_reparam)
 plot_local_reff(samp = samp, parami = 101, nalpha = 20)
 ```
 
-The relative efficiency near zero is much worse than for the half-Cauchy with nominal parameterization and constraint `<lower=0>`.
+We examine the relative efficiency in different parts of the
+posterior, by computing the relative efficiency for $p(x <
+\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
+and $\alpha \in (0,0.025,\ldots,0.975)$.
+```{r}
+samp <- as.array(fit_half_reparam)
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 40)
+```
 
-Rank plot visualisation of x[15], which has the smallest relative efficiency 0.30 among x's.
+The relative efficiency near zero is much worse than for the
+half-Cauchy with nominal parameterization and constraint `<lower=0>`.
+
+Rank plot visualisation of x[15], which has the smallest relative
+efficiency 0.30 among x's.
 ```{r}
 mcmc_hist(r_scale(samp[,,115]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Varies from uniform, which is expected with lower relative efficiency, but would require a reference.
+The rank plot is different from uniform, which is expected with lower
+relative efficiency, but would require a reference.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.24.
 ```{r}
 mcmc_hist(r_scale(samp[,,152]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Varies from uniform, which is expected with lower relative efficiency, but would require a reference.
+The rank plot is different from uniform, which is expected with lower
+relative efficiency, but would require a reference.
 
 # Hierarchical model: Eight Schools
 
-The models are from Michael Betancourt's case study on [Diagnosing Biased Inference with Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
+The models are from Michael Betancourt's case study on
+[Diagnosing Biased Inference with Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
 
 ## A Centered Eight Schools model
 
@@ -745,39 +1144,59 @@ input_data <- read_rdump("eight_schools.data.R")
 fit_cp <- stan(file='eight_schools_cp.stan', data=input_data,
             iter=2000, chains=4, seed=483892929, refresh=0)
 ```
-We do observe divergent transitions, which is sensitive diagnostic for this model and we observer also low BFMI, but let's assume we were investigating a MCMC algorithm without such diagnostic.
+
+We do observe divergent transitions, which is sensitive diagnostic for
+this model and we observer also low BFMI, but let's assume we were
+investigating a MCMC algorithm without such diagnostic.
 
 ```{r}
 res<-monitornew(fit_cp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
-Some rank-normalized split-Rhats are larger than 1.01. Relative efficiencies for tau and lp__ are less than 10%, which is worry-some and longer chains should be run.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+Some rank-normalized split-Rhats are larger than 1.01. Relative
+efficiencies for tau and lp__ are less than 10%, which is worry-some
+and longer chains should be run.
+
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_cp)
 plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
-We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+We see that MCMC has difficulties in exploring small tau values. As
+the efficiency for estimating small tau values is practically zero, we
+may assume that we may miss substantial amount of posterior mass and
+get biased estimates.
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.05 among parameters.
+We examine the relative efficiency of cumulative probabilities below
+quantiles (0.025, ..., 0.975) for tau.
+```{r}
+samp <- as.array(fit_cp)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 40)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.05 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Clear problems.
+We observe clear problems.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.05.
 ```{r}
 mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Clear problems.
+We observe clear problems.
 
-### Centered parameterization longer chains
+### Centered parameterization with longer chains
 
-Low r_eff can be sometimes compensated with longer chains. Let's check 10 times longer chain.
+Low r_eff can be sometimes compensated with longer chains. Let's check
+10 times longer chain.
+
 ```{r, cache=TRUE, comment=NA, results='hide'}
 fit_cp2 <- stan(file='eight_schools_cp.stan', data=input_data,
             iter=20000, chains=4, seed=483892929, refresh=0)
@@ -785,39 +1204,64 @@ fit_cp2 <- stan(file='eight_schools_cp.stan', data=input_data,
 
 ```{r}
 res<-monitornew(fit_cp2, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
-Some rank-normalized split-Rhats are still larger than 1.01. Relative efficiencies for tau and lp__ are around 1%. Drop in the relative efficiency when the the sample size was increased indicates serious problems in mixing.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+Some rank-normalized split-Rhats are still larger than 1.01. Relative
+efficiencies for tau and lp__ are around 1%. Drop in the relative
+efficiency when the the sample size was increased indicates serious
+problems in mixing.
+
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
+
 ```{r}
 samp <- as.array(fit_cp2)
 plot_local_reff(samp = samp, parami = 2, nalpha = 50)
 ```
 
-We see that MCMC has difficulties in exploring small tau values.  As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+We see that MCMC has difficulties in exploring small tau values.  As
+the efficiency for estimating small tau values is practically zero, we
+may assume that we may miss substantial amount of posterior mass and
+get biased estimates.
 
-We can examine also other parameters, like mu in the following plot.
+We examine the relative efficiency of cumulative probabilities below
+quantiles (0.01, ..., 0.99) for tau.
+
 ```{r}
 samp <- as.array(fit_cp2)
-plot_local_reff(samp = samp, parami = 1, nalpha = 40)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 100)
 ```
 
-There are gaps of poor efficiency which indicates sticking of MCMC, but the sticking doesn't occus for any specific range of values of mu.
+We examine also other parameters, like mu in the following plot.
+```{r}
+samp <- as.array(fit_cp2)
+plot_local_reff(samp = samp, parami = 1, nalpha = 50)
+```
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.01 among parameters.
+There are gaps of poor efficiency which indicates sticking of MCMC,
+but the sticking doesn't occur for any specific range of values of mu.
+
+We examine also other parameters, like mu in the following plot.
+```{r}
+samp <- as.array(fit_cp2)
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 100)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.01 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-Clear problems to sample small values of tau.
+We observe clear problems to sample small values of tau.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.01.
 ```{r}
 mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-Now clear problems sampling different energy levels.
+We observe clear problems sampling different energy levels.
 
 ### Centered parameterization very long chains
 
@@ -829,31 +1273,56 @@ fit_cp3 <- stan(file='eight_schools_cp.stan', data=input_data,
 
 ```{r}
 res<-monitornew(fit_cp3, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
-Some rank-normalized split-Rhats are still larger than 1.01. Relative efficiencies for tau and lp__ are around 0% and relative efficiencies for other parameters are also getting smaller. Drop in the relative efficiency when the the sample size was increased indicates serious problems in mixing.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+Some rank-normalized split-Rhats are still larger than 1.01. Relative
+efficiencies for tau and lp__ are around 0% and relative efficiencies
+for other parameters are also getting smaller. Drop in the relative
+efficiency when the the sample size was increased indicates serious
+problems in mixing.
+
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_cp3)
 plot_local_reff(samp = samp, parami = 2, nalpha = 100)
 ```
 
-We see that MCMC has difficulties in exploring small tau values. As the efficiency for estimating small tau values is practically zero, we may assume that we may miss substantial amount of posterior mass and get biased estimates.
+We see that MCMC has difficulties in exploring small tau values. As
+the efficiency for estimating small tau values is practically zero, we
+may assume that we may miss substantial amount of posterior mass and
+get biased estimates. It is good to note that the low efficiency for
+small tau values is due to too large step size, and the low efficiency
+for large tau values is partially due to too small step size, but even
+more importantly due to the random walk in energy space.
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.00 among parameters.
+We examine the relative efficiency of cumulative probabilities below
+quantiles (0.01, ..., 0.99) for tau.
+```{r}
+samp <- as.array(fit_cp3)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 100)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.00 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-Clear problems to sample small values of tau and even with 100000 draws per chain, the plots don't get crowded as traceplots would.
+We observe clear problems to sample small values of tau and even with 100000
+draws per chain, the plots don't get crowded as traceplots would.
 
-Rank plot visualisation of lp__, which has relative efficiency 0.01.
+Rank plot visualisation of lp__, which has relative
+efficiency 0.01.
 ```{r}
 mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-Now clear problems sampling different energy levels.
+We observe clear problems sampling different energy levels, and
+the low efficiency for lp__ comes just from slow random walk
+(autocorrelation for chains 1 and 2 goes to zero after 1000 lags, and
+for chains 3 and 4 after 5000 lags).
 
 
 ## Non-centered Eight Schools model
@@ -872,36 +1341,49 @@ input_data <- read_rdump("eight_schools.data.R")
 fit_ncp <- stan(file='eight_schools_ncp.stan', data=input_data,
             iter=2000, chains=4, seed=483892929, refresh=0)
 ```
-We still observe some divergent transitions with the default adapt_delta and no divergences with adapt_delta=0.95. Let's analyze both samples. 
+
+We still observe some divergent transitions with the default
+adapt_delta and no divergences with adapt_delta=0.95. Let's analyze
+both samples.
 
 ```{r}
 res<-monitornew(fit_ncp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
+
 All Rhats are close to 1, and relative efficiencies are good.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp)
 plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
-Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+Small tau values are still more difficult to explore, but the relative
+efficiency is in a good range.
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.57 among parameters.
+We examine the relative efficiency of probabilities below quantiles
+(0.025, ..., 0.975) for tau.
+```{r}
+samp <- as.array(fit_ncp)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 40)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.57 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-I think these show problems to sample small values of tau.
+We can see problems in sampling small values of tau.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.01.
 ```{r}
 mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/50)+0.5)
 ```
 
-Now clear problems sampling different energy levels.
-
+We observe clear problems sampling different energy levels.
 
 ### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
 
@@ -910,31 +1392,45 @@ Next we examine the same model but with higher `adapt_delta=0.95`.
 fit_ncp2 <- stan(file='eight_schools_ncp.stan', data=input_data,
             iter=2000, chains=4, control=list(adapt_delta=0.95), seed=483892929, refresh=0)
 ```
+
 We get zero divergences with adapt_delta=0.95.
 
 ```{r}
 res<-monitornew(fit_ncp2, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
-All Rhats are close to 1, and relative efficiencies are good and slightly better than with the default adapt_delta.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+All Rhats are close to 1, and relative efficiencies are good and
+slightly better than with the default adapt_delta.
+
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp2)
 plot_local_reff(samp = samp, parami = 2, nalpha = 20)
 ```
 
-Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+Small tau values are still more difficult to explore, but the relative
+efficiency is in a good range.
 
-Check also with a finer resolution
+Check with a finer resolution
 ```{r}
 samp <- as.array(fit_ncp2)
 plot_local_reff(samp = samp, parami = 2, nalpha = 50)
 ```
 
-Also with a finer resolution the efficiency of MCMC is good for different values of tau.
+Also with a finer resolution the efficiency of MCMC is good for
+different values of tau.
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.62 among parameters.
+We examine the relative efficiency of probabilities below quantiles
+(0.025, ..., 0.975) for tau.
+```{r}
+samp <- as.array(fit_ncp2)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 40)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.62 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
@@ -946,33 +1442,48 @@ Rank plot visualisation of lp__, which has relative efficiency 0.44.
 mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-Now clear problems sampling different energy levels.
+We observe clear problems sampling different energy levels.
 
 ### Non-centered parameterization default MCMC options plus `adapt_delta=0.95` and longer chains
 
 If in doubt, we can run longer chains.
 ```{r, cache=TRUE, comment=NA, results='hide'}
 input_data <- read_rdump("eight_schools.data.R")
-
+start_time <- Sys.time();
 fit_ncp3 <- stan(file='eight_schools_ncp.stan', data=input_data,
-            iter=20000, chains=4, control=list(adapt_delta=0.95), seed=483892929, refresh=0)
+            iter=20000, chains=4, control=list(adapt_delta=0.954), seed=483892929, refresh=0)
+end_time <- Sys.time();end_time - start_time
 ```
 
 ```{r}
 res<-monitornew(fit_ncp3, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
-All Rhats are close to 1, and relative efficiencies are good and slightly better than with the default adapt_delta. Relative efficiency is similar as for shorter chain, which means that running longer chains is giving us higher effective sample size.
 
-We examine the relative efficiency of probabilities between quantiles (0, 0.05, ..., 1) for tau.
+All Rhats are close to 1, and relative efficiencies are good and
+slightly better than with the default adapt_delta. Relative efficiency
+is similar as for shorter chain, which means that running longer
+chains is giving us higher effective sample size.
+
+We examine the relative efficiency of probabilities between quantiles
+(0, 0.05, ..., 1) for tau.
 ```{r}
 samp <- as.array(fit_ncp3)
 plot_local_reff(samp = samp, parami = 2, nalpha = 100)
 ```
 
-Small tau values are still more difficult to explore, but the relative efficiency is in a good range.
+Small tau values are still more difficult to explore, but the relative
+efficiency is in a good range.
 
-Rank plot visualisation of tau, which has the smallest relative efficiency 0.64 among parameters.
+We examine the relative efficiency of probabilities below quantiles
+(0.01, ..., 0.99) for tau.
+```{r}
+samp <- as.array(fit_ncp2)
+plot_quantile_reff(samp = samp, parami = 2, nalpha = 100)
+```
+
+Rank plot visualisation of tau, which has the smallest relative
+efficiency 0.64 among parameters.
 ```{r}
 mcmc_hist(r_scale(samp[,,2]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/200)+0.5)
 ```
@@ -984,12 +1495,15 @@ Rank plot visualisation of lp__, which has relative efficiency 0.41.
 mcmc_hist(r_scale(samp[,,19]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/200)+0.5)
 ```
 
-Now clear problems sampling different energy levels.
+We observe clear problems sampling different energy levels.
 
 
 # NUTS and effective sample size
 
-We have already seen that the relatice efficiency of HMC/NUTS can be higher than with independent draws. The next example illustrates interesting relative efficiency phenomea due to properties of  HMC/NUTS algorithm.
+We have already seen that the relative efficiency of HMC/NUTS can be
+higher than with independent draws. The next example illustrates
+interesting relative efficiency phenomena due to properties of HMC/NUTS
+algorithm.
 
 ```{r}
 writeLines(readLines("normal.stan"))
@@ -1003,7 +1517,7 @@ fit_n <- stan(file='normal.stan', data=data.frame(J=16),
 ```{r}
 samp<-as.array(fit_n)
 res<-monitornew(samp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
 
 The relative efficiency for all $x$ is larger than 2. The relative
@@ -1022,39 +1536,73 @@ Let's check the local relative efficiency
 plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
-The relative efficiency for probability estimate for a small interval is close to 1 with a slight drop in the tails. This is a good reault, but far from the relative efficiency for mean estimate.
+The relative efficiency for probability estimate for a small interval
+is close to 1 with a slight drop in the tails. This is a good result,
+but far from the relative efficiency for mean estimate.
 
-The total energy of HMC should affect how far in the tails a chain in one iteration can go. Far tails of the target have high energy, and only chains with high total energy can then reach there. This will suggest that, the random walk in total energy would cause random walk in variance of $x$. Let's check the second moment of $x$.
+Let's check the relative efficiency of cumulative probabilities
+```{r}
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 100)
+```
+
+The total energy of HMC should affect how far in the tails a chain in
+one iteration can go. Far tails of the target have high energy, and
+only chains with high total energy can then reach there. This will
+suggest that, the random walk in total energy would cause random walk
+in variance of $x$. Let's check the second moment of $x$.
 ```{r}
 samp<-as.array(fit_n)^2
 res<-monitornew(samp, warmup=0, digits_summary = 2, probs=0.5, print = FALSE)
-round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff')],2)
+round(res[,c('sRhat','zsRhat','fzsRhat','reff','zsreff','fzsreff','medsreff','madsreff')],2)
 ```
 
-Mean of the relative efficiencies for $x[j]^2$ is 0.4, which is quite close 
-to the relative efficiency for `lp__`. This is not that surprising as the potential energy in normal model is relative to $\sum_{j=1}^J x_j^2$.
+Mean of the relative efficiencies for $x[j]^2$ is 0.4, which is quite
+close to the relative efficiency for `lp__`. This is not that
+surprising as the potential energy in normal model is relative to
+$\sum_{j=1}^J x_j^2$.
 
 Let's check the local relative efficiency
 ```{r}
 plot_local_reff(samp = samp, parami = 1, nalpha = 100)
 ```
 
-The relative efficiency is mostly a bit below 1, but for the right tail of $x[1]^2$ the relative efficiency drops. This likely due to only some iterations have high enough total energy to obtain draws from the high energy part of the tail. 
+The relative efficiency is mostly a bit below 1, but for the right
+tail of $x[1]^2$ the relative efficiency drops. This likely due to
+only some iterations have high enough total energy to obtain draws
+from the high energy part of the tail.
 
-We can see the correlation between `lp__` and magnitude of $x[1]$ in the following plot.
+Let's check the relative efficiency of cumulative probabilities
+```{r}
+plot_quantile_reff(samp = samp, parami = 1, nalpha = 100)
+```
+
+We can see the correlation between `lp__` and magnitude of $x[1]$ in
+the following plot.
 ```{r}
 samp<-as.array(fit_n)
 qplot(as.vector(samp[,,17]),abs(as.vector(samp[,,1]))) + xlab('lp__') + ylab('x[1]')
 ```
 
-Low `lp__` corresponds to high energy and more variation in $x$, and high `lp__` corresponds to low energy and small variation in $x$.
+Low `lp__` corresponds to high energy and more variation in $x$, and
+high `lp__` corresponds to low energy and small variation in $x$.
 
 Finally $\sum_{j=1}^J x_j^2$ is perfectly correlated with `lp__`.
 ```{r}
 qplot(as.vector(samp[,,17]),as.vector(apply(samp[,,1:16]^2,c(1,2),sum))) + xlab('lp__') + ylab('sum(x^2)')
 ```
 
-This shows that even if we get high relative efficiency estimates for parameters, it is important to look at the relative efficiency of `lp__` as it can indicate problems of sampling in tails, which would affect the accuracy of variance and tail quantile estimates.
+This shows that even if we get high relative efficiency estimates for
+parameters, it is important to look at the relative efficiency of
+`lp__` as it can indicate problems of sampling in tails, which would
+affect the accuracy of variance and tail quantile estimates.
+
+# Local efficiency for distributional approximations
+
+We note that we can plot similar local relative efficiency plots also
+for distributional approximations (like Laplace and ADVI
+approximations), using Pareto smoothed importance sampling based
+effective sample size estimates (Vehtari et al, 2017). There will be
+another case study for this.
 
 # Original Computing Environment
 
