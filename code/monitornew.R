@@ -168,9 +168,8 @@ rhat_rfun <- function(sims) {
 } 
 
 monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2), 
-                    probs = c(0.025, 0.25, 0.50, 0.75, 0.975), 
-                    digits_summary = 1, 
-                    print = TRUE, ...) { 
+                       probs = c(0.025, 0.25, 0.50, 0.75, 0.975), 
+                       digits_summary = 1, print = TRUE, ...) { 
   # print the summary for a general simulation results 
   # of 3-d array: # iter * # chains * # parameters 
   # Args:
