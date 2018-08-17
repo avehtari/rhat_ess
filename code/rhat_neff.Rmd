@@ -1,6 +1,6 @@
 ---
 title: "Rank-normalized split-Rhat and relative efficiency estimates"
-author: "Aki Vehtari, Daniel Simpson, Andrew Gelman, Paul Bürkner"
+author: "Aki Vehtari, Andrew Gelman, Daniel Simpson, Paul Bürkner"
 date: "August 2018"
 encoding: "UTF-8"
 output:
