@@ -233,26 +233,21 @@ relative efficiency of quantiles and small interval probabilities.
 Rank normalization is commonly used in Spearman's rank correlation
 coefficient, but also to transform predictor values in epidemiology.
 Rank normalization computes ranks for draws from all chains combined,
-applies z-transformation to those ranks, and reconstruct the chains. 
-Rank normalization makes the subsequent computations well defined and
-bijectively invariant. This means that we get same results, for
-example, if we use unconstrained or constrained parameters. Furthermore,
-to improve sensitivity to scale differences between chains, we
-consider folded rank-normalization which uses rank distance from the
-median.
-
-<!--
-Invariant under what kind of transformations? please clarify
-
-Clarify what "reconstructs the chains" means.
--->
+applies z-transformation to those ranks.  Rank normalization makes the
+subsequent computations well defined and invariant under bijective
+transformations. This means that we get same results, for example, if
+we use unconstrained or constrained parameters. Furthermore, to
+improve sensitivity to scale differences between chains, we consider
+folded rank-normalization which uses rank distance from the median.
 
 ## Relative efficiency of median and other quantile estimates
 
-Classic $N_{\rm eff}$ focuses on posterior mean, but as the mean 
-can be non-finite, we may prefer to use the median and other
-quantiles by default. If the median of $x$ is $\tilde{x}$, 
-then by definition $p(x < \tilde{x}) = 0.5$. 
+By default RStan and RStanARM report median and median absolute
+deviation (MAD) instead of mean and standard error (SE), as median and
+MAD dareis well dfined also when the marginal distribution does not
+have finite mean and variance.
+
+If the median of $x$ is $\tilde{x}$, then by definition $p(x < \tilde{x}) = 0.5$. 
 We can't present this as a simple expectation, but we can estimate it by
 $\frac{1}{S}\sum I_{x<x'}$. The indicator function transforms simulation 
 draws to 0's and 1's, and thus the subsequent computations are
@@ -262,26 +257,29 @@ where $\hat{Q}_{0.5}$ is the empirical median from the combined
 draws. This should be good approximation, if the efficiency for 
 $p(x < \hat{Q}_{\alpha})$ is smoothly changing around $\alpha = 0.5$.
 
-We can also compute the approximative relative efficiency for the median 
-absolute deviation based scale estimate (MAD_SD), by computing the relative
-efficiency for median of absolute deviations from the median of all draws.
+We can also compute the approximative relative efficiency for the
+median absolute deviation (MAD), by computing the relative efficiency
+for median of absolute deviations from the median of all draws.  The
+absolute deviations from the median of all draws are same as
+previously defined folded samples
+$$
+  {\rm abs}(y-{\rm median}(y)).
+$$
+Thus relative efficiency of MAD is obtained by using the same approach as for median but using the folded values.
 
-<!--
-The above sentence is hard to understand. 
-Maybe also explain with some equations?
--->
+## Relative efficiency of quantiles
 
 Further, we can compute the relative efficiency for other quantiles than the 
-median. Some tail quantiles such as the 5% quantile or the 95% quantile
+median. Some tail quantiles such as the 5\% quantile or the 95\% quantile
 are often used to construct credible intervals. Estimating the relative
 efficiency of such quantiles is thus of high practical relevance in particular
 as we observe the relative efficiency for tail quantiles is often
-lower than for mean or median.
+lower than for mean or median. By computing relative efficiency for many quantiles we can obtain local efficiency measure.
 
 ## Relative efficiency of small interval probability estimates
 
-Next, examine the relative efficiency in different parts of the
-posterior by computing the relative efficiency for $p(\hat{Q}_\alpha
+We can get even more local relative efficiency estimate by considering small intervals.
+We propose to compute the relative efficiency for $p(\hat{Q}_\alpha
 \le x < \hat{Q}_{\alpha+\delta})$, where $\hat{Q}_\alpha$ is the empirical
 $\alpha$-quantile, $\delta=1/M$ is the length of the interval with some
 positive integer $M$ chosen by the researcher, and $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
@@ -293,7 +291,6 @@ distribution. We demonstrate it's usefulness as a diagnostic and
 educational tool to teach why expectations of different
 functionals may have different $N_{\rm eff}$.
 
-
 ## Rank plots
 
 We illustrate that rank plots can be used as a more compact alternative
@@ -301,9 +298,14 @@ to trace plots.
 
 ## Finite mean and variance of a marginal
 
-There will be a separate case study for diagnostics to check when
-certain marginal has finite mean and variance needed in order to
-report posterior mean and MCSE.
+We now intentionally separate MCMC diagnostic based on generic and
+stable rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and
+Monte Carlo error estimates for the desired expectations, which is
+applicable only when mean and variance exist. We could use Pareto $k$
+diagnostic to estimate the existance of mean and variance (Vehtari,
+Gabry, and Gelman, 2017). There will be a separate case study for
+diagnostics to check when certain marginal has finite mean and
+variance needed in order to report posterior mean and MCSE.
 
 ## Abbreviations
 
