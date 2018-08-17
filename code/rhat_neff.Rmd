@@ -919,20 +919,11 @@ relative efficiency of `r round(min(res$zsreff), 2)`,
 also indicates clear problems with mixing.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , 7])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 ### Default Stan options + `max_treedepth=20`
-
-```{r, include=FALSE, cache=FALSE}
-knitr::opts_chunk$set(eval = FALSE)
-```
-
-<!--
-Is this max_treedepth thing really necessary for this case study?
-It slows down sampling so drastically that noone ever wants
-to run this code...
--->
 
 We can try to improve the performance by increasing `max_treedepth`.
 
@@ -1021,7 +1012,8 @@ Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency `r round(min(res$zsreff))` among the x's. The rank plot indicates clear convergence problems.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , which_min_eff])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 The rank plot visualisation of `lp__`, which has relative efficiency `round(monitor_simple(samp[,, "lp__"])$zsreff)`, doesn't look so good either.
@@ -1113,7 +1105,8 @@ plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
 
 The rank plot visualisation of x[`r which_min_eff`], which has the smallest relative efficiency `r round(min(res$zsreff), 2)` among the x's.
 ```{r}
-mcmc_hist_r_scale(samp[, , "x[34]"])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 Still problems at the edges.
@@ -1126,9 +1119,10 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 
 There seems to be slight problems also in mixing for energy.
 
-```{r, include=FALSE, cache=FALSE, eval=TRUE}
-knitr::opts_chunk$set(eval = TRUE)
-```
+<!--
+From the above plot, I would naively don't see any problems in mixing.
+Or am I just misinterpreting the plot?
+-->
 
 ## First alternative parameterization of Cauchy
 
@@ -1234,7 +1228,8 @@ Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency `r round(min(res$zsreff), 2)` among x's.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , which_min_eff])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 Looks better than for the nominal parameterization.
@@ -1344,7 +1339,8 @@ Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency of `r round( min(res$zsreff), 2)` among x's.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , "x[13]"])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 Nothing special.
@@ -1419,6 +1415,7 @@ close to Gaussian.
 We check the indicator function `I` and `lp__`:
 ```{r}
 res <- monitor_simple(samp[, , 51:52])
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
 cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
 ```
@@ -1449,10 +1446,11 @@ samp <- as.array(fit_half_nom)
 plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
 ```
 
-Rank plot visualisation of `x[32]`, which has the smallest relative
+Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency 1.0 among x's.
 ```{r}
-mcmc_hist_r_scale(samp[, , "x[32]"])
+xmin <- paste0("x[", which_min_eff, "]")
+mcmc_hist_r_scale(samp[, , xmin])
 ```
 
 Looks like there are differences in scale of chains.
