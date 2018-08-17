@@ -154,14 +154,23 @@ We call this {\em split}-$\widehat{R}$ because we are applying it to chains that
 \paragraph{Rank normalization}
 
 {\em Split}-$\widehat{R}$ assumes that the quantities being considered
-have finite mean and variance.  It is also more stable close to
-Gaussian the distribution is.  Target distribution can be far from
-normal and for example Cauchy distribution has undefined mean and
-infinite variance, and thus {\em split}-$\widehat{R}$ is not well
-defined. To alleviate thos we propose to compute {\em Split}-$\widehat{R}$
-using rank normalized values.
+have finite mean and variance and it's more stable for distributions
+close to Gaussian.  Target distribution can be far from normal and for
+example Cauchy distribution has non-fimite mean and  variance,
+and thus {\em split}-$\widehat{R}$ is not well defined. To alleviate
+those we propose to compute {\em split}-$\widehat{R}$ using rank
+normalized values.
 
-Explain rank-normalization here.
+Rank normalization replaces each draw by its rank (or fractional rank
+which the rank divided by the total number of observations). We use
+average rank for ties to conserve the number of values the same in
+case of discrete quantities. Rank normalization is made jointly for
+all draws from all chains.
+
+In additional of using rank-normalized values to compute {\em
+  split}-$\widehat{R}$, we propose to plot rank plots for each cain
+instead of traces. These can be used instead of trace plots, which in
+case of long chains tend to squeeze to a mess.
 
 \paragraph{Folded split}
 
@@ -169,10 +178,19 @@ Explain rank-normalization here.
 have the same location. To alleviate this we propose to to compute
 {\em Split}-$\widehat{R}$ also for folded rank normalized values.
 
-Folded values are obtained by transformation
+Folded values are obtained by absolute deviation transformation
 \begin{equation}
-  {\mathrm abs}(y-{\mathrm median}(y)).
+  {\rm abs}(y-{\rm median}(y)).
 \end{equation}
+where median is compute from all draws from all chains. Folded rank
+normalized values are then obtained by rank normalizing the folded
+values.
+
+\paragraph{Combined {\em split}-$\widehat{R}$}
+
+We propose to report the maximum of {\em
+  rank-normalized-split}-$\widehat{R}$ and {\em
+  folded-rank-normalize-split}-$\widehat{R}$.
 
 \section{Effective sample size}
 If the $n$ simulation draws within each sequence were truly
@@ -190,7 +208,13 @@ which involve both cross-chain (mean) and within-chain calculations
 (autocorrelation); they were introduced in Stan manual and explained
 in more detail in Gelman et al. (2013).
 
-One way to define effective sample size for correlated simulation draws is to consider the statistical efficiency of the average of the simulations $\bar{\psi}_{..}$, as an estimate of the posterior mean, $\mbox{E}(\psi|y)$.  This can be a reasonable baseline even though is not the only possible summary and might be inappropriate, for example, if there is particular interest in accurate representation of low-probability events in the tails of the distribution.
+One way to define effective sample size for correlated simulation
+draws is to consider the statistical efficiency of the average of the
+simulations $\bar{\psi}_{..}$, as an estimate of the posterior mean,
+$\mbox{E}(\psi|y)$.  This can be a reasonable baseline even though is
+not the only possible summary and might be inappropriate, for example,
+if there is particular interest in accurate representation of
+low-probability events in the tails of the distribution.
 
 The effective sample size of a sequence is defined in terms of the
 autocorrelations within the sequence at different lags.  The
@@ -236,7 +260,7 @@ integrated and thus the autocorrelation cannot be calculated, nor the
 effective sample size.  Instead, these quantities must be estimated
 from the samples themselves.  The rest of this section describes a
 autocorrelations and split-$\hat{R}$ based effective sample
-size estimator, based on multiple chains. For simplicity, each chain
+size estimator, based on multiple split chains. For simplicity, each chain
 $\theta_m$ will be assumed to be of length $N$.
 
 Stan carries out the autocorrelation computations for all lags
@@ -286,10 +310,76 @@ Our $\hat{n}_{\rm eff}$ is slightly different from similar formulas in the liter
 
 \paragraph{Rank normalization}
 
-Variance and autocovariance estimates assume also finite mean and variance, and thus as for 
-{\em Split}-$\widehat{R}$, we propose to use rank normalization. Effective sample size estimate has been used to adjust the Monte Carlo error estimate of the expectation. We now intentionally separate MCMC diagnostic based on generic and stable rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte Carlo error estimates for the desired expectations, which would require also estimation whether mean and variance exist.
+Variance and autocovariance estimates assume also that the marginal
+distribution has finite mean and variance, and thus as for {\em
+  Split}-$\widehat{R}$, we propose to use rank
+normalization. Effective sample size estimate has been used to adjust
+the Monte Carlo error estimate of the expectation. We now
+intentionally separate MCMC diagnostic based on generic and stable
+rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte
+Carlo error estimates for the desired expectations, which is
+applicable only when mean and variance exist. We could use Pareto $k$
+diagnostic to estimate the existance of mean and variance (Vehtari,
+Gabry, and Gelman, 2017), but we leave details of that out of this
+paper.
 
-We also propose local relative efficiency.
+To emphasize the difference to classic $\hat{n}_{\rm eff}/n$, we
+propose to report relative efficiency of the rank normalized sample
+$\hat{R}_{\rm eff} = \text{\it rank-normalized-split-}\hat{n}_{\rm eff}/n$.
+
+\paragraph{Relative efficiency of median and MAD}
+
+By default RStan and RStanARM report median and median absolute
+deviation (MAD) instead of mean and standard error (SE), as median and
+MAD dareis well dfined also when the marginal distribution does not
+have finite mean and variance.
+
+If the median of $x$ is $\tilde{x}$, then by definition
+$p(x < \tilde{x}) = 0.5$.  We can't present this as a simple
+expectation, but we can estimate it by $\frac{1}{S}\sum I_{x<x'}$. The
+indicator function transforms simulation draws to 0's and 1's, and
+thus the subsequent computations are bijectively invariant. Instead of
+estimating the efficiency of the median directly, we can estimate the
+efficiency of $p(x < \hat{Q}_{0.5})$, where $\hat{Q}_{0.5}$ is the
+empirical median from the combined draws. This should be good
+approximation, if the efficiency for $p(x < \hat{Q}_{\alpha})$ is
+smoothly changing around $\alpha = 0.5$.
+
+We can also compute the approximative relative efficiency for the median 
+absolute deviation (MAD), by computing the relative
+efficiency for median of absolute deviations from the median of all draws.
+The absolute deviations from the median of all draws are same as previously defined folded samples
+\begin{equation}
+  {\rm abs}(y-{\rm median}(y)).
+\end{equation}
+Thus relative efficiency of MAD is obtained by using the same approach as for median but using the folded values.
+
+\paragraph{Relative efficiency of quantiles}
+
+Further, we can compute the relative efficiency for other quantiles than the 
+median. Some tail quantiles such as the 5\% quantile or the 95\% quantile
+are often used to construct credible intervals. Estimating the relative
+efficiency of such quantiles is thus of high practical relevance in particular
+as we observe the relative efficiency for tail quantiles is often
+lower than for mean or median. By computing relative efficiency for many quantiles we can obtain local efficiency measure.
+
+\paragraph{Relative efficiency of small interval probability estimates}
+
+We can get even more local relative efficiency estimate by considering small interavls. We propose to compute the relative efficiency for $p(\hat{Q}_\alpha
+\le x < \hat{Q}_{\alpha+\delta})$, where $\hat{Q}_\alpha$ is the empirical
+$\alpha$-quantile, $\delta=1/M$ is the length of the interval with some
+positive integer $M$ chosen by the researcher, and $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
+Each interval has $N/M$ draws, and the efficiency measures 
+autocorrelation of an indicator function which
+indicates when the values are inside the specific interval. This gives
+us a local efficiency measure which does not depend on the shape of the
+distribution. We demonstrate it's usefulness as a diagnostic and
+educational tool to teach why expectations of different
+functionals may have different $N_{\mbox{eff}}$.
+
+\section{Experiments}
+
+Full experiments are in the notebook, and we show here some results.
 
 \section{Diagnostics based on Metropolis and HMC dynamics}
 
@@ -316,7 +406,7 @@ After split-$\widehat{R}$ has been calculated, the marginal posterior of the est
 
 \subsection{Generalized $\hat{R}$ for Ragged Chains}
 
-Now suppose that each chain may have a different number of samples.
+Now suppose that each chain may have a different number of samples (which could happen in time constrained parallel sampling).
 Let $N_m$ be the number of samples in chain $m$.  Now the formula for
 the within-chain mean for chain $m$ uses the size of the chain, $N_m$,
 \[
