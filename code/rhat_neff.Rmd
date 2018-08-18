@@ -11,6 +11,7 @@ output:
     number_sections: TRUE
     toc_float:
       smooth_scroll: FALSE
+bibliography: rhat_neff.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -25,10 +26,10 @@ knitr::opts_chunk$set(
 
 Split-$\widehat{R}$ and effective sample size, are routinely used
 monitor the convergence of iterative simulations.  $\widehat{R}$
-(Gelman and Rubin, 1992; Brooks and Gelman, 1998) and
-*split*-$\widehat{R}$ (Gelman et al.\, 2013) are based on the ratio of
+[@Gelman+Rubin:1992; @Brooks+Gelman:1998] and
+*split*-$\widehat{R}$ [@BDA3] are based on the ratio of
 between and within-sequence marginal variances of the simulations. The
-effective sample size estimate ($N_{\rm eff}$) by Gelman et al. (2013)
+effective sample size estimate ($N_{\rm eff}$) by @BDA3
 is based on marginal variance and autocorrelation estimates from split
 chains.
 
@@ -54,13 +55,13 @@ estimates,
 # Review of *split*-$\widehat{R}$ and effective sample size
 
 We review split-$\widehat{R}$ and effective sample size estimated as
-implemented in Stan 2.18 (ref).
+implemented in Stan 2.18 [@Stan:JSS:2017, @Stan.2.18].
 
 ## *Split*-$\widehat{R}$
 
-Here are the formulas, with the presentation taken from Gelman et al.
-(2013).  For each scalar summary of interest $\psi$, we compute $B$
-and $W$, the between- and within-sequence variances:
+Here are the formulas, with the presentation taken from @BDA3.  For
+each scalar summary of interest $\psi$, we compute $B$ and $W$, the
+between- and within-sequence variances:
 $$
 B = \frac{n}{m-1}\sum_{j=1}^{m}(\overline{\psi}_{.j}-\overline{\psi}_{..})^2,
 \;\mbox{ where }\;\;\overline{\psi}_{.j}=\frac{1}{n}\sum_{i=1}^n \psi_{ij},\;\;
@@ -123,11 +124,11 @@ sequence will be autocorrelated, and $B$ will be larger than $\mbox{var}(\psi|y)
 in expectation.
 
 A nice introductory reference for analyzing MCMC results in general
-and effective sample size in particular is (Geyer, 2011).  The
-particular calculations used by Stan follow those for split-$\hat{R}$,
+and effective sample size in particular is [@Geyer:2011; see also @Geyer:1992].  The
+particular calculations used by Stan [@Stan.2.18] follow those for split-$\hat{R}$,
 which involve both cross-chain (mean) and within-chain calculations
 (autocorrelation); they were introduced in Stan manual and explained
-in more detail in Gelman et al. (2013).
+in more detail in @BDA3.
 
 One way to define effective sample size for correlated simulation
 draws is to consider the statistical efficiency of the average of the
@@ -170,7 +171,7 @@ $$
 
 Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of
 antithetic Markov chains, which have negative autocorrelations on odd
-lags. Dynamic Hamiltonian algorithm used in Stan can produce $N_{\rm
+lags. Dynamic Hamiltonian algorithm [@Hoffman+Gelman:2014] used in Stan can produce $N_{\rm
 eff}>N$ for parameters which have close to Gaussian posterior with low
 dependency on other parameters (Stan before 2.18 computed $N_{\rm
 eff}$ so that the maximum reported value was $N$).
@@ -187,7 +188,7 @@ $\theta_m$ will be assumed to be of length $N$.
 
 Stan carries out the autocorrelation computations for all lags
 simultaneously using Eigen's fast Fourier transform (FFT) package with
-appropriate padding; see (Geyer, 2011) for more detail on using
+appropriate padding; see @Geyer:2011 for more detail on using
 FFT for autocorrelation calculations.
 The autocorrelation estimates $\hat{\rho}_{t,m}$ at lag $t$ from
 multiple chains $m \in (1,\ldots,M)$ are combined with within-sample
@@ -208,7 +209,7 @@ $t$ increases, typical truncated sum of $\hat{\rho}_t$ is used.
 Negative autocorrelations can happen only on odd lags and by summing
 over pairs starting from lag 0, the paired autocorrelation is
 guaranteed to be positive, monotone and convex modulo estimator noise
-(Geyer, 1992; Geyer, 2011).  Stan uses Geyer's initial monotone
+[@Geyer:1992; @Geyer:2011].  Stan uses Geyer's initial monotone
 sequence criterion. The effective sample size estimator is defined as
 $$
 \hat{N}_{\rm eff}
@@ -312,10 +313,11 @@ where $N$ is the total number of draws.
 ## Relative efficiency of median and MAD
 
 Since the marginal posterior distributions might not have finite mean
-and variance, by default RStan and RStanARM report median and median
-absolute deviation (MAD) instead of mean and standard error
-(SE). Median and MAD are well defined also when the marginal
-distribution does not have finite mean and variance.
+and variance, by default RStan [@RStan.2.17] and RStanARM
+[@RStanARM.2.17] report median and median absolute deviation (MAD)
+instead of mean and standard error (SE). Median and MAD are well
+defined also when the marginal distribution does not have finite mean
+and variance.
 
 If the median of $x$ is $\tilde{x}$, then by definition $p(x < \tilde{x}) = 0.5$. 
 We can't present this as a simple expectation, but we can estimate it by
@@ -376,9 +378,9 @@ functionals may have different $N_{\rm eff}$.
 
 We note that we can plot similar local relative efficiency plots also
 for distributional approximations (like Laplace and ADVI
-approximations), using Pareto smoothed importance sampling based
-effective sample size estimates (Vehtari et al, 2017). There will be
-another case study for this.
+[@Kucukelbir+etal:ADVI:2017] approximations), using Pareto smoothed
+importance sampling based effective sample size estimates
+[@Vehtari+etal:PSIS:2017]. There will be another case study for this.
 
 ## Rank plots
 
@@ -390,12 +392,12 @@ plots can be used as a more compact alternative to trace plots.
 
 ## Finite mean and variance of a marginal
 
-We intentionally separate MCMC diagnostic based on generic and
-stable rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and
-Monte Carlo error estimates for the desired expectations, which is
+We intentionally separate MCMC diagnostic based on generic and stable
+rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte
+Carlo error estimates for the desired expectations, which is
 applicable only when mean and variance exist. We could use Pareto $k$
-diagnostic to estimate the existance of mean and variance (Vehtari,
-Gabry, and Gelman, 2017). There will be a separate case study for
+diagnostic to estimate the existance of mean and variance
+[@Vehtari+etal:PSIS:2017]. There will be a separate case study for
 diagnostics to check when certain marginal has finite mean and
 variance needed in order to report posterior mean and MCSE.
 
@@ -2156,3 +2158,5 @@ writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
 ```{r, comment=NA}
 devtools::session_info("rstan")
 ```
+
+# References
