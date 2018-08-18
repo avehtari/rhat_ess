@@ -55,7 +55,7 @@ estimates,
 # Review of *split*-$\widehat{R}$ and effective sample size
 
 We review split-$\widehat{R}$ and effective sample size estimated as
-implemented in Stan 2.18 [@Stan:JSS:2017, @Stan.2.18].
+implemented in Stan 2.18 [@Stan:JSS:2017; @Stan.2.18].
 
 ## *Split*-$\widehat{R}$
 
@@ -307,7 +307,7 @@ Monte Carlo error of the mean rank normalized value back to the
 original scale, but for simplicity we propose to report (bijective)
 transformation invariant relative efficiency values
 $$
-R_{\rm eff}=\textit{split-rank-normalized-}N_{\rm eff} / N$,
+R_{\rm eff}=\textit{rank-normalized-split-}N_{\rm eff} / N$,
 where $N$ is the total number of draws.
 
 ## Relative efficiency of median and MAD
@@ -342,7 +342,7 @@ $$
 $$
 We see that relative efficiency of MAD is obtained by using the same
 approach as for median but using the folded values used also in
-$folded-split-rank-normalized*-$\widehat{R}$.
+*folded-rank-normalized-split*-$\widehat{R}$.
 
 Previously Stan has reported $N_{\rm eff}$ only for the posterior
 location (previously mean), but we demonstrate that it is good to
@@ -397,7 +397,7 @@ rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte
 Carlo error estimates for the desired expectations, which is
 applicable only when mean and variance exist. We could use Pareto $k$
 diagnostic to estimate the existance of mean and variance
-[@Vehtari+etal:PSIS:2017]. There will be a separate case study for
+[@Vehtari+etal:PSIS:2017]. There will be another case study for
 diagnostics to check when certain marginal has finite mean and
 variance needed in order to report posterior mean and MCSE.
 
@@ -408,26 +408,26 @@ In the code and figures the following abbreviations have been used
  - Rhat = classic no-split-Rhat
  - sRhat = classic split-Rhat
  - zsRhat = rank-normalized split-Rhat
-   + all draws are jointly ranked, z-transformed and put back to the chains
-   + can detect differences in location and trends
+    + all chains are jointly ranked and z-transformed
+    + can detect differences in location and trends
  - fzsRhat = folded rank-normalized split-Rhat
-   + all draws are jointly "folded" by computing absolute deviation
-     from median, ranked, z-transformed and put back to the chains
-   + can detect differences in scales
+    + all chains are jointly "folded" by computing absolute deviation
+      from median, ranked and z-transformed
+    + can detect differences in scales
  - neff = no-split effective sample size
  - reff = neff / N
  - zsneff = rank-normalized split effective sample size
-   + estimates the efficiency of mean estimate for rank normalized values
+    + estimates the efficiency of mean estimate for rank normalized values
  - zsreff = zsneff / N
  - fzsneff = folded rank-normalized split effective sample size
-   + estimates the efficiency of rank normalized *mean* absolute deviation
+    + estimates the efficiency of rank normalized *mean* absolute deviation
  - fzsreff = fzsneff / N
  - medsneff = median split effective sample size
-   + estimates the efficiency of median
-   + approximated using efficiency for $p(x < \hat{Q}_{0.5})$
+    + estimates the efficiency of median
+    + approximated using efficiency for $p(x < \hat{Q}_{0.5})$
  - medsreff = medsneff / N
  - madsneff = mad split effective sample size
-   + estimates the efficiency of median absolute deviation
+    + estimates the efficiency of median absolute deviation
  - madsreff = madsneff / N
 
 ## Proposed change in Stan
@@ -444,9 +444,9 @@ The proposal is to switch in Stan
  - if computing median and MAD_SD, report corresponding 
  $R_{\rm eff}$'s (medsreff and madsreff)
 
-Justifications for the change are
+Justifications for the change are:
 
-- Rank normalization makes zsRhat and zsreff well defined for all
+- rank normalization makes zsRhat and zsreff well defined for all
   distributions, bijective transformation invariant and more stable
   than sRhat and neff. Adding folded version fzsRhat helps to detect
   differences in scale.
@@ -487,11 +487,12 @@ The code for alternative new *split*-$\widehat{R}$ and $N_{\rm eff}$ versions ar
 **Load packages**
 ```{r, comment=NA, message=FALSE, warning=FALSE, results='hide'}
 library(rstan)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
 library(bayesplot)
 library(tidyverse)
 library(gridExtra)
 source('monitornew.R')
-rstan_options(auto_write = TRUE)
 ```
 
 ```{r monitor_simple}
