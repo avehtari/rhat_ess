@@ -12,6 +12,7 @@ output:
     toc_float:
       smooth_scroll: FALSE
 bibliography: rhat_neff.bib
+csl: harvard-cite-them-right.csl
 ---
 
 ```{r setup, include=FALSE}
