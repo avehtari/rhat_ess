@@ -166,9 +166,9 @@ autocorrelations $\rho_t$ is defined by
 $$
 N_{\rm eff}
 \ = \
-\frac{n}{\sum_{t = -\infty}^{\infty} \rho_t}
+\frac{N}{\sum_{t = -\infty}^{\infty} \rho_t}
 \ = \
-\frac{n}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
+\frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
 $$
 
 Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of
