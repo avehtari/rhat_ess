@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 # Introduction
 
 Split-$\widehat{R}$ and effective sample size, are routinely used
-monitor the convergence of iterative simulations.  $\widehat{R}$
+to monitor the convergence of iterative simulations.  $\widehat{R}$
 [@Gelman+Rubin:1992; @Brooks+Gelman:1998] and
 *split*-$\widehat{R}$ [@BDA3] are based on the ratio of
 between and within-sequence marginal variances of the simulations. The
@@ -481,6 +481,8 @@ of 1.01, as values larger than that are usually rounded in our summaries to 1.01
 We demonstrated the proposed approached with several simulation studies.
 
 ## Setup
+
+The code for alternative new *split*-$\widehat{R}$ and $N_{\rm eff}$ versions are in [monitornew.R](monitornew.R).
 
 **Load packages**
 ```{r, comment=NA, message=FALSE, warning=FALSE, results='hide'}
@@ -2149,7 +2151,11 @@ parameters, it is important to look at the relative efficiency of
 `lp__` as it can indicate problems of sampling in tails, which would
 affect the accuracy of variance and tail quantile estimates.
 
-# Original Computing Environment
+# References {.unnumbered}
+
+<div id="refs"></div>
+
+# Original Computing Environment {.unnumbered}
 
 ```{r, comment=NA}
 writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
@@ -2159,4 +2165,3 @@ writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
 devtools::session_info("rstan")
 ```
 
-# References
