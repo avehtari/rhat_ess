@@ -53,7 +53,7 @@ estimates
 # Review of *split*-$\widehat{R}$ and effective sample size
 
 In this section, we will review split-$\widehat{R}$ and 
-effective sample size estimates as implemented in Stan 2.18 [@Stan:JSS:2017; @Stan.2.18].
+effective sample size estimates as implemented in Stan 2.18 [@Stan.2.18].
 
 ## *Split*-$\widehat{R}$
 
@@ -245,7 +245,7 @@ In Stan pre 2.18, a slightly incorrect initial sequence was used, which
 implied that $\hat{N}_{\rm eff}$ was capped at $N$. As
 antithetic behavior $\hat{N}_{\rm eff} > N$ is not that common or the
 effect is small and capping at $N$ can be considered to be
-pessismistic, this had negligible effect on any inference.
+pessimistic, this had negligible effect on any inference.
 However, it may have led to an underestimation of Stan's efficiency
 when compared to other packages performing MCMC sampling.
 
@@ -261,7 +261,7 @@ We should be thinking of standardizing the notation
 a bit more. For instance, we use \psi and \theta for parameters
 and later used x and y for some arbitrary quantity.
 I have already tried to standardized the notation, but not
-sure how sucessful I was.
+sure how successful I was.
 -->
 
 ## Rank normalization
@@ -270,7 +270,7 @@ sure how sucessful I was.
 *Split*-$\widehat{R}$ assumes that the quantities being considered
 have finite mean and variance and it's more stable for distributions
 close to Gaussian.  Target distribution can be far from normal and for
-example Cauchy distribution has non-fimite mean and  variance,
+example Cauchy distribution has non-finite mean and  variance,
 and thus *split*-$\widehat{R}$ is not well defined. To alleviate
 those we propose to compute *split*-$\widehat{R}$ using rank
 normalized values.
@@ -285,7 +285,7 @@ case of discrete quantities. Rank normalization is made jointly for
 all draws from all chains.
 
 <!--
-What's the particular normailization procedure being applied?
+What's the particular normalization procedure being applied?
 -->
 
 Rank normalization makes the subsequent computations well defined and
@@ -356,7 +356,7 @@ the efficiency of the median directly, we can estimate the efficiency of
 $p(x < \hat{Q}_{0.5})$, where $\hat{Q}_{0.5}$ is the empirical median from the combined draws. This should be good approximation, if the efficiency for 
 $p(x < \hat{Q}_{\alpha})$ is smoothly changing around $\alpha = 0.5$.
 Compared to relative efficiency of the mean rank, this is a more local
-measue as it only assesses how the simulation jumps around the median.
+measure as it only assesses how the simulation jumps around the median.
 
 We can also compute the approximative relative efficiency for the
 median absolute deviation (MAD), by computing the relative efficiency
@@ -416,8 +416,8 @@ instead of trace plots. Rank plots are nothing else than histograms of the
 ranked posterior samples (ranked over all chains) plotted separately
 for each chain. If rank plots of all chains look similar, this indicates
 good mixing of the chains. As compared to trace plots, they don't tend
-to squeeze to a mess in case of long chains. Whithin this case study,
-we will illustrate the use and interpreation of rank plots.
+to squeeze to a mess in case of long chains. Within this case study,
+we will illustrate the use and interpretation of rank plots.
 
 ## Finite mean and variance of a marginal distribution
 
@@ -425,7 +425,7 @@ We intentionally separate MCMC diagnostics based on generic and stable
 rank-normalized efficiency and Monte Carlo error estimates 
 for the desired quantities, as the latter is only applicable when mean 
 and variance of this quantity exist. We
-could use Pareto-$k$-diagnostics to estimate the existance of mean and
+could use Pareto-$k$-diagnostics to estimate the existence of mean and
 variance [@Vehtari+etal:PSIS:2017], but this is out of the scope of
 the present case study. In the future, there will be a separate case study 
 for diagnostics to check whether a certain marginal distribution has finite
@@ -484,7 +484,7 @@ Justifications for the change are:
 
 - Relative efficiencies of the median and MAD (medsreff and masreff) are
   well defined for all distributions, bijective transformation invariant, 
-  more stable than neff, and focuse on the quantities we are acutally 
+  more stable than neff, and focus on the quantities we are actually 
   reporting.
 
 In summary outputs, we propose to eventually use Rhat to denote the new
@@ -537,7 +537,7 @@ monitor_simple <- function(sims, ...) {
 }
 ```
 
-## Independent draws from normal distribution with additional trend, shift or scaling 
+## Independent draws from normal distribution with additional trend, shift or scaling
 
 This part focuses on diagnostics for
 
@@ -596,8 +596,8 @@ ggplot(data=res, aes(y=zsRhat, x=trend)) +
 
 **Result:** Split-Rhat is useful for detecting non-stationarity in
  the chains. If we use a threshold of $1.01$, we can detect trends which have
- acount for 2% of the total marginal variance. If we use a threshold of $1.1$, we
- can detect trends which acount for 30% of the total marginal variance.
+ account for 2% of the total marginal variance. If we use a threshold of $1.1$, we
+ can detect trends which account for 30% of the total marginal variance.
 
 Relative efficiency (effective sample size divided by the number of
 draws) is based on split Rhat and within-chain autocorrelation.
@@ -750,7 +750,7 @@ ggplot(data=res, aes(y=fzsRhat, x=scale)) +
   ggtitle('Folded-split-Rhat')
 ```
 
-**Result:** Folded-Split-Rhat focuses explicitely on scales 
+**Result:** Folded-Split-Rhat focuses explicitly on scales 
 and can thus detect scale differences.
 
 **Result:** If we use a threshold of $1.01$, we can detect a chain with scale
@@ -821,7 +821,7 @@ The following Cauchy models are from Michael Betancourt's case study
 
 ### Nominal parameterization of Cauchy
 
-The nominal cauchy model with direct parameterization is as follows.
+The nominal Cauchy model with direct parameterization is as follows.
 
 ```{r}
 writeLines(readLines("cauchy_nom.stan"))
@@ -1005,7 +1005,7 @@ related to the efficiency of quantile estimates. Each interval has
 specified proportion of draws, and the efficiency measures
 autocorrelation of an indicator function which indicates when the
 values are inside the specific interval. This gives us a local
-efficiency measure which is indepedent on the shape of the
+efficiency measure which is independent on the shape of the
 distribution.
 
 ```{r plot_quantile_reff}
