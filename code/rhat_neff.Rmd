@@ -29,7 +29,7 @@ Split-$\widehat{R}$ and effective sample size ($N_{\rm eff}$), are routinely use
 to monitor the convergence of iterative simulations.  $\widehat{R}$
 [@Gelman+Rubin:1992; @Brooks+Gelman:1998] and
 *split*-$\widehat{R}$ [@BDA3] are based on the ratio of
-between and within-sequence marginal variances of the simulations. The
+between and within-chain marginal variances of the simulations. The
 effective sample size estimate by @BDA3
 is based on marginal variance and autocorrelation estimates from split
 chains.
@@ -59,7 +59,7 @@ effective sample size estimates as implemented in Stan 2.18 [@Stan:JSS:2017; @St
 
 Below, we present the computation of *Split*-$\widehat{R}$ following
 the notation of @BDA3.  For each scalar summary of interest $\psi$, we
-compute $B$ and $W$, the between- and within-sequence variances:
+compute $B$ and $W$, the between- and within-chain variances:
 $$
 B = \frac{n}{m-1}\sum_{j=1}^{m}(\overline{\psi}_{.j}-\overline{\psi}_{..})^2,
 \;\mbox{ where }\;\;\overline{\psi}_{.j}=\frac{1}{n}\sum_{i=1}^n \psi_{ij},\;\;
@@ -74,12 +74,6 @@ $m$ is the number of chains. The between-chain variance, $B$,
 also contains the factor $n$ because it is based on the variance of 
 the within-chain means, $\overline{\psi}_{.j}$, each of which 
 is an average of $n$ values $\psi_{ij}$.
-
-<!--
-I replaced "sequence" with "chain" as I believe this is easier
-to understand for most readers. If you don't agree, I am happy 
-to revise it to "sequence".
--->
 
 We can estimate $\mbox{var}(\psi|y)$, the marginal posterior variance
 of the estimand, by a weighted average of $W$ and $B$, namely
@@ -115,6 +109,10 @@ which declines to 1 as $n\rightarrow\infty$. We call this *split*-$\widehat{R}$
 because we are applying it to chains that have been split in half so that $m$ is
 twice the number of actual chains. Without splitting, $\widehat{R}$ would get
 fooled by non-stationary chains.
+
+We note that *split*-$\widehat{R}$ is also well defined for sequences that are not Markov-chains. However, for simplicity, we always refer to 'chains' instead
+of more generally to 'sequences' as the former is our primary use case for 
+$\widehat{R}$ measures.
 
 ## Effective sample size
 
@@ -243,8 +241,8 @@ In the above paragraph using between-chain variance twice
 doesn't make sense. Is one of those a typo?
 -->
 
-In Stan pre 2.18, slightly incorrect initial sequence was used, which had
-the effect that the $\hat{N}_{\rm eff}$ estimate was capped at $N$. As
+In Stan pre 2.18, a slightly incorrect initial sequence was used, which 
+implied that $\hat{N}_{\rm eff}$ was capped at $N$. As
 antithetic behavior $\hat{N}_{\rm eff} > N$ is not that common or the
 effect is small and capping at $N$ can be considered to be
 pessismistic, this had negligible effect on any inference.
@@ -346,11 +344,12 @@ defined even when the marginal distribution does not have finite mean
 and variance.
 
 By definition of the median, we have $p(x < {\rm median}(x)) = 0.5$. 
-We can't present this as a simple expectation, but we can estimate it by
+We can't write this down as a simple expectation, but we can represent it by
+the Indicator function
 $$
-\frac{1}{S}\sum_{s=1}^S I_{x_s<{\rm median}(x)}(x_s),
+I_{x<{\rm median}(x)}(x).
 $$ 
-where $S$ is the number of draws.
+evaluated at each draw $x$.
 The indicator function transforms simulation draws to 0's and 1's, and thus
 the subsequent computations are bijectively invariant. Instead of estimating 
 the efficiency of the median directly, we can estimate the efficiency of 
@@ -413,20 +412,19 @@ importance sampling based effective sample size estimates
 
 In additional of using rank-normalized values to compute
 *split*-$\widehat{R}$, we propose to use rank plots for each chain
-instead of traces. These can be used instead of trace plots, which in
-case of long chains tend to squeeze to a mess. We illustrate that rank
-plots can be used as a more compact alternative to trace plots.
-
-<!--
-Should we add more explanation of what a "rank plot" is?
--->
+instead of trace plots. Rank plots are nothing else than histograms of the 
+ranked posterior samples (ranked over all chains) plotted separately
+for each chain. If rank plots of all chains look similar, this indicates
+good mixing of the chains. As compared to trace plots, they don't tend
+to squeeze to a mess in case of long chains. Whithin this case study,
+we will illustrate the use and interpreation of rank plots.
 
 ## Finite mean and variance of a marginal distribution
 
 We intentionally separate MCMC diagnostics based on generic and stable
-rank-normalized relative efficiency $\hat{N}_{\rm eff}/N$ and Monte
-Carlo error estimates for the desired quantities, as the latter is
-only applicable when mean and variance of this quantity exist. We
+rank-normalized efficiency and Monte Carlo error estimates 
+for the desired quantities, as the latter is only applicable when mean 
+and variance of this quantity exist. We
 could use Pareto-$k$-diagnostics to estimate the existance of mean and
 variance [@Vehtari+etal:PSIS:2017], but this is out of the scope of
 the present case study. In the future, there will be a separate case study 
