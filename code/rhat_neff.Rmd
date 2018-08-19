@@ -25,44 +25,41 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Split-$\widehat{R}$ and effective sample size, are routinely used
+Split-$\widehat{R}$ and effective sample size ($N_{\rm eff}$), are routinely used
 to monitor the convergence of iterative simulations.  $\widehat{R}$
 [@Gelman+Rubin:1992; @Brooks+Gelman:1998] and
 *split*-$\widehat{R}$ [@BDA3] are based on the ratio of
 between and within-sequence marginal variances of the simulations. The
-effective sample size estimate ($N_{\rm eff}$) by @BDA3
+effective sample size estimate by @BDA3
 is based on marginal variance and autocorrelation estimates from split
 chains.
 
 $\widehat{R}$, *split*-$\widehat{R}$, and $N_{\rm eff}$ are well
-defined only if the marginal posteriors have finite mean and variance,
-and even in that case they are less stable for distributions with long
-tails.
+defined only if the marginal distributions have finite mean and variance.
+and even in that case, they are less stable for distributions with long
+tails. To alleviate these problems, we propose to compute *split*-$\widehat{R}$ 
+and $N_{\rm eff}$ using rank normalized values, quantiles, and 
+posterior intervals.
 
-To alleviate these problems, we propose
+We additionally propose
 
- - to compute *split*-$\widehat{R}$ and $N_{\rm eff}$ using rank normalized values,
-quantiles and posterior intervals.
-
-We also propose
-
- - to diagnose convergence and relative efficiency of scale of the marginal
-distribution in addition to the usual location estimate (mean or
-median), which will improve reliability of Monte Carlo error
-estimates,
- - to use relative efficiency of several quantile or small interval probability estimates as local relative efficiency measure which can reveal local sampling problems,
+ - to diagnose convergence and relative efficiency of the marginal
+distribution's scale in addition to the usual location estimate 
+(mean or median), which will improve reliability of Monte Carlo error
+estimates
+ - to use relative efficiency of several quantile or small interval probability estimates as local relative efficiency measures to reveal local sampling problems
  - to use rank plots as a more compact alternative to trace plots.
 
 # Review of *split*-$\widehat{R}$ and effective sample size
 
-We review split-$\widehat{R}$ and effective sample size estimated as
-implemented in Stan 2.18 [@Stan:JSS:2017; @Stan.2.18].
+In this section, we will review split-$\widehat{R}$ and 
+effective sample size estimates as implemented in Stan 2.18 [@Stan:JSS:2017; @Stan.2.18].
 
 ## *Split*-$\widehat{R}$
 
-Here are the formulas, with the presentation taken from @BDA3.  For
-each scalar summary of interest $\psi$, we compute $B$ and $W$, the
-between- and within-sequence variances:
+Below, we present the computation of *Split*-$\widehat{R}$ following
+the notation of @BDA3.  For each scalar summary of interest $\psi$, we
+compute $B$ and $W$, the between- and within-sequence variances:
 $$
 B = \frac{n}{m-1}\sum_{j=1}^{m}(\overline{\psi}_{.j}-\overline{\psi}_{..})^2,
 \;\mbox{ where }\;\;\overline{\psi}_{.j}=\frac{1}{n}\sum_{i=1}^n \psi_{ij},\;\;
@@ -72,80 +69,86 @@ W =
 \sum_{i=1}^n (\psi_{ij}-\overline{\psi}_{.j})^2.
 $$
 
-The between-sequence variance, $B$, contains a factor of $n$ because
-it is based on the variance of the within-sequence means,
-$\overline{\psi}_{.j}$, each of which is an average of $n$ values
-$\psi_{ij}$.
+In the above equations, $n$ is the number of simulations per chain and 
+$m$ is the number of chains. The between-chain variance, $B$, 
+also contains the factor $n$ because it is based on the variance of 
+the within-chain means, $\overline{\psi}_{.j}$, each of which 
+is an average of $n$ values $\psi_{ij}$.
+
+<!--
+I replaced "sequence" with "chain" as I believe this is easier
+to understand for most readers. If you don't agree, I am happy 
+to revise it to "sequence".
+-->
 
 We can estimate $\mbox{var}(\psi|y)$, the marginal posterior variance
 of the estimand, by a weighted average of $W$ and $B$, namely
 $$
 \widehat{\mbox{var}}^+(\psi|y)=\frac{n-1}{n}W + \frac{1}{n}B.
 $$
-This quantity *overestimates*
-the marginal posterior variance assuming the starting distribution
-is appropriately overdispersed, but is *unbiased* under
-stationarity (that is, if the starting distribution equals the target
-distribution), or
-in the limit $n\rightarrow\infty$.
-To have overdispersed starting distribution, independent Markov chains
-should be initialized with diffuse starting values for the parameters.
+This quantity *overestimates* the marginal posterior variance 
+assuming the starting distribution is appropriately overdispersed
+compared to the target distribution, 
+but is *unbiased* under stationarity (that is, if the starting 
+distribution equals the target distribution), or in the limit
+$n\rightarrow\infty$. To have an overdispersed starting distribution, 
+independent Markov chains should be initialized with diffuse starting
+values for the parameters.
 
-Meanwhile, for any finite $n$, the ``within'' variance
-$W$ should be an *underestimate*
-of $\mbox{var}(\psi|y)$ because the individual sequences have not had
-time to range over all of the target distribution and, as a result,
-will have less variability; in the limit as $n\rightarrow\infty$, the
-expectation of $W$ approaches $\mbox{var}(\psi|y)$.
+Meanwhile, for any finite $n$, the within-chain variance
+$W$ should *underestimate* $\mbox{var}(\psi|y)$ because the 
+individual chains haven't had the time to explore all of the target 
+distribution and, as a result, will have less variability. 
+In the limit as $n\rightarrow\infty$, the expectation of $W$ 
+approaches $\mbox{var}(\psi|y)$.
 
-
-We monitor convergence of the iterative simulation by estimating
-the factor by which the scale of the current distribution for $\psi$
-might be reduced if the simulations were continued in the limit
-$n\rightarrow\infty$.  This potential scale reduction is estimated for
-monitoring convergence of iterative simulation by
+We monitor convergence of the iterative simulation to the target
+distribution by estimating the factor by which the scale of the 
+current distribution for $\psi$ might be reduced if the simulations 
+were continued in the limit $n\rightarrow\infty$. This potential 
+scale reduction is estimated as
 $$
 \widehat{R}=
 \sqrt{\frac{\widehat{\mbox{var}}^+(\psi|y)}{W}},
 $$
-which declines to 1 as $n\rightarrow\infty$.
-
-We call this *split*-$\widehat{R}$ because we are applying it to
-chains that have been split in half.  Without splitting, $\widehat{R}$
-would get fooled by nonstationary chains.
+which declines to 1 as $n\rightarrow\infty$. We call this *split*-$\widehat{R}$
+because we are applying it to chains that have been split in half so that $m$ is
+twice the number of actual chains. Without splitting, $\widehat{R}$ would get
+fooled by non-stationary chains.
 
 ## Effective sample size
 
-If the $n$ simulation draws within each sequence were truly
-independent, then the between-sequence variance $B$ would be an unbiased
+If the $n$ simulation draws within each chain were truly
+independent, the between-chain variance $B$ would be an unbiased
 estimate of the posterior variance, $\mbox{var}(\psi|y)$, and we would have
-a total of $mn$ independent simulations from the $m$
-sequences.  In general, however, the simulations of $\psi$ within each
-sequence will be autocorrelated, and $B$ will be larger than $\mbox{var}(\psi|y)$,
-in expectation.
+a total of $N = m \times n$ independent simulations from the $m$
+chains. In general, however, the simulations of $\psi$ within each
+chain will be autocorrelated, and thus $B$ will be larger than 
+$\mbox{var}(\psi|y)$, in expectation.
 
 A nice introductory reference for analyzing MCMC results in general
-and effective sample size in particular is [@Geyer:2011; see also @Geyer:1992].  The
-particular calculations used by Stan [@Stan.2.18] follow those for split-$\hat{R}$,
-which involve both cross-chain (mean) and within-chain calculations
-(autocorrelation); they were introduced in Stan manual and explained
-in more detail in @BDA3.
+and effective sample size in particular is provided by @Geyer:2011
+[see also @Geyer:1992].  The particular calculations used by Stan
+[@Stan.2.18] follow those for split-$\hat{R}$, which involve both
+between-chain (mean) and within-chain calculations
+(autocorrelation). They were introduced in the Stan manual
+[@StanManual.2.18.0] and explained in more detail in @BDA3.
 
 One way to define effective sample size for correlated simulation
 draws is to consider the statistical efficiency of the average of the
-simulations $\bar{\psi}_{..}$, as an estimate of the posterior mean,
-$\mbox{E}(\psi|y)$.  This can be a reasonable baseline even though is
+simulations $\bar{\psi}_{..}$ as an estimate of the posterior mean
+$\mbox{E}(\psi|y)$. This can be a reasonable baseline even though it is
 not the only possible summary and might be inappropriate, for example,
 if there is particular interest in accurate representation of
 low-probability events in the tails of the distribution.
 
-The effective sample size of a sequence is defined in terms of the
-autocorrelations within the sequence at different lags.  The
+The effective sample size of a chain is defined in terms of the
+autocorrelations within the chain at different lags. The
 autocorrelation $\rho_t$ at lag $t \geq 0$ for a chain with joint
 probability function $p(\theta)$ with mean $\mu$ and variance
 $\sigma^2$ is defined to be
 $$
-\rho_t
+\rho_t 
 =
 \frac{1}{\sigma^2} \, \int_{\Theta} (\theta^{(n)} - \mu)
 (\theta^{(n+t)} - \mu) \, p(\theta) \, d\theta.
@@ -174,74 +177,79 @@ Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of
 antithetic Markov chains, which have negative autocorrelations on odd
 lags. Dynamic Hamiltonian algorithm [@Hoffman+Gelman:2014] used in Stan can produce $N_{\rm
 eff}>N$ for parameters which have close to Gaussian posterior with low
-dependency on other parameters (Stan before 2.18 computed $N_{\rm
-eff}$ so that the maximum reported value was $N$).
+dependency on other parameters (before version 2.18, Stan computed 
+$N_{\rm eff}$ so that the maximum reported value was $N$).
 
 \subsection{Estimation of Effective Sample Size}
 
 In practice, the probability function in question cannot be tractably
 integrated and thus the autocorrelation cannot be calculated, nor the
 effective sample size.  Instead, these quantities must be estimated
-from the samples themselves.  The rest of this section describes a
-autocorrelations and split-$\hat{R}$ based effective sample
-size estimator, based on multiple split chains. For simplicity, each chain
-$\theta_m$ will be assumed to be of length $N$.
+from the samples themselves.  The rest of this section describes am
+autocorrelation and split-$\hat{R}$ based effective sample
+size estimator, based on multiple split chains. For simplicity, 
+each chain will be assumed to be of the same length $N$.
 
 Stan carries out the autocorrelation computations for all lags
 simultaneously using Eigen's fast Fourier transform (FFT) package with
-appropriate padding; see @Geyer:2011 for more detail on using
+appropriate padding; see @Geyer:2011 for more details on using
 FFT for autocorrelation calculations.
-The autocorrelation estimates $\hat{\rho}_{t,m}$ at lag $t$ from
-multiple chains $m \in (1,\ldots,M)$ are combined with within-sample
-variance estimate $W$ and multi-chain variance estimate
+The autocorrelation estimates $\hat{\rho}_{t,j}$ at lag $t$ from
+multiple chains $j \in (1,\ldots,m)$ are combined with the within-chain
+variance estimate $W$ and the multi-chain variance estimate
 $\widehat{\mbox{var}}^{+}$ introduced in the previous section to
 compute the combined autocorrelation at lag $t$ as
 $$
 \hat{\rho}_t
-= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M \hat{\rho}_{t,m}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{m}\sum_{j=1}^m \hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
 $$
 If the chains have not converged, the variance estimator
-$\widehat{\mbox{var}}^{+}$ will overestimate variance, leading to an
-overestimate of autocorrelation and an underestimate effective sample
-size.
+$\widehat{\mbox{var}}^{+}$ will overestimate the true marginal variance 
+which leads to an overestimation of the autocorrelation and an 
+underestimation of the effective sample size.
 
 Because of the noise in the correlation estimates $\hat{\rho}_t$ as
-$t$ increases, typical truncated sum of $\hat{\rho}_t$ is used.
+$t$ increases, typically the truncated sum of $\hat{\rho}_t$ is used.
 Negative autocorrelations can happen only on odd lags and by summing
 over pairs starting from lag 0, the paired autocorrelation is
 guaranteed to be positive, monotone and convex modulo estimator noise
 [@Geyer:1992; @Geyer:2011].  Stan uses Geyer's initial monotone
 sequence criterion. The effective sample size estimator is defined as
 $$
-\hat{N}_{\rm eff}
-=
-\frac{MN}
-     {\hat{\tau}},
+\hat{N}_{\rm eff} = \frac{N \, m}{\hat{\tau}},
 $$
 where
 $$
-\hat{\tau} = 1 + 2 \sum_{t=1}^{2m+1} \hat{\rho}_t = -1 + 2 \sum_{t'=0}^{m} \hat{P}_{t'},
+\hat{\tau} = 1 + 2 \sum_{t=1}^{2k+1} \hat{\rho}_t = 
+-1 + 2 \sum_{t'=0}^{k} \hat{P}_{t'},
 $$
-where $\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}$. Initial
-positive sequence estimators is obtained by choosing the largest $m$
-such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,m$. The initial monotone
+and $\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}$. Initial
+positive sequence estimators is obtained by choosing the largest $k$
+such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,k$. The initial monotone
 sequence is obtained by further reducing $\hat{P}_{t'}$ to the minimum
 of the preceding ones so that the estimated sequence is monotone.
 
 Our $\hat{N}_{\rm eff}$ is slightly different from similar formulas in
-the literature in that we use also between-sequence variance in the
+the literature in that we use also between-chain variance in the
 computation which typically gives us more conservative claims (lower
-values of $N_{\rm eff}$) compared to purely between-sequence
+values of $N_{\rm eff}$) compared to purely between-chain
 estimates, especially when mixing is poor. If the chains are not
 mixing at all (e.g. the posterior is multimodal and the chains are
 stuck in different modes), then our $\hat{N}_{\rm eff}$ is close to
 the number of chains.
 
-In Stan pre 2.18 slightly wrong initial sequence was used, which had
-the effect that $\hat{N}_{\rm eff}$ estimate was capped at $N$. As
-antithetic behavior $\hat{N}_{\rm eff}>N$ is not that common or the
+<!--
+In the above paragraph using between-chain variance twice
+doesn't make sense. Is one of those a typo?
+-->
+
+In Stan pre 2.18, slightly incorrect initial sequence was used, which had
+the effect that the $\hat{N}_{\rm eff}$ estimate was capped at $N$. As
+antithetic behavior $\hat{N}_{\rm eff} > N$ is not that common or the
 effect is small and capping at $N$ can be considered to be
 pessismistic, this had negligible effect on any inference.
+However, it may have led to an underestimation of Stan's efficiency
+when compared to other packages performing MCMC sampling.
 
 # New *split*-$\widehat{R}$ and relative efficiency estimate
 
@@ -249,6 +257,14 @@ As *split*-$\widehat{R}$, and $N_{\rm eff}$ are well defined only if
 the marginal posteriors have finite mean and variance, we next
 describe approaches which are well defined for all distributions and
 more robust for long tailed distributions.
+
+<!--
+We should be thinking of standardizing the notation
+a bit more. For instance, we use \psi and \theta for parameters
+and later used x and y for some arbitrary quantity.
+I have already tried to standardized the notation, but not
+sure how sucessful I was.
+-->
 
 ## Rank normalization
 
@@ -266,50 +282,59 @@ Rank normalization is commonly used in Spearman's rank correlation
 coefficient, but also to transform predictor values in epidemiology.
 Rank normalization replaces each draw by its rank (or fractional rank
 which the rank divided by the total number of observations). We use
-average rank for ties to conserve the number of values the same in
+average rank for ties to conserve the number of values in
 case of discrete quantities. Rank normalization is made jointly for
 all draws from all chains.
 
+<!--
+What's the particular normailization procedure being applied?
+-->
+
 Rank normalization makes the subsequent computations well defined and
-invariant under bijective transformations. This means that we get same
-results, for example, if we use unconstrained or constrained
-parameters. Furthermore, to improve sensitivity to scale differences
+invariant under bijective transformations. This means that we get the
+same results, for example, if we use unconstrained or constrained
+parameters. 
+
+Furthermore, to improve sensitivity to scale differences
 between chains, we consider folded rank-normalization which uses rank
 distance from the median.
 
 \paragraph{Folded split}
 
 *Split*-$\widehat{R}$ can miss if chains have different scales but
-have the same location. To alleviate this we propose to to compute
+the same location. To alleviate this, we propose to compute
 *Split*-$\widehat{R}$ also for folded rank normalized values.
-Folded values are obtained by absolute deviation transformation
+Folded values are obtained by applying the absolute deviation transformation
 \begin{equation}
-  {\rm abs}(y-{\rm median}(y)),
+  {\rm abs}(x-{\rm median}(x)),
 \end{equation}
-where median is compute from all draws from all chains. Folded rank
+where the median is computed from the draws from all chains. Folded rank
 normalized values are then obtained by rank normalizing the folded
 values.
 
-## *Combined split*-$\widehat{R}$
-
-For simplicity, we propose to report the maximum of
-*rank-normalized-split*-$\widehat{R}$ and
-*folded-rank-normalize-split*-$\widehat{R}$ values.
+To obtain a single conservative $\widehat{R}$ estimate, we propose to 
+report the maximum of *rank-normalized-split*-$\widehat{R}$ and
+*folded-rank-normalized-split*-$\widehat{R}$ for each parameter.
 
 ## Relative efficiency of mean rank
 
-In additional of using rank-normalized values for convergence
-diagnostics, we can compute also effective sample size using them.
-This is estimate will be well defined even if the original
+In addition of using rank-normalized values for convergence
+diagnostics, we can also compute the corresponding effective sample.
+This estimate will be well defined even if the original
 distribution does not have finite mean and variance, but it is not
-directly applicabe to estimate the Monte Carlo error of the
-expectation of the original value. We could transform quantiles the
+directly applicable to estimate the Monte Carlo error of the
+mean of the original values. We could transform quantiles the
 Monte Carlo error of the mean rank normalized value back to the
 original scale, but for simplicity we propose to report (bijective)
 transformation invariant relative efficiency values
 $$
-R_{\rm eff}=\textit{rank-normalized-split-}N_{\rm eff} / N$,
+R_{\rm eff}=\textit{rank-normalized-split-}N_{\rm eff} / N,
+$$
 where $N$ is the total number of draws.
+
+<!--
+I don't fully understand the sentence starting with "we could transform"
+-->
 
 ## Relative efficiency of median and MAD
 
@@ -317,37 +342,39 @@ Since the marginal posterior distributions might not have finite mean
 and variance, by default RStan [@RStan.2.17] and RStanARM
 [@RStanARM.2.17] report median and median absolute deviation (MAD)
 instead of mean and standard error (SE). Median and MAD are well
-defined also when the marginal distribution does not have finite mean
+defined even when the marginal distribution does not have finite mean
 and variance.
 
-If the median of $x$ is $\tilde{x}$, then by definition $p(x < \tilde{x}) = 0.5$. 
+By definition of the median, we have $p(x < {\rm median}(x)) = 0.5$. 
 We can't present this as a simple expectation, but we can estimate it by
-$\frac{1}{S}\sum I_{x<x'}$. The indicator function transforms simulation 
-draws to 0's and 1's, and thus the subsequent computations are
-bijectively invariant. Instead of estimating the efficiency of the median
-directly, we can estimate the efficiency of $p(x < \hat{Q}_{0.5})$,
-where $\hat{Q}_{0.5}$ is the empirical median from the combined
-draws. This should be good approximation, if the efficiency for 
+$$
+\frac{1}{S}\sum_{s=1}^S I_{x_s<{\rm median}(x)}(x_s),
+$$ 
+where $S$ is the number of draws.
+The indicator function transforms simulation draws to 0's and 1's, and thus
+the subsequent computations are bijectively invariant. Instead of estimating 
+the efficiency of the median directly, we can estimate the efficiency of 
+$p(x < \hat{Q}_{0.5})$, where $\hat{Q}_{0.5}$ is the empirical median from the combined draws. This should be good approximation, if the efficiency for 
 $p(x < \hat{Q}_{\alpha})$ is smoothly changing around $\alpha = 0.5$.
-
-Compared to relative efficiency of mean rank, this is more local as it
-measures only how the simulation jumps around median.
+Compared to relative efficiency of the mean rank, this is a more local
+measue as it only assesses how the simulation jumps around the median.
 
 We can also compute the approximative relative efficiency for the
 median absolute deviation (MAD), by computing the relative efficiency
-for median of absolute deviations from the median of all draws.  The
+for median of absolute deviations from the median of all draws. The
 absolute deviations from the median of all draws are same as
-previously defined folded samples
+previously defined for folded samples
 $$
-  {\rm abs}(y-{\rm median}(y)).
+{\rm abs}(x-{\rm median}(x)).
 $$
-We see that relative efficiency of MAD is obtained by using the same
-approach as for median but using the folded values used also in
+We see that the relative efficiency of MAD is obtained by using the same
+approach as for median but with the folded values used also used in
 *folded-rank-normalized-split*-$\widehat{R}$.
 
-Previously Stan has reported $N_{\rm eff}$ only for the posterior
-location (previously mean), but we demonstrate that it is good to
-report the relative efficiency also for scale (we propose to use MAD).
+Previously, Stan had reported $N_{\rm eff}$ only for the posterior
+location (previously mean but now median), but we demonstrate that it is 
+good to report the relative efficiency also for an estimation of the
+scale (and we propose to use MAD).
 
 ## Relative efficiency of quantiles
 
@@ -357,17 +384,16 @@ quantile are often used to construct credible intervals. Estimating
 the relative efficiency of such quantiles thus has high practical
 relevance in particular as we observe the relative efficiency for tail
 quantiles is often lower than for mean or median. By computing
-relative efficiency for many quantiles we can obtain local efficiency
-measure demonstrated in the experiments.
+relative efficiency for many quantiles, we can obtain local efficiency
+measures as demonstrated in the experiments.
 
 ## Relative efficiency of small interval probability estimates
 
-We can get even more local relative efficiency estimate by considering small intervals.
-We propose to compute the relative efficiency for $p(\hat{Q}_\alpha
-\le x < \hat{Q}_{\alpha+\delta})$, where $\hat{Q}_\alpha$ is the empirical
-$\alpha$-quantile, $\delta=1/M$ is the length of the interval with some
-positive integer $M$ chosen by the researcher, and $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
-Each interval has $N/M$ draws, and the efficiency measures 
+We can get even more local relative efficiency estimate by considering small intervals. We propose to compute the relative efficiency for 
+$p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+\delta})$, where 
+$\hat{Q}_\alpha$ is the empirical $\alpha$-quantile, $\delta=1/k$ is the 
+length of the interval with some positive integer $k$ chosen by the researcher, and $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
+Each interval has $N/k$ draws, and the efficiency measures 
 autocorrelation of an indicator function which
 indicates when the values are inside the specific interval. This gives
 us a local efficiency measure which does not depend on the shape of the
@@ -391,16 +417,22 @@ instead of traces. These can be used instead of trace plots, which in
 case of long chains tend to squeeze to a mess. We illustrate that rank
 plots can be used as a more compact alternative to trace plots.
 
-## Finite mean and variance of a marginal
+<!--
+Should we add more explanation of what a "rank plot" is?
+-->
 
-We intentionally separate MCMC diagnostic based on generic and stable
-rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte
-Carlo error estimates for the desired expectations, which is
-applicable only when mean and variance exist. We could use Pareto $k$
-diagnostic to estimate the existance of mean and variance
-[@Vehtari+etal:PSIS:2017]. There will be another case study for
-diagnostics to check when certain marginal has finite mean and
-variance needed in order to report posterior mean and MCSE.
+## Finite mean and variance of a marginal distribution
+
+We intentionally separate MCMC diagnostics based on generic and stable
+rank-normalized relative efficiency $\hat{N}_{\rm eff}/N$ and Monte
+Carlo error estimates for the desired quantities, as the latter is
+only applicable when mean and variance of this quantity exist. We
+could use Pareto-$k$-diagnostics to estimate the existance of mean and
+variance [@Vehtari+etal:PSIS:2017], but this is out of the scope of
+the present case study. In the future, there will be a separate case study 
+for diagnostics to check whether a certain marginal distribution has finite
+mean and variance required to obtain reasonable estimates of 
+posterior mean and Monte-Carlo standard error.
 
 ## Abbreviations
 
@@ -431,13 +463,13 @@ In the code and figures the following abbreviations have been used
     + estimates the efficiency of median absolute deviation
  - madsreff = madsneff / N
 
-## Proposed change in Stan
+## Proposed changes in Stan
 
 The proposal is to switch in Stan
 
  - from split-$\widehat{R}$ (sRhat) to the maximum of 
  rank-normalized-split-$\widehat{R}$ and 
- folded-rank-normalized-split-$\widehat{R}$ that is max(zsRhat, fzsRhat)
+ folded-rank-normalized-split-$\widehat{R}$: max(zsRhat, fzsRhat)
  - from classic effective sample size estimate (neff), 
  which currently doesn't use chain splitting, to 
  rank-normalized-split-$R_{\rm eff}$ (zsreff) and 
@@ -447,25 +479,27 @@ The proposal is to switch in Stan
 
 Justifications for the change are:
 
-- rank normalization makes zsRhat and zsreff well defined for all
-  distributions, bijective transformation invariant and more stable
-  than sRhat and neff. Adding folded version fzsRhat helps to detect
+- Rank normalization makes zsRhat and zsreff well defined for all
+  distributions, under bijective transformations invariant and more stable
+  than sRhat and neff. Adding a folded version fzsRhat helps to detect
   differences in scale.
 
-- CDF based medsreff and masreff are well defined for all
-  distributions, bijective transformation invariant, more stable than
-  neff, and focuses on the median and mad_sd we are reporting.
+- Relative efficiencies of the median and MAD (medsreff and masreff) are
+  well defined for all distributions, bijective transformation invariant, 
+  more stable than neff, and focuse on the quantities we are acutally 
+  reporting.
 
-In displays we propose eventually to use Rhat to denote the new
-version, but to make it more clear that rank-normalized efficiency is
-different we would switch to use R_eff and display relative
-efficiency. The relative efficiency is also easier to check for
-low values as we don't need to compare it to the total number of draws.
+In summary outputs, we propose to eventually use Rhat to denote the new
+version. However, to make it more clear that rank-normalized efficiency 
+is different than standard efficiency, we could use the term 'R_eff' and 
+display relative efficiency. The relative efficiency is also easier to 
+check for low values as we don't need to compare it to the total number 
+of draws.
 
 ## Warning thresholds
 
-Based on the experiments, more strict convergence diagnostic and
-relative efficiency warning limits could be used.
+Based on the experiments presented below, more strict convergence 
+diagnostics and relative efficiency warning limits could be used.
 
 We propose the following warning thresholds, although additional
 experiments would be useful:
@@ -2160,7 +2194,10 @@ affect the accuracy of variance and tail quantile estimates.
 # Original Computing Environment {.unnumbered}
 
 ```{r, comment=NA}
-writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
+makevars <- file.path(Sys.getenv("HOME"), ".R/Makevars")
+if (file.exists(makevars)) {
+  writeLines(readLines(makevars)) 
+}
 ```
 
 ```{r, comment=NA}
