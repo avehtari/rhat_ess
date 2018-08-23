@@ -173,20 +173,20 @@ $$
 
 Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of
 antithetic Markov chains, which have negative autocorrelations on odd
-lags. Dynamic Hamiltonian algorithm [@Hoffman+Gelman:2014] used in Stan can produce $N_{\rm
-eff}>N$ for parameters which have close to Gaussian posterior with low
-dependency on other parameters (before version 2.18, Stan computed 
-$N_{\rm eff}$ so that the maximum reported value was $N$).
+lags. Dynamic Hamiltonian algorithm [@Hoffman+Gelman:2014] used in Stan 
+can produce $N_{\rm eff}>N$ for parameters which have close to Gaussian 
+posterior with low dependency on other parameters (before version 2.18, 
+Stan computed $N_{\rm eff}$ so that the maximum reported value was $N$).
 
 \subsection{Estimation of Effective Sample Size}
 
 In practice, the probability function in question cannot be tractably
-integrated and thus the autocorrelation cannot be calculated, nor the
-effective sample size.  Instead, these quantities must be estimated
-from the samples themselves.  The rest of this section describes am
+integrated and thus neither autocorrelation not the effective sample size.  
+can be calculated. Instead, these quantities must be estimated
+from the samples themselves. The rest of this section describes an
 autocorrelation and split-$\hat{R}$ based effective sample
 size estimator, based on multiple split chains. For simplicity, 
-each chain will be assumed to be of the same length $N$.
+each chain will be assumed to be of the same length $n$.
 
 Stan carries out the autocorrelation computations for all lags
 simultaneously using Eigen's fast Fourier transform (FFT) package with
@@ -199,7 +199,8 @@ $\widehat{\mbox{var}}^{+}$ introduced in the previous section to
 compute the combined autocorrelation at lag $t$ as
 $$
 \hat{\rho}_t
-= 1 - \frac{\displaystyle W - \textstyle \frac{1}{m}\sum_{j=1}^m \hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{m}\sum_{j=1}^m 
+\hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
 $$
 If the chains have not converged, the variance estimator
 $\widehat{\mbox{var}}^{+}$ will overestimate the true marginal variance 
@@ -410,7 +411,7 @@ importance sampling based effective sample size estimates
 
 ## Rank plots
 
-In additional of using rank-normalized values to compute
+In addition to using rank-normalized values to compute
 *split*-$\widehat{R}$, we propose to use rank plots for each chain
 instead of trace plots. Rank plots are nothing else than histograms of the 
 ranked posterior samples (ranked over all chains) plotted separately

@@ -131,75 +131,84 @@ in the limit $n\rightarrow\infty$.
 To have overdispersed starting distribution, independent Markov chains
 should be initialized with diffuse starting values for the parameters.
 
-Meanwhile, for any finite $n$, the ``within'' variance
-$W$ should be an {\em underestimate}
-of $\mbox{var}(\psi|y)$ because the individual sequences have not had
-time to range over all of the target distribution and, as a result,
+Meanwhile, for any finite $n$, the ``within'' variance $W$ should be an 
+{\em underestimate} of $\mbox{var}(\psi|y)$ because the individual sequences 
+have not had time to range over all of the target distribution and, as a result,
 will have less variability; in the limit as $n\rightarrow\infty$, the
-expectation of $W$ approaches $\mbox{var}(\psi|y)$. The idea to monitor variance across multiple chains comes from Fosdick (1959); the contribution of Gelman and Rubin (1992) was to compare this to within-chain variance.
-
+expectation of $W$ approaches $\mbox{var}(\psi|y)$. The idea to monitor variance 
+across multiple chains comes from Fosdick (1959); the contribution of Gelman and 
+Rubin (1992) was to compare this to the within-chain variance.
 
 We monitor convergence of the iterative simulation by estimating
 the factor by which the scale of the current distribution for $\psi$
 might be reduced if the simulations were continued in the limit
-$n\rightarrow\infty$.  This potential scale reduction is estimated for monitoring convergence of iterative simulation by
-\begin{equation}\label{rhat.defined}
-\widehat{R}=
-\sqrt{\frac{\widehat{\mbox{var}}^+(\psi|y)}{W}},
+$n\rightarrow\infty$. This potential scale reduction is estimated for 
+monitoring convergence of iterative simulation by
+
+\begin{equation}
+\label{rhat.defined}
+\widehat{R} = \sqrt{\frac{\widehat{\mbox{var}}^+(\psi|y)}{W}},
 \end{equation}
-which declines to 1 as $n\rightarrow\infty$.
 
-We call this {\em split}-$\widehat{R}$ because we are applying it to chains that have already been split in half, as described in Section \ref{splitting}.  Without splitting, $\widehat{R}$ would get fooled by nonstationary chains such as those in Figure \ref{converge.challenge}b.
+which declines to 1 as $n\rightarrow\infty$. We call this {\em split}-$\widehat{R}$ 
+because we are applying it to chains that have already been split in half, as 
+described in Section \ref{splitting}. Without splitting, $\widehat{R}$ would 
+get fooled by nonstationary chains such as those in Figure 
+\ref{converge.challenge}b.
 
-\paragraph{Rank normalization}
+\subsection{Rank normalization}
 
 {\em Split}-$\widehat{R}$ assumes that the quantities being considered
-have finite mean and variance and it's more stable for distributions
-close to Gaussian.  Target distribution can be far from normal and for
-example Cauchy distribution has non-fimite mean and  variance,
-and thus {\em split}-$\widehat{R}$ is not well defined. To alleviate
-those we propose to compute {\em split}-$\widehat{R}$ using rank
-normalized values.
+have finite mean and variance and it is more stable for distributions
+close to Gaussian. However, the target distribution may very well be far 
+from normal. The Cauchy distribution, for instance, has both non-finite 
+mean and variance, and thus {\em split}-$\widehat{R}$ is not well defined.
+To alleviate these limitations, we propose to compute {\em split}-$\widehat{R}$ 
+using rank normalized values.
 
+Rank normalization is commonly used in Spearman's rank correlation
+coefficient, but also to transform predictor values in epidemiology.
 Rank normalization replaces each draw by its rank (or fractional rank
 which the rank divided by the total number of observations). We use
-average rank for ties to conserve the number of values the same in
+average rank for ties to conserve the number of values in
 case of discrete quantities. Rank normalization is made jointly for
 all draws from all chains.
 
-In additional of using rank-normalized values to compute {\em
-  split}-$\widehat{R}$, we propose to plot rank plots for each cain
-instead of traces. These can be used instead of trace plots, which in
-case of long chains tend to squeeze to a mess.
+In addition to using rank-normalized values to compute
+{\em split}-$\widehat{R}$, we propose to use rank plots for each chain
+instead of trace plots. Rank plots are nothing else than histograms of the 
+ranked posterior samples (ranked over all chains) plotted separately
+for each chain. If rank plots of all chains look similar, this indicates
+good mixing of the chains. As compared to trace plots, they don't tend
+to squeeze to a mess in case of long chains.
 
-\paragraph{Folded split}
+\subsection{Folded-split-R-hat}
 
 {\em Split}-$\widehat{R}$ can miss if chains have different scales but
-have the same location. To alleviate this we propose to to compute
+have the same location. To alleviate this limitation, we propose to compute
 {\em Split}-$\widehat{R}$ also for folded rank normalized values.
 
-Folded values are obtained by absolute deviation transformation
+Folded values $x_f$ are obtained by the absolute deviation transformation
 \begin{equation}
-  {\rm abs}(y-{\rm median}(y)).
+  x_f = {\rm abs}(x-{\rm median}(x)).
 \end{equation}
-where median is compute from all draws from all chains. Folded rank
-normalized values are then obtained by rank normalizing the folded
-values.
+where the median is computed from all draws from all chains. 
+Folded rank normalized values are then obtained by rank normalizing 
+the folded values $x_f$.
 
-\paragraph{Combined {\em split}-$\widehat{R}$}
-
-We propose to report the maximum of {\em
-  rank-normalized-split}-$\widehat{R}$ and {\em
-  folded-rank-normalize-split}-$\widehat{R}$.
+To obtain a single conservative $\widehat{R}$ estimate, we propose to 
+report the maximum of {\em rank-normalized-split}-$\widehat{R}$ and
+{\em folded-rank-normalized-split}-$\widehat{R}$ for each parameter.
 
 \section{Effective sample size}
-If the $n$ simulation draws within each sequence were truly
-independent, then the between-sequence variance $B$ would be an unbiased
+
+If the $n$ simulation draws within each chain were truly
+independent, the between-chain variance $B$ would be an unbiased
 estimate of the posterior variance, $\mbox{var}(\psi|y)$, and we would have
-a total of $mn$ independent simulations from the $m$
-sequences.  In general, however, the simulations of $\psi$ within each
-sequence will be autocorrelated, and $B$ will be larger than $\mbox{var}(\psi|y)$,
-in expectation.
+a total of $N = m \times n$ independent simulations from the $m$
+chains. In general, however, the simulations of $\psi$ within each
+chain will be autocorrelated, and thus $B$ will be larger than 
+$\mbox{var}(\psi|y)$, in expectation.
 
 A nice introductory reference for analyzing MCMC results in general
 and effective sample size in particular is (Geyer, 2011).  The
@@ -260,21 +269,23 @@ integrated and thus the autocorrelation cannot be calculated, nor the
 effective sample size.  Instead, these quantities must be estimated
 from the samples themselves.  The rest of this section describes a
 autocorrelations and split-$\hat{R}$ based effective sample
-size estimator, based on multiple split chains. For simplicity, each chain
-$\theta_m$ will be assumed to be of length $N$.
+size estimator, based on multiple split chains. For simplicity, each 
+chain is assumed to be of the same length $n$.
 
 Stan carries out the autocorrelation computations for all lags
 simultaneously using Eigen's fast Fourier transform (FFT) package with
 appropriate padding; see (Geyer, 2011) for more detail on using
 FFT for autocorrelation calculations.
-%
-The autocorrelation estimates $\hat{\rho}_{t,m}$ at lag $t$ from
-multiple chains $m \in (1,\ldots,M)$ are combined with within-sample variance estimate $W$ 
-and multi-chain variance estimate
-$\widehat{\mbox{var}}^{+}$ introduced in the previous section to compute the combined autocorrelation at lag $t$ as
+
+The autocorrelation estimates $\hat{\rho}_{t,j}$ at lag $t$ from
+multiple chains $j \in (1,\ldots,m)$ are combined with within-sample 
+variance estimate $W$ and multi-chain variance estimate
+$\widehat{\mbox{var}}^{+}$ introduced in the previous section to 
+compute the combined autocorrelation at lag $t$ as
 \begin{equation}
 \hat{\rho}_t
-= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M \hat{\rho}_{t,m}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{m}\sum_{j=1}^m 
+\hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
 \end{equation}
 If the chains have not converged, the variance estimator
 $\widehat{\mbox{var}}^{+}$ will overestimate variance, leading to an
@@ -290,69 +301,93 @@ guaranteed to be positive, monotone and convex modulo estimator noise
 sequence criterion. The effective sample size estimator is defined as
 \begin{equation}
 \hat{N}_{\mbox{\scriptsize eff}}
-=
-\frac{MN}
-     {\hat{\tau}},
+= \frac{Nm}{\hat{\tau}},
 \end{equation}
 %
 where
 \begin{equation}
-\hat{\tau} = 1 + 2 \sum_{t=1}^{2m+1} \hat{\rho}_t = -1 + 2 \sum_{t'=0}^{m} \hat{P}_{t'},
+\hat{\tau} = 1 + 2 \sum_{t=1}^{2k+1} \hat{\rho}_t = 
+-1 + 2 \sum_{t'=0}^{k} \hat{P}_{t'},
 \end{equation}
 where $\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}$. Initial
-positive sequence estimators is obtained by choosing the largest $m$
-such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,m$. The initial monotone
+positive sequence estimators are obtained by choosing the largest $k$
+such that $\hat{P}_{t'}>0, \quad t' = 1, \ldots, k$. The initial monotone
 sequence is obtained by further reducing $\hat{P}_{t'}$ to the minimum
 of the preceding ones so that the estimated sequence is monotone.
 
+Our $\hat{N}_{\rm eff}$ is slightly different from similar formulas in the 
+literature in that we use also between-sequence variance in the ratio of 
+(\ref{rhohat}) which typically gives us more conservative claims (lower 
+values of $N_{\rm eff}$) compared to purely between-sequence estimates, 
+especially when mixing is poor. If the chains are not mixing at all (e.g.
+the posterior is multimodal and the chains are stuck in different modes), 
+then our $\hat{N}_{\rm eff}$ is close to the number of chains.
 
-Our $\hat{n}_{\rm eff}$ is slightly different from similar formulas in the literature in that we use also between-sequence variance in the ratio of (\ref{rhohat}) which typically gives us more conservative claims (lower values of $n_{\rm eff}$) compared to purely between-sequence estimates, especially when mixing is poor. If the chains are not mixing at all (e.g. the posterior is multimodal and the chains are stuck in different modes), then our $\hat{n}_{\rm eff}$ is close to the number of chains.
+\subsection{Rank Normalized Effective Sample Size}
 
-\paragraph{Rank normalization}
-
-Variance and autocovariance estimates assume also that the marginal
-distribution has finite mean and variance, and thus as for {\em
-  Split}-$\widehat{R}$, we propose to use rank
-normalization. Effective sample size estimate has been used to adjust
+Variance and autocovariance estimates assume that the marginal
+distribution has finite mean and variance, and thus as for 
+{\em Split}-$\widehat{R}$, we propose to use rank
+normalization. Effective sample size estimates habe been used to adjust
 the Monte Carlo error estimate of the expectation. We now
 intentionally separate MCMC diagnostic based on generic and stable
-rank-normalized relative efficiency $\hat{n}_{\rm eff}/n$ and Monte
+rank-normalized effective sample size $\hat{N}_{\rm eff}$ and Monte
 Carlo error estimates for the desired expectations, which is
 applicable only when mean and variance exist. We could use Pareto $k$
 diagnostic to estimate the existance of mean and variance (Vehtari,
-Gabry, and Gelman, 2017), but we leave details of that out of this
-paper.
+Gabry, and Gelman, 2017), but this is out of the scope of the present paper.
 
-To emphasize the difference to classic $\hat{n}_{\rm eff}/n$, we
-propose to report relative efficiency of the rank normalized sample
-$\hat{R}_{\rm eff} = \text{\it rank-normalized-split-}\hat{n}_{\rm eff}/n$.
+Depending on the context, it may be more intuitive to report the relative 
+efficiency $\hat{N}_{\rm eff}/ N$ instead of $\hat{N}_{\rm eff}$ itself.
+To emphasize the difference to efficiency estimates obtained from the
+original posterior draws,  we propose to call the relative efficiency of 
+the rank normalized valuess
+
+\begin{equation}
+\label{R_eff}
+\hat{R}_{\rm eff} := \text{\it rank-normalized-split-}\hat{N}_{\rm eff}/N.
+\end{equation}
 
 \paragraph{Relative efficiency of median and MAD}
 
-By default RStan and RStanARM report median and median absolute
-deviation (MAD) instead of mean and standard error (SE), as median and
-MAD dareis well dfined also when the marginal distribution does not
-have finite mean and variance.
+As marginal posterior distributions may not have finite mean
+and variance, by default RStan and RStanARM report median and median 
+absolute deviation (MAD) instead of mean and standard error (SE). 
+Median and MAD are well defined even for marginal distributions
+which do not have finite mean and variance.
 
-If the median of $x$ is $\tilde{x}$, then by definition
-$p(x < \tilde{x}) = 0.5$.  We can't present this as a simple
-expectation, but we can estimate it by $\frac{1}{S}\sum I_{x<x'}$. The
-indicator function transforms simulation draws to 0's and 1's, and
-thus the subsequent computations are bijectively invariant. Instead of
-estimating the efficiency of the median directly, we can estimate the
-efficiency of $p(x < \hat{Q}_{0.5})$, where $\hat{Q}_{0.5}$ is the
-empirical median from the combined draws. This should be good
-approximation, if the efficiency for $p(x < \hat{Q}_{\alpha})$ is
-smoothly changing around $\alpha = 0.5$.
+By definition of the median, we have $p(x < {\rm median}(x)) = 0.5$. 
+We cannot write this down as a simple expectation, but we can represent 
+it by the Indicator function
+$$
+I_{x<{\rm median}(x)}(x).
+$$ 
+evaluated at each draw $x$.
+The indicator function transforms simulation draws to 0's and 1's, and thus
+the subsequent computations are bijectively invariant. Instead of estimating 
+the efficiency of the median directly, we can estimate the efficiency of 
+$p(x < \hat{Q}_{0.5})$, where $\hat{Q}_{0.5}$ is the empirical median from 
+the combined draws. This should be good approximation, if the efficiency for 
+$p(x < \hat{Q}_{\alpha})$ is smoothly changing around $\alpha = 0.5$.
+Compared to relative efficiency of the mean rank, this is a more local
+measure as it only assesses how the simulation jumps around the median.
 
-We can also compute the approximative relative efficiency for the median 
-absolute deviation (MAD), by computing the relative
-efficiency for median of absolute deviations from the median of all draws.
-The absolute deviations from the median of all draws are same as previously defined folded samples
-\begin{equation}
-  {\rm abs}(y-{\rm median}(y)).
-\end{equation}
-Thus relative efficiency of MAD is obtained by using the same approach as for median but using the folded values.
+We can also compute the approximative relative efficiency for the
+median absolute deviation (MAD), by computing the relative efficiency
+for median of absolute deviations from the median of all draws. The
+absolute deviations from the median of all draws are same as
+previously defined for folded samples
+$$
+{\rm abs}(x-{\rm median}(x)).
+$$
+We see that the relative efficiency of MAD is obtained by using the same
+approach as for median but with the folded values used also used in
+*folded-rank-normalized-split*-$\widehat{R}$.
+
+Previously, Stan had reported $N_{\rm eff}$ only for the posterior
+location (previously mean but now median), but we demonstrate that it is 
+good to report the relative efficiency also for an estimation of the
+scale (and we propose to use MAD).
 
 \paragraph{Relative efficiency of quantiles}
 
@@ -361,14 +396,17 @@ median. Some tail quantiles such as the 5\% quantile or the 95\% quantile
 are often used to construct credible intervals. Estimating the relative
 efficiency of such quantiles is thus of high practical relevance in particular
 as we observe the relative efficiency for tail quantiles is often
-lower than for mean or median. By computing relative efficiency for many quantiles we can obtain local efficiency measure.
+lower than for mean or median. By computing relative efficiency for many quantiles,
+we can obtain a set of local efficiency measures that may also be plotted nicely.
 
-\paragraph{Relative efficiency of small interval probability estimates}
+\paragraph{Relative efficiency of small interval estimates}
 
-We can get even more local relative efficiency estimate by considering small intervals. We propose to compute the relative efficiency for $p(\hat{Q}_\alpha
+We can get an even more local relative efficiency estimate by considering small
+intervals. We propose to compute the relative efficiency for $p(\hat{Q}_\alpha
 \le x < \hat{Q}_{\alpha+\delta})$, where $\hat{Q}_\alpha$ is the empirical
 $\alpha$-quantile, $\delta=1/M$ is the length of the interval with some
-positive integer $M$ chosen by the researcher, and $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
+positive integer $M$ chosen by the researcher, and 
+$\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$. 
 Each interval has $N/M$ draws, and the efficiency measures 
 autocorrelation of an indicator function which
 indicates when the values are inside the specific interval. This gives
@@ -469,8 +507,6 @@ the formula for $\hat{R}$ from the previous section.
 \label{warmup}Algorithms such as Metropolis and Hamiltonian Monte Carlo require tuning, and these tuning operations typically destroy the conditions under which the stationary distribution of the algorithm equals the target distribution.  Se we discard the simulations obtained during this {\em warmup} period.  A practical question then arises:  how long should the warm-up period be, and how long should we run the simulations after warmup?  By default Stan currently runs 4 parallel chains from different starting points, with 1000 warmup iterations in which there is adaptation of the Hamiltonian Monte Carlo mass matrix, followed by 1000 more iterations on each chain.  The result is then 4 chains of 1000 saved iterations each, which after splitting yield 8 chains each of length 500 for the computation of $\widehat{R}$.
 
 Some questions for further research include the possibility of the length of the warmup itself being adaptive, and also the possibility of choosing how long to run the computation based on wall time rather than a fixed number of iterations.  One minor complication is that this leads to ``ragged'' arrays of simulations, with different chains of different lengths, so that the formulas for $\widehat{R}$ and $n_{\rm eff}$ must be altered slightly.  Options then arise as to how to weight the various chains, with extremes being chains weighted equally and draws weighted equally; see Stan Development Team (2017).
-
-
 
 
 For models with many parameters, the computations of $\widehat{R}$ and $n_{\rm eff}$ are not free.  There may be more efficient ways to compute these than just using the simple formulas above.  Another challenge is computing these as the algorithm is running.  Suppose, for example, one wanted to run the simulations until $\widehat{R}<1.05$ for all parameters.  It could be expensive to recompute this every step.  While $\widehat{R}$ is easy to compute as draws come in using Welford's algorithm.  The splitting introduces a complication in that, with every two new iterations in a chain, we need to transfer one iteration from the second half to the first half;  it is still possible to compute online, but it requires at least half the chain to be buffered.
