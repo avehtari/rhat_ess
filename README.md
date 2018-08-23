@@ -14,3 +14,15 @@ New ideas
  - rank normalization
  - unequal variances, min \hat[E]?
 
+Implementation todo
+- Bayesplot
+  + rank plots
+  + local relative efficiency plots
+    - small intervals
+    - quantiles
+- Default output?
+  + for all quantities
+  + Median, Mad
+- C++
+  + Rank-normalization 
+  + Folded
