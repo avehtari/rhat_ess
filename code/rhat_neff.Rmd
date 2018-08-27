@@ -1083,8 +1083,8 @@ which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 Treedepth exceedence and Bayesian Fraction of Missing Information are
-HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and
-relative efficiency can detect. 
+dynamic HMC specific diagnostics [@betancourt2017conceptual]. Let's
+see what generic Split-Rhat and relative efficiency can detect.
 
 We check the diagnostics for all x's.
 
@@ -1182,8 +1182,9 @@ which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 Treedepth exceedence and Bayesian Fraction of Missing Information are
-HMC/NUTS specific diagnostics. Let's see what generic Split-Rhat and
-relative efficiency can detect. Check the diagnostics for all x's.
+dynamic HMC specific diagnostics [@betancourt2017conceptual]. Let's
+see what generic Split-Rhat and relative efficiency can detect. Check
+the diagnostics for all x's.
 
 ```{r}
 plot_rhat(res)
@@ -2074,12 +2075,12 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 
 We observe clear problems sampling different energy levels.
 
-## NUTS and effective sample size
+## Dynamic HMC and effective sample size
 
-We have already seen that the relative efficiency of HMC/NUTS can be
+We have already seen that the relative efficiency of dynamic can be
 higher than with independent draws. The next example illustrates
 interesting relative efficiency phenomena due to properties of the
-HMC/NUTS algorithm.
+dynamic HMC algorithms.
 
 ```{r}
 writeLines(readLines("normal.stan"))
