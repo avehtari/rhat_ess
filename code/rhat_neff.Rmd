@@ -1,7 +1,7 @@
 ---
 title: "Rank-normalized split-Rhat and relative efficiency estimates"
 author: "Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul Bürkner"
-date: "August 2018"
+date: "September 2018 (first version May 2018)"
 encoding: "UTF-8"
 output:
   html_document:
@@ -35,10 +35,11 @@ is based on marginal variance and autocorrelation estimates from split
 chains.
 
 $\widehat{R}$, *split*-$\widehat{R}$, and $N_{\rm eff}$ are well
-defined only if the marginal distributions have finite mean and variance.
-and even in that case, they are less stable for distributions with long
-tails. To alleviate these problems, we propose to compute *split*-$\widehat{R}$ 
-and $N_{\rm eff}$ using rank normalized values, quantiles, and 
+defined only if the marginal distributions have finite mean and
+variance.  and even in that case, they are less stable for
+distributions with long tails. To alleviate these problems, we propose
+to compute *split*-$\widehat{R}$ and $N_{\rm eff}$ using rank
+normalized values, empirical cumulative density functions for ranks (RECDF), and small
 posterior intervals.
 
 We additionally propose
@@ -47,8 +48,8 @@ We additionally propose
 distribution's scale in addition to the usual location estimate 
 (mean or median), which will improve reliability of Monte Carlo error
 estimates
- - to use relative efficiency of several quantile or small interval probability estimates as local relative efficiency measures to reveal local sampling problems
- - to use rank plots as a more compact alternative to trace plots.
+ - to use relative efficiency of several rank ECDFs or small interval probability estimates as local relative efficiency measures to reveal local sampling problems
+ - to use local efficiency and rank plots as a more compact alternative to trace plots.
 
 # Review of *split*-$\widehat{R}$ and effective sample size
 
@@ -278,12 +279,13 @@ normalized values.
 -->
 
 Rank normalization is commonly used in Spearman's rank correlation
-coefficient, but also to transform predictor values in epidemiology.
-Rank normalization replaces each draw by its rank (or fractional rank
-which the rank divided by the total number of observations). We use
-average rank for ties to conserve the number of values in
-case of discrete quantities. Rank normalization is made jointly for
-all draws from all chains.
+coefficient, but also to transform predictor values in epidemiology. 
+
+1. Ranking: Replace each value $\theta_i$ by its rank $r_i$. Average
+rank for ties are used to conserve the number of values in case of discrete
+quantities. Ranks are computed jointly for all draws from all chains.
+2. Normalization: Normalize ranks by inverse normal transformation $z_i =
+\phi^{-1}((r_i-1/2)/N)$.
 
 <!--
 What's the particular normalization procedure being applied?
@@ -376,7 +378,7 @@ location (previously mean but now median), but we demonstrate that it is
 good to report the relative efficiency also for an estimation of the
 scale (and we propose to use MAD).
 
-## Relative efficiency of quantiles
+## Relative efficiency of empirical CDF
 
 We can compute the relative efficiency also for other quantiles than
 the median. Some tail quantiles such as the 5\% quantile or the 95\%
