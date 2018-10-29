@@ -226,9 +226,9 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   sims_folded <- abs(sims_centered)
   sims_med <- (sims_centered<0)*1
   sims_mad <- (sweep(sims_folded,3,apply(sims_folded,3,median))<0)*1
-  fzsplit_rhat <- sapply(1:num_par, FUN = function(i)
+  zfsplit_rhat <- sapply(1:num_par, FUN = function(i)
       rhat_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
-  ## fzsplit_rhat2 <- sapply(1:num_par, FUN = function(i) {
+  ## zfsplit_rhat2 <- sapply(1:num_par, FUN = function(i) {
   ##     sims_split <- cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i])
   ##     sims_folded <- abs(sweep(sims_split,2,apply(sims_split,2,median)))
   ##     rhat_rfun(z_scale(sims_folded))
@@ -237,9 +237,9 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   zsplit_ess <- sapply(1:num_par, FUN = function(i)
     ess_rfun(z_scale(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i]))))
   zsplit_ress <- zsplit_ess/n_samples/n_chains
-  fzsplit_ess <- sapply(1:num_par, FUN = function(i)
+  zfsplit_ess <- sapply(1:num_par, FUN = function(i)
       ess_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
-  fzsplit_ress <- fzsplit_ess/n_samples/n_chains
+  zfsplit_ress <- zfsplit_ess/n_samples/n_chains
   medsplit_ess <- sapply(1:num_par, FUN = function(i)
       ess_rfun(z_scale(cbind(sims_med[1:half_n,,i],sims_med[idx_2nd:n_samples,,i]))))
   medsplit_ress <- medsplit_ess/n_samples/n_chains
@@ -248,8 +248,8 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   madsplit_ress <- madsplit_ess/n_samples/n_chains
   sem <- sd / sqrt(ess)
   
-  summary <- cbind(m, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, rhat, split_rhat, zrhat, zsplit_rhat, fzsplit_rhat, fzsplit_ess, fzsplit_ress, medsplit_ess, medsplit_ress, madsplit_ess, madsplit_ress)
-  colnames(summary) <- c("mean", "se_mean", "sd", probs_str, "neff", "reff", "sneff", "zneff", "zsneff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "fzsRhat", "fzsneff", "fzsreff", "medsneff", "medsreff", "madsneff", "madsreff")
+  summary <- cbind(m, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, rhat, split_rhat, zrhat, zsplit_rhat, zfsplit_rhat, zfsplit_ess, zfsplit_ress, medsplit_ess, medsplit_ress, madsplit_ess, madsplit_ress)
+  colnames(summary) <- c("mean", "se_mean", "sd", probs_str, "neff", "reff", "sneff", "zneff", "zsneff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", "zfsneff", "zfsreff", "medsneff", "medsreff", "madsneff", "madsreff")
   rownames(summary) <- parnames 
   if (print) {
     cat("Inference for the input samples (")
@@ -268,3 +268,9 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   invisible(summary) 
 } 
 
+monitor_simple <- function(sims, ...) {
+  out <- monitornew(sims, warmup = 0, probs = 0.5, print = FALSE, ...)
+  out <- as.data.frame(out)
+  out$par <- seq_len(nrow(out))
+  out
+}
