@@ -20,7 +20,7 @@ csl: harvard-cite-them-right.csl
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   comment=NA, 
-  cache=FALSE,
+  cache=TRUE,
   fig.width = 10
 )
 ```
@@ -149,7 +149,7 @@ We note that *split*-$\widehat{R}$ is also well defined for sequences that are n
 of more generally to 'sequences' as the former is our primary use case for 
 $\widehat{R}$ measures.
 
-## Effective sample size $\widehat{S}_{\rm eff}$ {#Seff}
+## Effective sample size $S_{\rm eff}$ {#Seff}
 
 If the $N$ simulation draws within each chain were truly
 independent, the between-chain variance $B$ would be an unbiased
@@ -250,7 +250,7 @@ guaranteed to be positive, monotone and convex modulo estimator noise
 [@Geyer:1992; @Geyer:2011].  Stan 2.18 uses Geyer's initial monotone
 sequence criterion. The effective sample size of combined chains is defined as
 $$
-\widehat{S}_{\rm eff} = \frac{N \, M}{\hat{\tau}},
+S_{\rm eff} = \frac{N \, M}{\hat{\tau}},
 $$
 where
 $$
@@ -263,18 +263,18 @@ such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,k$. The initial monotone
 sequence is obtained by further reducing $\hat{P}_{t'}$ to the minimum
 of the preceding ones so that the estimated sequence is monotone.
 
-$\widehat{S}_{\rm eff}$ described here is different from similar formulas in
+$S_{\rm eff}$ described here is different from similar formulas in
 the literature in that we use multiple chains and between-chain variance in the
 computation which typically gives us more conservative claims (lower
 values of $S_{\rm eff}$) compared to single chain
 estimates, especially when mixing is poor. If the chains are not
 mixing at all (e.g. the posterior is multimodal and the chains are
-stuck in different modes), then our $\widehat{S}_{\rm eff}$ is close to
+stuck in different modes), then our $S_{\rm eff}$ is close to
 the number of chains.
 
 In Stan pre 2.18, a slightly incorrect initial sequence was used, which 
-implied that $\widehat{S}_{\rm eff}$ was capped at $S$. As
-antithetic behavior $\widehat{S}_{\rm eff} > S$ is not that common or the
+implied that $S_{\rm eff}$ was capped at $S$. As
+antithetic behavior $S_{\rm eff} > S$ is not that common or the
 effect is small and capping at $S$ can be considered to be
 pessimistic, this had negligible effect on any inference.
 However, it may have led to an underestimation of Stan's efficiency
@@ -317,7 +317,7 @@ quantities. Ranks are computed jointly for all draws from all chains.
 2. Normalization: Normalize ranks by inverse normal transformation $z^{(nm)} =
 \phi^{-1}((r^{(nm)}-1/2)/S)$. 
 
-For continuous variables and $S \rightarrow \infty$, the rank normalized values are normally distributed and rank normalization performs non-parametric transformation to normal distribution. Using normalized ranks instead of ranks directly, has the benefit that the behavior of $\widehat{R}$ and $\widehat{S}_{\rm eff}$ do not change for normally distributed $\theta$.
+For continuous variables and $S \rightarrow \infty$, the rank normalized values are normally distributed and rank normalization performs non-parametric transformation to normal distribution. Using normalized ranks instead of ranks directly, has the benefit that the behavior of $\widehat{R}$ and $S_{\rm eff}$ do not change for normally distributed $\theta$.
 
 ### Examples of rank normalization
 
@@ -475,8 +475,8 @@ relative efficiency of such quantiles thus has high practical
 relevance in particular as we observe the relative efficiency for tail
 quantiles is often lower than for mean.  $\alpha$-quantile is
 $\theta^*$ for which $p(\theta < \theta^*) = \alpha$. This is not in a
-form of expectation, and thus $\widehat{R}$ and $\widehat{S}_{\rm
-eff}$ equations are not directly applicable. Thus we first focus on
+form of expectation, and thus $\widehat{R}$ and $S_{\rm eff}$
+equations are not directly applicable. Thus we first focus on
 relative efficiency of cumulative distribution function $p(\theta <
 \theta^*)$ for different values of $\theta^*$. For easier
 visualisation we may also use scaled rank values in place of
@@ -562,7 +562,7 @@ $$
 We see that the relative efficiency of MAD is obtained by using the
 same approach as for median (and other quantiles) but with the folded
 values used also used in
-*rank-normalized-folded-split*-$\widehat{S}_{\rm eff}$.
+*rank-normalized-folded-split*-$S_{\rm eff}$.
 
 Previously, Stan had reported $S_{\rm eff}$ only for the posterior
 mean, but we demonstrate that it is good to report the relative
@@ -583,15 +583,35 @@ non-zero in the relevant neighborhood. As the delta method of
 computing the variance would require knowledge of the normalized
 posterior density, we propose to use following approach.
 
-1. Sample draws from the above mentioned Beta distribution or compute
-two sigma points ($a=\bar{I}-{\rm sd}[\bar{I}]$, $b=\bar{I}+{\rm
-sd}[\bar{I}]$) based on the normal approximation.
+1. Sample draws from ${\rm Beta}((R_{\rm eff} Y)+1, R_{\rm eff}(S - Y)
++ 1)$ distribution or compute desired quantiles of that
+distribution. Including $R_{\rm eff}$ takes into account the relative
+efficiency of MCMC.
 2. Find posterior draws with closest corresponding ranks. For example,
-in case of sigma points, find $r_a$ and $r_b$ which are closest to
-$aS$ and $bS$.
-3. Use the corresponding $\theta^{(s)}$ as draws from Monte Carlo error
-distribution or compute approximate standard error as ${\rm
-abs}(\theta_a-\theta_b)/2$.
+in case of quantiles $\alpha_1$ and $\alpha_2$, find $r_1$ and $r_2$
+which are closest to $\alpha_1 S$ and $\alpha_2 S$.
+3. Use the corresponding $\theta^{(s)}$ as draws from Monte Carlo
+error distribution, report desired quantiles or, use draws or
+quantiles to compute approximate standard error.
+
+The follwing function computes MCSE, interval and S_eff for desired quantile of a quantity. 
+```{r}
+quantile_mcse <- function(samp = NULL, par = NULL, prob = NULL) {
+    tmp <- samp[, , par]
+    I <- tmp < quantile(tmp, prob)
+    rs <- monitor_simple(I)
+    Seff <- rs$zsneff[1]
+    a <- qbeta(c(0.1586553, 0.8413447, 0.05, 0.95),Seff*prob+1,Seff*(1-prob)+1)
+    stmp <- sort(tmp)
+    S <- length(stmp)
+    th1 <- stmp[max(round(a[1]*S),1)]
+    th2 <- stmp[min(round(a[2]*S),S)]
+    mcse <- (th2-th1)/2
+    th1 <- stmp[max(round(a[3]*S),1)]
+    th2 <- stmp[min(round(a[4]*S),S)]
+    data.frame(mcse=mcse, q05=th1, q95=th2, Seff=Seff)
+}
+```
 
 ## Relative efficiency of small interval probability estimates {#small_interval_R_eff}
 
@@ -1922,6 +1942,15 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 
 We observe clear problems.
 
+As we observed clear problems we shouldn't trust any Monte Carlo error
+estimates, but for illustration we show MCSE, interval and
+corresponding S_eff for median of `mu` and `tau`.
+<!-- This needs prettyfying -->
+```{r}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
+
 #### Centered parameterization with longer chains
 
 Low R_eff can be sometimes compensated with longer chains. Let's check
@@ -2000,6 +2029,17 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 
 We observe clear problems sampling different energy levels, which are connected to values of `tau`.
 
+As we observed clear problems we shouldn't trust any Monte Carlo error
+estimates, but for illustration we show MCSE, interval and
+corresponding S_eff for median of `mu` and `tau`. Comparing to the
+shorter MCMC run, 10 times more draws has not reduced the MCSE to one
+third as would be expected without problems in in mixing.
+<!-- This needs prettyfying -->
+```{r}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
+
 #### Centered parameterization very long chains
 
 And for further evidence let's check 100 times longer chains than the default.
@@ -2066,6 +2106,17 @@ mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(s
 We observe clear problems sampling different energy levels and
 sticking in all chains.
 
+As we observed clear problems we shouldn't trust any Monte Carlo error
+estimates, but for illustration we show MCSE, interval and
+corresponding S_eff for median of `mu` and `tau`.  Comparing to the
+shorter MCMC run, 100 times more draws has not reduced the MCSE to one
+tenths as would be expected without problems in in mixing.
+<!-- This needs prettyfying -->
+```{r}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
+
 ### Non-centered Eight Schools model
 
 For hierarchical models, non-centered parameterization often works better
@@ -2129,6 +2180,16 @@ mcmc_hist_r_scale(samp[, , 19])
 
 We observe clear problems sampling different energy levels.
 
+As we observed clear problems we shouldn't trust any Monte Carlo error
+estimates, but for illustration we show MCSE, interval and
+corresponding S_eff for median of `mu` and `tau`. MCSE is much smaller
+than with the problematic centered parameterization.
+<!-- This needs prettyfying -->
+```{r}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
+
 #### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
 
 Next we examine the same model but with higher `adapt_delta=0.95`.
@@ -2191,6 +2252,15 @@ mcmc_hist_r_scale(samp[, , 19])
 
 Seems quite ok.
 
+Now we should be able to trust Monte Carlo error estimates, and for
+illustration we show MCSE, interval and corresponding S_eff for median
+of `mu` and `tau`. The change compared to `adapt_delta=0.8` is small.
+<!-- This needs prettyfying -->
+```{r}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
+
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
 
 If in doubt, we can run longer chains.
@@ -2224,8 +2294,7 @@ Small `tau` values are still more difficult to explore, but the relative
 efficiency is in a good range.
 
 We examine also the relative efficiency of different quantile estimates.
-```{r}
-samp <- as.array(fit_ncp2)
+```{r, cache=FALSE}
 plot_quantile_reff(samp = samp, par = "tau", nalpha = 100)
 ```
 
@@ -2243,6 +2312,16 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 ```
 
 Nothing special.
+
+Now we should be able to trust Monte Carlo error estimates, and for
+illustration we show MCSE, interval and corresponding S_eff for median
+of `mu` and `tau`. Longer chains have reduced MCSE as we would expect
+for well nehaving chains.
+<!-- This needs prettyfying -->
+```{r, cache=FALSE}
+round(quantile_mcse(samp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp, par="tau", prob=0.5),2)
+```
 
 ## Dynamic HMC and effective sample size
 
