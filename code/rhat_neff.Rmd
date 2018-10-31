@@ -20,12 +20,12 @@ csl: harvard-cite-them-right.csl
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   comment=NA, 
-  cache=TRUE,
+  cache=FALSE,
   fig.width = 10
 )
 ```
 
-The code for alternative new *split*-$\widehat{R}$ and $N_{\rm eff}$ versions are in [monitornew.R](monitornew.R).
+The code for alternative new *split*-$\widehat{R}$ and $S_{\rm eff}$ versions are in [monitornew.R](monitornew.R).
 
 **Load packages**
 ```{r, comment=NA, message=FALSE, warning=FALSE, results='hide', cache=FALSE}
@@ -81,55 +81,67 @@ effective sample size estimates as implemented in Stan 2.18 [@Stan.2.18].
 ## *Split*-$\widehat{R}$ {#SplitRhat}
 
 Below, we present the computation of *Split*-$\widehat{R}$ following
-@BDA3, but using the notation style of .  For each scalar summary of interest $\theta$, we
+@BDA3, but using the notation style of @StanBook. Our recommendation
+is to run several chains. $N$ is the number of draws per chain, $M$ is
+the number of chains, and $S=MN$ is the total number of draws from all
+chains. For each scalar summary of interest $\theta$, we
 compute $B$ and $W$, the between- and within-chain variances:
+<!--
 $$
-B = \frac{n}{m-1}\sum_{j=1}^{m}(\overline{\theta}_{.j}-\overline{\theta}_{..})^2,
-\;\mbox{ where }\;\;\overline{\theta}_{.j}=\frac{1}{n}\sum_{i=1}^n \theta_{ij},\;\;
-\;\;\overline{\theta}_{..} = \frac{1}{m}\sum_{j=1}^m\overline{\theta}_{.j}\\
+B = \frac{N}{M-1}\sum_{m=1}^{M}(\overline{\theta}_{.m}-\overline{\theta}_{..})^2,
+\;\mbox{ where }\;\;\overline{\theta}_{.m}=\frac{1}{N}\sum_{n=1}^nN \theta_{nm},\;\;
+\;\;\overline{\theta}_{..} = \frac{1}{M}\sum_{m=1}^M\overline{\theta}_{.m}\\
 W =
- \frac{1}{m}\sum_{j=1}^{m}s_j^2, \;\mbox{ where }\;\; s_j^2=\frac{1}{n-1}
-\sum_{i=1}^n (\theta_{ij}-\overline{\theta}_{.j})^2.
+ \frac{1}{M}\sum_{m=1}^{M}s_j^2, \;\mbox{ where }\;\; s_m^2=\frac{1}{N-1}
+\sum_{n=1}^N (\theta_{nm}-\overline{\theta}_{.m})^2.
+$$
+-->
+$$
+B = \frac{N}{M-1}\sum_{m=1}^{M}(\overline{\theta}^{(.m)}-\overline{\theta}^{(..)})^2,
+\;\mbox{ where }\;\;\overline{\theta}^{(.m)}=\frac{1}{N}\sum_{n=1}^N \theta^{(nm)},\;\;
+\;\;\overline{\theta}^{(..)} = \frac{1}{M}\sum_{m=1}^M\overline{\theta}^{(.m)}\\
+W =
+ \frac{1}{M}\sum_{m=1}^{M}s_j^2, \;\mbox{ where }\;\; s_m^2=\frac{1}{N-1}
+\sum_{n=1}^N (\theta^{(nm)}-\overline{\theta}^{(.m)})^2.
 $$
 
-In the above equations, $n$ is the number of simulations per chain and 
-$m$ is the number of chains. The between-chain variance, $B$, 
-also contains the factor $n$ because it is based on the variance of 
-the within-chain means, $\overline{\theta}_{.j}$, each of which 
-is an average of $n$ values $\theta_{ij}$.
+The between-chain variance, $B$, 
+also contains the factor $N$ because it is based on the variance of 
+the within-chain means, $\overline{\theta}^{(.m)}$, each of which 
+is an average of $N$ values $\theta^{(nm)}$.
 
 We can estimate $\mbox{var}(\theta \mid y)$, the marginal posterior variance
 of the estimand, by a weighted average of $W$ and $B$, namely
 $$
-\widehat{\mbox{var}}^+(\theta \mid y)=\frac{n-1}{n}W + \frac{1}{n}B.
+\widehat{\mbox{var}}^+(\theta \mid y)=\frac{N-1}{N}W + \frac{1}{N}B.
 $$
 This quantity *overestimates* the marginal posterior variance 
 assuming the starting distribution is appropriately overdispersed
 compared to the target distribution, 
 but is *unbiased* under stationarity (that is, if the starting 
 distribution equals the target distribution), or in the limit
-$n\rightarrow\infty$. To have an overdispersed starting distribution, 
+$N\rightarrow\infty$. To have an overdispersed starting distribution, 
 independent Markov chains should be initialized with diffuse starting
 values for the parameters.
 
-Meanwhile, for any finite $n$, the within-chain variance
+Meanwhile, for any finite $N$, the within-chain variance
 $W$ should *underestimate* $\mbox{var}(\theta \mid y)$ because the 
 individual chains haven't had the time to explore all of the target 
 distribution and, as a result, will have less variability. 
-In the limit as $n\rightarrow\infty$, the expectation of $W$ 
+In the limit as $N\rightarrow\infty$, the expectation of $W$ 
 approaches $\mbox{var}(\theta \mid y)$.
 
 We monitor convergence of the iterative simulation to the target
 distribution by estimating the factor by which the scale of the 
 current distribution for $\theta$ might be reduced if the simulations 
-were continued in the limit $n\rightarrow\infty$. This potential 
+were continued in the limit $N\rightarrow\infty$. This potential 
 scale reduction is estimated as
 $$
 \widehat{R}=
 \sqrt{\frac{\widehat{\mbox{var}}^+(\theta \mid y)}{W}},
 $$
-which declines to 1 as $n\rightarrow\infty$. We call this *split*-$\widehat{R}$
-because we are applying it to chains that have been split in half so that $m$ is
+which declines to 1 as $N\rightarrow\infty$. We call this *split*-$\widehat{R}$
+because we are applying it to chains that have been split in half so that $M$ is
 twice the number of actual chains. Without splitting, $\widehat{R}$ would get
 fooled by non-stationary chains.
 
@@ -137,12 +149,12 @@ We note that *split*-$\widehat{R}$ is also well defined for sequences that are n
 of more generally to 'sequences' as the former is our primary use case for 
 $\widehat{R}$ measures.
 
-## Effective sample size $\widehat{N}_{\rm eff}$ {#Neff}
+## Effective sample size $\widehat{S}_{\rm eff}$ {#Seff}
 
-If the $n$ simulation draws within each chain were truly
+If the $N$ simulation draws within each chain were truly
 independent, the between-chain variance $B$ would be an unbiased
 estimate of the posterior variance, $\mbox{var}(\theta \mid y)$, and we would have
-a total of $N = m \times n$ independent simulations from the $m$
+a total of $S = M \times N$ independent simulations from the $M$
 chains. In general, however, the simulations of $\theta$ within each
 chain will be autocorrelated, and thus $B$ will be larger than 
 $\mbox{var}(\theta \mid y)$, in expectation.
@@ -157,7 +169,7 @@ between-chain (mean) and within-chain calculations
 
 One way to define effective sample size for correlated simulation
 draws is to consider the statistical efficiency of the average of the
-simulations $\bar{\theta}_{..}$ as an estimate of the posterior mean
+simulations $\bar{\theta}^{(..)}$ as an estimate of the posterior mean
 $\mbox{E}(\theta \mid y)$. This can be a reasonable baseline even though it is
 not the only possible summary and might be inappropriate, for example,
 if there is particular interest in accurate representation of
@@ -184,22 +196,22 @@ $$
 \frac{1}{\sigma^2} \, \int_{\Theta} \theta^{(n)} \, \theta^{(n+t)} \, p(\theta) \, d\theta.
 $$
 
-The effective sample size of $N$ samples generated by a process with
+The effective sample size of one chain generated by a process with
 autocorrelations $\rho_t$ is defined by
 $$
-S_{\rm eff}
+N_{\rm eff}
 \ = \
 \frac{N}{\sum_{t = -\infty}^{\infty} \rho_t}
 \ = \
 \frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
 $$
 
-Effective sample size $S_{\rm eff}$ can be larger than $N$ in case of
+Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of
 antithetic Markov chains, which have negative autocorrelations on odd
 lags. Dynamic Hamiltonian algorithm [@Hoffman+Gelman:2014] used in Stan 
-can produce $S_{\rm eff}>N$ for parameters which have close to Gaussian 
+can produce $N_{\rm eff}>N$ for parameters which have close to Gaussian 
 posterior with low dependency on other parameters (before version 2.18, 
-Stan computed $S_{\rm eff}$ so that the maximum reported value was $N$).
+Stan computed $N_{\rm eff}$ so that the maximum reported value was $N$).
 
 \subsection{Estimation of Effective Sample Size}
 
@@ -209,20 +221,20 @@ can be calculated. Instead, these quantities must be estimated
 from the samples themselves. The rest of this section describes an
 autocorrelation and split-$\hat{R}$ based effective sample
 size estimator, based on multiple split chains. For simplicity, 
-each chain will be assumed to be of the same length $n$.
+each chain will be assumed to be of the same length $N$.
 
 Stan carries out the autocorrelation computations for all lags
 simultaneously using Eigen's fast Fourier transform (FFT) package with
 appropriate padding; see @Geyer:2011 for more details on using
 FFT for autocorrelation calculations.
-The autocorrelation estimates $\hat{\rho}_{t,j}$ at lag $t$ from
-multiple chains $j \in (1,\ldots,m)$ are combined with the within-chain
+The autocorrelation estimates $\hat{\rho}_{t,m}$ at lag $t$ from
+multiple chains $m \in (1,\ldots,M)$ are combined with the within-chain
 variance estimate $W$ and the multi-chain variance estimate
 $\widehat{\mbox{var}}^{+}$ introduced in the previous section to
 compute the combined autocorrelation at lag $t$ as
 $$
 \hat{\rho}_t
-= 1 - \frac{\displaystyle W - \textstyle \frac{1}{m}\sum_{j=1}^m 
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M 
 \hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
 $$
 If the chains have not converged, the variance estimator
@@ -233,12 +245,12 @@ underestimation of the effective sample size.
 Because of the noise in the correlation estimates $\hat{\rho}_t$ as
 $t$ increases, typically the truncated sum of $\hat{\rho}_t$ is used.
 Negative autocorrelations can happen only on odd lags and by summing
-over pairs starting from lag 0, the paired autocorrelation is
+over pairs starting from lag $t=0$, the paired autocorrelation is
 guaranteed to be positive, monotone and convex modulo estimator noise
-[@Geyer:1992; @Geyer:2011].  Stan uses Geyer's initial monotone
-sequence criterion. The effective sample size estimator is defined as
+[@Geyer:1992; @Geyer:2011].  Stan 2.18 uses Geyer's initial monotone
+sequence criterion. The effective sample size of combined chains is defined as
 $$
-\widehat{N}_{\rm eff} = \frac{n \, m}{\hat{\tau}},
+\widehat{S}_{\rm eff} = \frac{N \, M}{\hat{\tau}},
 $$
 where
 $$
@@ -251,24 +263,19 @@ such that $\hat{P}_{t'}>0, \quad t' = 1,\ldots,k$. The initial monotone
 sequence is obtained by further reducing $\hat{P}_{t'}$ to the minimum
 of the preceding ones so that the estimated sequence is monotone.
 
-$\widehat{N}_{\rm eff}$ described here is different from similar formulas in
-the literature in that we use also between-chain variance in the
+$\widehat{S}_{\rm eff}$ described here is different from similar formulas in
+the literature in that we use multiple chains and between-chain variance in the
 computation which typically gives us more conservative claims (lower
-values of $S_{\rm eff}$) compared to purely between-chain
+values of $S_{\rm eff}$) compared to single chain
 estimates, especially when mixing is poor. If the chains are not
 mixing at all (e.g. the posterior is multimodal and the chains are
-stuck in different modes), then our $\widehat{N}_{\rm eff}$ is close to
+stuck in different modes), then our $\widehat{S}_{\rm eff}$ is close to
 the number of chains.
 
-<!--
-In the above paragraph using between-chain variance twice
-doesn't make sense. Is one of those a typo?
--->
-
 In Stan pre 2.18, a slightly incorrect initial sequence was used, which 
-implied that $\widehat{N}_{\rm eff}$ was capped at $N$. As
-antithetic behavior $\widehat{N}_{\rm eff} > N$ is not that common or the
-effect is small and capping at $N$ can be considered to be
+implied that $\widehat{S}_{\rm eff}$ was capped at $S$. As
+antithetic behavior $\widehat{S}_{\rm eff} > S$ is not that common or the
+effect is small and capping at $S$ can be considered to be
 pessimistic, this had negligible effect on any inference.
 However, it may have led to an underestimation of Stan's efficiency
 when compared to other packages performing MCMC sampling.
@@ -304,13 +311,13 @@ Rank normalization is commonly used, for example, in Spearman's rank
 correlation coefficient and to transform predictor values in
 epidemiology.
 
-1. Ranking: Replace each value $\theta_{ij}$ by its rank $r_{ij}$. Average
+1. Ranking: Replace each value $\theta^{(nm)}$ by its rank $r^{(nm)}$. Average
 rank for ties are used to conserve the number of unique values of discrete
 quantities. Ranks are computed jointly for all draws from all chains.
-2. Normalization: Normalize ranks by inverse normal transformation $z_{ij} =
-\phi^{-1}((r_{ij}-1/2)/N)$. 
+2. Normalization: Normalize ranks by inverse normal transformation $z^{(nm)} =
+\phi^{-1}((r^{(nm)}-1/2)/S)$. 
 
-For continuous variables and $N \rightarrow \infty$, the rank normalized values are normally distributed and rank normalization performs non-parametric transformation to normal distribution. Using normalized ranks instead of ranks directly, has the benefit that the behavior of $\widehat{R}$ and $\widehat{N}_{\rm eff}$ do not change for normally distributed $\theta$.
+For continuous variables and $S \rightarrow \infty$, the rank normalized values are normally distributed and rank normalization performs non-parametric transformation to normal distribution. Using normalized ranks instead of ranks directly, has the benefit that the behavior of $\widehat{R}$ and $\widehat{S}_{\rm eff}$ do not change for normally distributed $\theta$.
 
 ### Examples of rank normalization
 
@@ -378,7 +385,7 @@ plotranknorm(theta, n)
 ### Variation in ranks and ECDF
 
 In the above plots, the ECDF with respect to scaled rank and rank normalized $z$-values look all exatly same for all distributions. In *Split*-$\widehat{R}$ and effective sample size computations, we rank all draws jointly, but then compare ranks and ECDF of individual split chains. To illustrate the variation between chains, we draw 8 batches of 100 draws each from N(0,1):
-```{r, message=FALSE, cache=FALSE}
+```{r, message=FALSE}
 n<-100
 m<-8
 theta <- rnorm(n*m)
@@ -388,7 +395,7 @@ plotranknorm(theta, n, m)
 The variation in ECDF due to the variation ranks is now visible also in scale ranks and rank normalized z-values from different batches.
 
 The benefit of rank normalization is more obvious for non-normal distribution such as Cauchy:
-```{r, message=FALSE, cache=FALSE}
+```{r, message=FALSE}
 theta <- rcauchy(n*m)
 plotranknorm(theta, n, m)
 ```
@@ -396,11 +403,11 @@ plotranknorm(theta, n, m)
 Rank normalization makes the subsequent computations well defined and
 invariant under bijective transformations. This means that we get the
 same results, for example, if we use unconstrained or constrained
-parameters. 
+parameterisation in a model. 
 
 ## Rank normalized *Split*-$\widehat{R}$
 
-Rank normalized *Split*-$\widehat{R}$ is computed using the equations in [Section *Split*-$\widehat{R}$](#SplitRhat) by replacing parameter values $\theta_{ij}$ with rank normalized values $z_{ij}$.
+Rank normalized *Split*-$\widehat{R}$ is computed using the equations in [Section *Split*-$\widehat{R}$](#SplitRhat) by replacing parameter values $\theta^{(nm)}$ with rank normalized values $z^{(nm)}$.
 
 ## Rank normalized folded *split*-$\widehat{R}$
 
@@ -410,8 +417,12 @@ we propose to compute rank normalized *folded-split*-$\widehat{R}$
 using *folded* split chains by rank normalizing absolute deviations from
 median
 $$
-  {\rm abs}(\theta_{ij}-{\rm median}(\theta)).
+  {\rm abs}(\theta^{(nm)}-{\rm median}(\theta)).
 $$
+
+<!--
+Notation for median?
+-->
 
 To obtain a single conservative $\widehat{R}$ estimate, we propose to
 report the maximum of *rank-normalized-split*-$\widehat{R}$ and
@@ -425,14 +436,14 @@ effective sample size.  This estimate will be well defined even if the
 original distribution does not have finite mean and variance. It is
 not directly applicable to estimate the Monte Carlo error of the mean
 of the original values, but it will provide bijective transformation
-invariant estimate the efficiency of mixing of chains. For simplicity
+invariant estimate of the mizing efficiency of chains. For simplicity
 we propose to report relative efficiency values
 $$
-R_{\rm eff}=\textit{rank-normalized-split-}S_{\rm eff} / N,
+R_{\rm eff}=\textit{rank-normalized-split-}S_{\rm eff} / S,
 $$
 where $\textit{split-}S_{\rm eff}$ is computed using equations in
-[Section Effective sample size](#Neff) by replacing parameter values
-$\theta_{ij}$ with rank normalized values $z_{ij}$. For $\theta$ which
+[Section Effective sample size](#Seff) by replacing parameter values
+$\theta^{(nm)}$ with rank normalized values $z^{(nm)}$. For $\theta$ which
 have close to normal distribution the difference to using the original
 values is small. For $\theta$ which has a distribution far from
 normal, rank normalization can be seen as near optimal non-parametric
@@ -464,7 +475,7 @@ relative efficiency of such quantiles thus has high practical
 relevance in particular as we observe the relative efficiency for tail
 quantiles is often lower than for mean.  $\alpha$-quantile is
 $\theta^*$ for which $p(\theta < \theta^*) = \alpha$. This is not in a
-form of expectation, and thus $\widehat{R}$ and $\widehat{N}_{\rm
+form of expectation, and thus $\widehat{R}$ and $\widehat{S}_{\rm
 eff}$ equations are not directly applicable. Thus we first focus on
 relative efficiency of cumulative distribution function $p(\theta <
 \theta^*)$ for different values of $\theta^*$. For easier
@@ -473,19 +484,19 @@ $\theta^*$.
 
 For any $\theta^*$ ECDF gives an estimate of cumulative probability
 $$
-p(\theta<\theta^*) \approx \bar{I} = \frac{1}{N}\sum_{i=1}^N
-I(\theta<\theta^*),
+p(\theta<\theta^*) \approx \bar{I} = \frac{1}{S}\sum_{s=1}^S
+I(\theta^{(s)}<\theta^*),
 $$
-where $I(\theta<\theta^*)$ is the indicator function. The indicator
+where $I()$ is the indicator function. The indicator
 function transforms simulation draws to 0's and 1's, and thus the
 subsequent computations are bijectively invariant. For independent
-draws and $Y=\sum_{i=1}^N I(\theta<\theta^*)$, this estimate has ${\rm
-Beta}(Y+1, N - Y + 1)$ distribution. Thus we can easily examine
-variation of ECDF for any $\theta^*$ value from single chain. If $Y$
-is not very close to $1$ or $N$ and $N$ is large, we can use the
+draws and $Y=\sum_{s=1}^S I(\theta^{(s)}<\theta^*)$, this estimate has ${\rm
+Beta}(Y+1, S - Y + 1)$ distribution. Thus we can easily examine
+variation of ECDF for any $\theta^*$ value from a single chain. If $Y$
+is not very close to $1$ or $S$ and $S$ is large, we can use the
 variance of Beta distribution
 $$
-{\rm Var}[p(\theta<\theta^*)] = \frac{(Y+1)*(N-Y+1)}{(N+2)^2(N+3)}.
+{\rm Var}[p(\theta<\theta^*)] = \frac{(Y+1)*(S-Y+1)}{(S+2)^2(S+3)}.
 $$
 
 We illustrate uncertainty intervals of Beta distribution and normal approximation of ECDF for 100 draws from N(0,1)
@@ -506,23 +517,24 @@ plotranknorm(theta, n, m, interval=TRUE)
 ```
 
 The above plots illustrate that the normal approximation is accurate
-for practical purposes in MCMC diagnostics for most purposes. By using
+for practical purposes in MCMC diagnostics using indicator function
+for most purposes. By using
 the relative efficiency equations for several split chains and the
-indicator function $I(\theta<\theta^*)$, we can compute the relative
+indicator function $I(\theta^{(s)}<\theta^*)$, we can compute the relative
 efficiency for different values of $\theta^*$.  By computing relative
 efficiency for many quantiles, we can obtain local efficiency measures
 as demonstrated in the experiments.
 
-## Relative efficiency of quantiles
+## Relative efficiency of quantiles {#quantile_R_eff}
 
-Assuming the cumulative distribution function $F$ is continuous near
+Assuming the cumulative distribution function $F$ is continuous and smooth near
 an $\alpha$-quantile and we know $F$, we could use delta method to
 compute a variance estimate for $F_\theta^{-1}(\bar{I})$. Although we
-don't usually know $F$, delta method approach reveals that the the
+don't usually know $F$, delta method approach reveals that the
 variance of $\bar{I}$ is scaled by the (usually unknown) density
 $f(\theta^*)$, but the relative efficiency depends only on the
 relative efficiency of $\bar{I}$. Thus, we can use relative efficiency
-of ECDF (via the indicator function $I(\theta<\theta^*)$) also for the
+of ECDF (via the indicator function $I(\theta^{(s)}<\theta^*)$) also for the
 corresponding quantile estimates.
 
 ## Relative efficiency of median and MAD
@@ -545,16 +557,16 @@ for median of absolute deviations from the median of all draws. The
 absolute deviations from the median of all draws are same as
 previously defined for folded samples
 $$
-{\rm abs}(\theta_{ij}-{\rm median}(\theta)).
+{\rm abs}(\theta^{(nm)}-{\rm median}(\theta)).
 $$
 We see that the relative efficiency of MAD is obtained by using the
 same approach as for median (and other quantiles) but with the folded
 values used also used in
-*rank-normalized-folded-split*-$\widehat{N}_{\rm eff}$.
+*rank-normalized-folded-split*-$\widehat{S}_{\rm eff}$.
 
 Previously, Stan had reported $S_{\rm eff}$ only for the posterior
 mean, but we demonstrate that it is good to report the relative
-efficiency also for an estimation of the scale.
+efficiency also for the posterior scale.
 
 ## Monte Carlo error estimates for quantiles
 
@@ -576,12 +588,12 @@ two sigma points ($a=\bar{I}-{\rm sd}[\bar{I}]$, $b=\bar{I}+{\rm
 sd}[\bar{I}]$) based on the normal approximation.
 2. Find posterior draws with closest corresponding ranks. For example,
 in case of sigma points, find $r_a$ and $r_b$ which are closest to
-$aN$ and $bN$.
-3. Use the corresponding $\theta_i$ as draws from Monte Carlo error
+$aS$ and $bS$.
+3. Use the corresponding $\theta^{(s)}$ as draws from Monte Carlo error
 distribution or compute approximate standard error as ${\rm
 abs}(\theta_a-\theta_b)/2$.
 
-## Relative efficiency of small interval probability estimates
+## Relative efficiency of small interval probability estimates {#small_interval_R_eff}
 
 We can get more local relative efficiency estimate by considering
 small intervals. We propose to compute the relative efficiency for
@@ -641,7 +653,7 @@ In the code and figures the following abbreviations have been used
  - zfsreff = zfsneff / N
  - medsneff = median split effective sample size
     + estimates the efficiency of median
-    + approximated using efficiency for $p(x < \hat{Q}_{0.5})$
+    + approximated using efficiency for $p(\theta < \hat{Q}_{0.5})$
  - medsreff = medsneff / N
  - madsneff = mad split effective sample size
     + estimates the efficiency of median absolute deviation
@@ -672,9 +684,9 @@ Justifications for the change are:
   more stable than neff, and focus on the quantities we are actually 
   reporting.
 
-In summary outputs, we propose to eventually use Rhat to denote the new
+In summary outputs, we propose to eventually use `Rhat` to denote the new
 version. However, to make it more clear that rank-normalized efficiency 
-is different than standard efficiency, we could use the term 'R_eff' and 
+is different than standard efficiency, we could use the term `R_eff` and 
 display relative efficiency. The relative efficiency is also easier to 
 check for low values as we don't need to compare it to the total number 
 of draws.
@@ -696,7 +708,7 @@ of 1.01, as values larger than that are usually rounded in our summaries to 1.01
 
 ## Proposed additions to bayesplot
 
-The proposal is to add to bayesplot following
+The proposal is to add to `bayesplot` package the following
 
 - Rank plot
 - Relative efficiency of quantiles plot
@@ -704,7 +716,7 @@ The proposal is to add to bayesplot following
 
 # Experiments
 
-We demonstrated the proposed approached with several simulation studies.
+We demonstrate the proposed approached with several simulation studies.
 
 ## Independent draws from normal distribution with additional trend, shift or scaling
 
@@ -864,6 +876,11 @@ mcmc_hist_r_scale <- function(x, nbreaks = 50) {
   )
 }
 ```
+<!--
+add guidelines for uniformity as in
+https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html
+-->
+
 
 ```{r}
 mcmc_hist_r_scale(r)
@@ -877,7 +894,7 @@ Next we investigate the sensitivity to detect if one of the chains has
 not converged to the same distribution as the others but has lower
 marginal variance.
 
-```{r}
+```{r, cache=FALSE}
 conds <- expand.grid(
   iters = c(250, 1000, 4000), 
   scale = c(0, 0.25, 0.5, 0.75, 1),
@@ -910,7 +927,7 @@ ggplot(data=res, aes(y=zsRhat, x=scale)) +
 **Result:** Split-Rhat is not able to detect scale differences between chains.
 
 ```{r}
-ggplot(data=res, aes(y=fzsRhat, x=scale)) + 
+ggplot(data=res, aes(y=zfsRhat, x=scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
@@ -942,7 +959,7 @@ ggplot(data=res, aes(y=zsreff, x=scale)) +
 focuses on location differences between chains.
 
 ```{r}
-ggplot(data=res, aes(y=fzsreff, x=scale)) + 
+ggplot(data=res, aes(y=zfsreff, x=scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
@@ -973,9 +990,9 @@ Folded Rhat is $1.06$, but the rank plot clearly shows where the problem is.
 
 ## Cauchy: A distribution with infinite mean and variance
 
-The classic Rhat is based on calculating within and between chain
+The classic split-Rhat is based on calculating within and between chain
 variances. If the marginal distribution of a chain is such that
-the variance is not defined (i.e. infinite), the classic Rhat is not 
+the variance is not defined (i.e. infinite), the classic split-Rhat is not 
 well justified. In this section, we will use the Cauchy distribution 
 as an example of such distribution. Also in cases where
 mean and variance are finite, the distribution can be far from
@@ -1003,7 +1020,9 @@ Run the nominal model:
 fit_nom <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0)
 ```
 
-The diagnostics warn about very large number of transitions after
+Treedepth exceedence and Bayesian Fraction of Missing Information are
+dynamic HMC specific diagnostics [@betancourt2017conceptual]. We get
+warnings about very large number of transitions after
 warmup that exceeded the maximum treedepth, which is likely due to
 very long tails of the Cauchy distribution. All chains have low 
 estimated Bayesian fraction of missing information also indicating
@@ -1026,7 +1045,7 @@ which_min_eff <- which(res$zsreff == min(res$zsreff))
 plot_rhat <- function(res) {
   p1 <- ggplot(res, aes(x=par, y=sRhat)) + 
     geom_point() + 
-    ggtitle('Classic Split-Rhat') + 
+    ggtitle('Classic split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
     ylim(c(.99 ,1.26))
@@ -1040,7 +1059,7 @@ plot_rhat <- function(res) {
   
   p3 <- ggplot(res, aes(x=par, y=zfsRhat)) + 
     geom_point() + 
-    ggtitle('Folded rank split-Rhat') + 
+    ggtitle('Folded rank norm. split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
     ylim(c(.99,1.26))
@@ -1055,7 +1074,8 @@ plot_rhat(res)
 
 For one parameter, Rhats exceed the classic threshold of 1.1. Depending on the 
 Rhat estimate, a few others also exceed the threshold 1.01. The rank normalized
-split-Rhat have several values over 1.01. Please note that the classic Rhat is not well defined in this example. 
+split-Rhat have several values over 1.01. Please note that the classic
+split-Rhat is not well defined in this example.
 
 ```{r}
 plot_reff <- function(res) {
@@ -1065,35 +1085,35 @@ plot_reff <- function(res) {
   
   p1 <- ggplot(res, aes(x=par, y=reff)) + 
     geom_point() + 
-    ggtitle('Classic rel. efficiency (reff)') + 
+    ggtitle('Classic R_eff (reff)') + 
     geom_hline(yintercept = c(0,1)) +
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits) 
   
   p2 <- ggplot(res, aes(x=par, y=zsreff)) + 
     geom_point() + 
-    ggtitle('New rel. efficiency (zsreff)') + 
+    ggtitle('New Bulk-R_eff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
   p3 <- ggplot(res, aes(x=par, y=zfsreff)) + 
     geom_point() + 
-    ggtitle('Folded rel. efficiency (zfsreff)') + 
+    ggtitle('New Tail-R_eff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
   p4 <- ggplot(res, aes(x=par, y=medsreff)) + 
     geom_point() + 
-    ggtitle('Rel.eff. of median (medsreff)') + 
+    ggtitle('Median-R_eff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p5 <- ggplot(res, aes(x=1:50, y=madsreff)) + 
+  p5 <- ggplot(res, aes(x=par, y=madsreff)) + 
     geom_point() + 
-    ggtitle('Rel.eff. of mad (madsreff)') + 
+    ggtitle('MAD-R_eff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
@@ -1107,32 +1127,32 @@ plot_reff <- function(res) {
 plot_reff(res) 
 ```
 
-Both classic and rank normalized relative efficiency estimates have
-several near zero values, and the overall samples shouldn't be trusted.
+Both classic and new relative efficiency estimates have
+several near zero values, and the overall sample shouldn't be trusted.
 
 **Result:** Relative efficiency is more sensitive than (rank-normalized) 
 split-Rhat to detect problems of slow mixing.
 
-We also check the indicator function `I` and `lp__` and find out that
-the relative efficiency for `lp__` is worryingly low.
+We also check `lp__` and find out that
+the relative efficiency is worryingly low.
 
 ```{r}
 res <- monitor_simple(samp[, , 51:52]) 
-cat('I: r_eff = ', round(res['I','zsreff'], 2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'], 2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'], 2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'], 2), '\n')
 ```
 
 Next, we examine the relative efficiency in different parts of the
-posterior by computing the relative efficiency for 
-$p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ 
-is the empirical $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$ 
-varies in steps of $5%$.  Each interval contains $5%$ of the draws
-and the efficiency measures autocorrelation of an indicator function 
-which indicates when the values are inside the specific interval. 
-This gives us a local efficiency measure which is does not depend on 
-the shape of the distribution.
+posterior by computing the relative efficiency of small interval
+probability estimates (see [Section Relative efficiency of small
+interval probability estimates](#small_interval_R_eff)).  Each
+interval contains $1/k$ of the draws (e.g., with $k=20$).
+The small interval efficiency measures mixing of an indicator
+function which indicates when the values are inside the specific
+small interval.  This gives us a local efficiency measure which does not
+depend on the shape of the distribution.
 
-```{r plot_local_reff}
+```{r plot_local_reff, cahce=FALSE}
 plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
   delta <- 1 / nalpha
   alphas <- seq(0, 1 - delta, by = delta)
@@ -1156,7 +1176,8 @@ plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
     scale_y_continuous(
       breaks = seq(0, 1, by=0.25), 
       limits = c(0, 1.1)
-    )
+    ) +
+    labs(x='Quantile', y='R_eff')
 }
 ```
 
@@ -1164,20 +1185,17 @@ plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
 plot_local_reff(samp = samp, par = 1, nalpha = 20)
 ```
 
-We see that MCMC is less efficient in the tails.
+We see that the efficiency of MCMC is worryingly low in the tails
+(which is caused by slow mixing in long tails of Cauchy)..
 
 Alternative way to examine the relative efficiency in different parts
-of the posterior, is to compute relative efficiency for 
-$p(x < \hat{Q}_{\alpha})$, where $\hat{Q}_\alpha$ is the empirical
-$\alpha$-quantile and $\alpha \in (0.025,\ldots,0.975)$. This is
-related to the efficiency of quantile estimates. Each interval has
-specified proportion of draws, and the efficiency measures
-autocorrelation of an indicator function which indicates when the
-values are inside the specific interval. This gives us a local
-efficiency measure which is independent on the shape of the
-distribution.
+of the posterior, is to compute relative efficiency for quantiles (see
+[Section Relative efficiency of quantiles](#quantile_R_eff)). Each
+interval has specified proportion of draws, and the efficiency measures
+mixing of an indicator function which indicates when the
+values are inside the specific interval. 
 
-```{r plot_quantile_reff}
+```{r plot_quantile_reff, cahce=FALSE}
 plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
   delta <- 1 / nalpha
   alphas <- seq(delta, 1 - delta, by = delta)
@@ -1202,15 +1220,20 @@ plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
     scale_y_continuous(
       breaks = seq(0, ymax, by = 0.25), 
       limits = c(0, ymax)
-    )
+    ) +
+    labs(x='Quantile', y='R_eff')
 }
 ```
 
-```{r}
+```{r, cahce=FALSE}
 plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
 ```
 
-Rank plot visualisation of x[1], which has relative efficiency 
+We see that the efficiency of MCMC is worryingly low in the tails
+(which is caused by slow mixing in long tails of Cauchy).
+
+We can further analyze potential problems using rank plots.
+Rank plot visualisation of x[1], which has bulk relative efficiency 
 `r round(res$zsreff[1], 2)`.
 
 ```{r}
@@ -1220,7 +1243,7 @@ mcmc_hist_r_scale(samp[, , 1])
 The chains clearly have different rank plots.
 
 The rank plot visualisation of x[`r which_min_eff`], which has a 
-relative efficiency of `r round(min(res$zsreff), 2)`, 
+bulk relative efficiency of `r round(min(res$zsreff), 2)`, 
 also indicates clear problems with mixing.
 
 ```{r}
@@ -1250,17 +1273,13 @@ res <- monitor_simple(samp[, , 1:50])
 which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
-Treedepth exceedence and Bayesian Fraction of Missing Information are
-dynamic HMC specific diagnostics [@betancourt2017conceptual]. Let's
-see what generic Split-Rhat and relative efficiency can detect.
-
 We check the diagnostics for all x's.
 
 ```{r}
 plot_rhat(res)
 ```
 
-All Rhats are below $1.1$, but many are over $1.01$. Classic Rhat has more
+All Rhats are below $1.1$, but many are over $1.01$. Classic split-Rhat has more
 variation than the rank normalized (and the former is not well
 defined). The folded rank normalized Rhat shows that there is still
 more variation in scale than location between different chains.
@@ -1269,45 +1288,43 @@ more variation in scale than location between different chains.
 plot_reff(res) 
 ```
 
-Some classic relative efficiencies (reffs) are close to zero. If we
+Some classic R_eff's are close to zero. If we
 wouldn't realize that the variance is infinite, we might try to run
 longer chains, but in case of infinite variance, zero efficiency is
 the truth and longer chains won't help. However other quantities can
 be well defined, and that's why it is useful also to look at the
 rank normalized version as a generic transformation with finite mean
-and variance. The smallest rank-normalized r_eff are around $0.25$,
-which is not that bad. There is still large variation between
-parameters although they all have the same distribution.
+and variance. The smallest bulk-$R_{\rm eff}$ are around $0.25$,
+which is not that bad. The smallest median-$R_{\rm eff}$'s are larger
+than $0.5$, that is we are able to estimate the median
+efficiently. However, many tail-$R_{\rm eff}$'s are small indicating
+problmes for estimating scale.		
 
 **Result:** Rank normalized relative efficiency is more stable than
 classic relative efficiency, which is not well defined for Cauchy.
 
-We check the indicator function `I` and `lp__`. Although increasing 
-`max_treedepth` improved diagnostics for `x`, the efficiency for 
-`I` and `lp__` didn't change.
+**Result:** it is useful to look at both bulk and tail relative efficiencies.
+
+We check also `lp__`. Although increasing `max_treedepth` improved
+efficiency for bulk of `x`, the efficiency for `lp__` didn't change.
 
 ```{r}
 res <- monitor_simple(samp[, , 51:52])
-cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, 
-where $\hat{Q}_\alpha$ is $\alpha$-quantile and 
-$\alpha \in (0,0.05,\ldots,0.95)$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 plot_local_reff(samp = samp, par = 1, nalpha = 20)
 ```
 
-Increasing `max_treedepth` improved the efficiency slightly in the tails.
+It seems that increasing `max_treedepth` has not much improved the efficiency in the tails.
 
-We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(x < \hat{Q}_{\alpha})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
-and $\alpha \in (0,0.025,\ldots,0.975)$ in steps of $0.025$.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
@@ -1321,7 +1338,7 @@ xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
 
-The rank plot visualisation of `lp__`, which has relative efficiency `round(monitor_simple(samp[,, "lp__"])$zsreff)`, doesn't look so good either.
+The rank plot visualisation of `lp__`, which has relative efficiency `r round(monitor_simple(samp[,, "lp__"])$zsreff)`, doesn't look so good either.
 
 ```{r}
 mcmc_hist_r_scale(samp[, , "lp__"])
@@ -1349,46 +1366,44 @@ res <- monitor_simple(samp[, , 1:50])
 which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
-Treedepth exceedence and Bayesian Fraction of Missing Information are
-dynamic HMC specific diagnostics [@betancourt2017conceptual]. Let's
-see what generic Split-Rhat and relative efficiency can detect. Check
-the diagnostics for all x's.
+Check the diagnostics for all x's.
 
 ```{r}
 plot_rhat(res)
 ```
 
-All Rhats are below $1.01$. Classic Rhat has more variation than the
+All Rhats are below $1.01$. Classic split-Rhat has more variation than the
 rank normalized Rhat (but the former is not well defined).
 
 ```{r, warning=FALSE}
 plot_reff(res) 
 ```
 
-Most classic relative efficiencies (reffs) are close to zero. If we
-wouldn't realize that the variance is infinite, we might try to run
-longer chains, but in case of infinite variance zero is the true value
-and longer chains don't help. However other quantities can be well
-defined, and that's why it can be useful also to look at the rank
-normalized version as a generic transformation with finite mean and
-variance. The rank-normalized r_eff's start to concentrate around 0.6,
-which is quite good. There is still some variation between parameters.
+Most classic R_eff's are close to zero. Running longer chains just made most classic R_eff's smaller.
+
+The smallest bulk-$R_{\rm eff}$ are around $0.25$, which is not that
+bad. The smallest median-$R_{\rm eff}$'s are larger than $0.75$, that
+is we are able to estimate the median efficiently. However, many
+tail-$R_{\rm eff}$'s are small indicating problmes for estimating
+scale.
 
 **Result:** Rank normalized relative efficiency is more stable than
 classic relative efficiency, which is not well defined for Cauchy.
 
-We check the indicator function `I` and `lp__`:
+**Result:** it is useful to look at both bulk and tail relative efficiencies.
+
+We check also `lp__`. Although increasing the number of iterations improved
+efficiency for bulk of `x`, the efficiency for `lp__` didn't change.
+
 ```{r}
 res <- monitor_simple(samp[, , 51:52])
-cat('I: r_eff = ', round(res['I','reff'],2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha+0.05})$, where 
-$\hat{Q}_\alpha$ is $\alpha$-quantile and 
-$\alpha \in (0,0.05,\ldots,0.95)$ in steps of $0.05$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 plot_local_reff(samp = samp, par = 1, nalpha = 20)
@@ -1402,8 +1417,9 @@ finer resolution for the local efficiency estimates.
 plot_local_reff(samp = samp, par = 1, nalpha = 100)
 ```
 
-The efficiency far in the tails is worryingly low. We see similar problems 
-in the alternative local relative efficiency.
+The efficiency far in the tails is worryingly low. This was more
+difficult to see previously with less draws from the tails. We see
+similar problems in the plot of relative efficiency of quantiles.
 
 ```{r}
 plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
@@ -1415,7 +1431,9 @@ xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
 
-Still problems at the edges.
+Increasing the number of iterations couldn't remove the mixing
+problems at the edges. The mixing problem is inherent to Cauchy and
+nominal parameterization.
 
 The rank plot visualisation of `lp__`, which has relative efficiency 
 `r round(res["lp__", "zsreff"], 2)`, looks as follows:
@@ -1459,30 +1477,29 @@ There are no warnings, and the sampling is much faster.
 plot_rhat(res)
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the
+All Rhats are below 1.01. Classic split-Rhat's look also good even if the
 classic is not well defined for Cauchy distribution.
 
 ```{r, warning=FALSE}
 plot_reff(res) 
 ```
 
-**Result:** Rank normalized r_eff's have less variation than classic 
+**Result:** Rank normalized R_eff's have less variation than classic 
 one which is not well defined for Cauchy.
 
-We check the indicator function `I` and `lp__`:
+We check `lp__`:
 ```{r}
 res <- monitor_simple(samp[, , 151:152])
-cat('I: r_eff = ', round(res['I','zsreff'], 2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'], 2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
-The relative efficiency for these are also much better than with
+The relative efficiencies for `lp__` are also much better than with
 nominal parameterization.
 
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(\hat{Q}_\alpha \le x < \hat{Q}_{\alpha + 0.05})$, where 
-$\hat{Q}_\alpha$ is $\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 samp <- as.array(fit_alt1)
@@ -1491,49 +1508,38 @@ plot_local_reff(samp = samp, par = 101, nalpha = 20)
 
 The relative efficiency is good in all parts of the posterior.
 
-We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(x < \hat{Q}_{\alpha})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
-and $\alpha \in (0,0.025,\ldots,0.975)$.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 samp <- as.array(fit_alt1)
 plot_quantile_reff(samp = samp, par = 101, nalpha = 40)
 ```
 
-```{r}
+We compare mean relative efficiencies of underlying parameters in the new
+parameterization and the actual x we are interested in.
+
+```{r, cahce=FALSE}
 res <- monitor_simple(samp[, , 101:150])
-which_min_eff <- which(res$zsreff == min(res$zsreff))
 res1 <- monitor_simple(samp[, , 1:50])
 res2 <- monitor_simple(samp[, , 51:100])
 ```
 
 ```{r}
-cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']), 2), '\n')
-cat('Mean fr_eff for xs = ' , round(mean(res[,'fzsreff']), 2), '\n')
-cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']), 2), '\n')
-cat('Mean r_eff for x_bs = ' , round(mean(res2[,'zsreff']), 2), '\n')
+cat('Mean bulk-R_eff for x\'s = ' , round(mean(res[,'zsreff']), 2), '\n')
+cat('Mean tail-R_eff for x\'s = ' , round(mean(res[,'zfsreff']), 2), '\n')
+cat('Mean bulk-R_eff for x_a\'s = ' , round(mean(res1[,'zsreff']), 2), '\n')
+cat('Mean bulk-R_eff for x_b\'s = ' , round(mean(res2[,'zsreff']), 2), '\n')
 ```
 
 **Result:** We see that the relative efficiency of the interesting $x$
-can be different from the relative efficiency of the parameters that
-used to compute it. Also r_eff we are computing is for rank
-normalized and to compute Monte Carlo errors, the final target
-function should be taken into account, but we just want to avoid the
-complication of the potentially non-existing moments at this point,
-and come back later in other paper how to use Pareto diagnostic to
-check whether necessary moments exist to compute the desired
-expectations and their Monte Carlo errors.
-
-<!--
-The above result sections is hard to read and understand.
-Can we break this down a little bit?
--->
+can be different from the relative efficiency of the parameters $x_a$
+and $x_b$ that we use to compute it.
 
 Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency `r round(min(res$zsreff), 2)` among x's.
 
 ```{r}
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
@@ -1545,8 +1551,7 @@ Rank plot visualisation of `lp__`, which has a relative efficiency of `r round(m
 mcmc_hist_r_scale(samp[, , "lp__"])
 ```
 
-Looks better than for the nominal parameterization. It would be useful
-to have the reference plotted.
+Looks better than for the nominal parameterization. 
 
 ### Another alternative parameterization of the Cauchy distribution
 
@@ -1574,7 +1579,7 @@ res <- monitor_simple(samp[, , 51:100])
 plot_rhat(res)
 ```
 
-All Rhats except some folded Rhats are below 1.01. Classic Rhat's look
+All Rhats except some folded Rhats are below 1.01. Classic split-Rhat's look
 also good even if it is not well defined for the Cauchy distribution.
 
 ```{r, warning=FALSE}
@@ -1583,35 +1588,30 @@ plot_reff(res)
 
 **Result:** Rank normalized relative efficiencies have less variation
 than classic ones which is not well defined for Cauchy. 
-Rank normalized relative efficiencies are slightly larger than 1, 
+Bulk-$R_{\rm eff}$ and median-$R_{\rm eff}$ are slightly larger than 1, 
 which is possible for antithetic Markov chains which have negative 
 correlation for odd lags.
 
-We check the indicator function `I` and `lp__`:
+We check `lp__`:
 ```{r}
 res <- monitor_simple(samp[, , 101:102])
-cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
 The relative efficiency for these are also much better than with
 the nominal parameterization.
 
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(\hat{Q}_\alpha \leq x < \hat{Q}_{\alpha+0.05})$, where 
-$\hat{Q}_\alpha$ is $\alpha$-quantile and 
-$\alpha \in (0,0.05,\ldots,0.95)$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 samp <- as.array(fit_alt3)
 plot_local_reff(samp = samp, par = 51, nalpha = 20)
 ```
 
-We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(x < \hat{Q}_{\alpha})$, where $\hat{Q}_\alpha$ is 
-$\alpha$-quantile and $\alpha \in (0,0.025,\ldots,0.975)$.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 samp <- as.array(fit_alt3)
@@ -1622,24 +1622,24 @@ The relative efficiency in tails is worse than for the first
 alternative parameterization, although it's still better than for the
 nominal model.
 
+We compare mean relative efficiency of underlying parameter in the new
+parameterization and the actual x we are interested in.
+
 ```{r}
 res <- monitor_simple(samp[, , 51:100])
 which_min_eff <- which(res$zsreff == min(res$zsreff))
 res1 <- monitor_simple(samp[, , 1:50])
-cat('Mean r_eff for xs = ' , round(mean(res[,'zsreff']),2), '\n')
-cat('Mean fr_eff for xs = ' , round(mean(res[,'zfsreff']),2), '\n')
-cat('Mean r_eff for x_as = ' , round(mean(res1[,'zsreff']),2), '\n')
+cat('Mean bulk-R_eff for x\'s = ' , round(mean(res[,'zsreff']),2), '\n')
+cat('Mean tail-R_eff for x\'s = ' , round(mean(res[,'zfsreff']),2), '\n')
+cat('Mean bulk-R_eff for x_tilde\'s = ' , round(mean(res1[,'zsreff']),2), '\n')
 ```
 
-**Result:** When the transformation is univariate and bijective, the
-rank normalized Rhat and r_eff are transformation invariant.
+**Result:** When the transformation is univariate and bijective (`x =
+tan(pi() * (x_tilde - 0.5))`), the rank normalized Rhat and R_eff are
+transformation invariant.
 
 Naturally when computing the desired expectations, the final target
-function should be taken into account, but we just want to avoid the
-complication of the potentially non-existing moments at this point,
-and come back later in other paper how to use Pareto diagnostic to
-check whether necessary moments exist to compute the desired
-expectations and their Monte Carlo errors.
+function should be taken into account.
 
 Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency of `r round( min(res$zsreff), 2)` among x's.
@@ -1688,52 +1688,47 @@ res <- monitor_simple(samp[, , 1:50])
 plot_rhat(res) 
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the
+All Rhats are below 1.01. Classic split-Rhat's look also good even if the
 classic is not well defined for half-Cauchy distribution.
 
 ```{r, warning=FALSE}
 plot_reff(res)  
 ```
 
-**Result:** Rank normalized r_eff's have less variation than classic
-one which is not well defined for Cauchy. Rank normalized r_eff's
-are much larger than 1, which is possible for antithetic Markov
-chains which have negative correlation for odd lags.
+**Result:** Rank normalized R_eff's have less variation than classic
+one which is not well defined for Cauchy.
+Bulk-$R_{\rm eff}$ and median-$R_{\rm eff}$ are larger than 1, 
+which is possible for antithetic Markov chains which have negative 
+correlation for odd lags.
 
 Due to constraint `<lower=0>`, the sampling was made in `log(x)` space,
 and we can also check the performance in that space.
-```{r}
-res <- monitor_simple(samp[, , 1:50])
+```{r, cache=FALSE}
+res <- monitor_simple(log(samp[, , 1:50]))
 ```
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, cache=FALSE}
 plot_reff(res) 
 ```
 
-$log(x)$ is quite close to Gaussian, and thus classic r_eff is also
-close to rank normalized r_eff which is exactly same as for $x$ as the
+$\log(x)$ is quite close to Gaussian, and thus classic R_eff is also
+close to rank normalized R_eff which is exactly same as for $x$ as the
 rank normalized version is invariant to bijective transformations.
 
 **Result:** Rank normalized relative efficiency is close to classic 
 relative efficiency for transformations which make the distribution 
 close to Gaussian.
 
-We check the indicator function `I` and `lp__`:
+We check `lp__`:
 ```{r}
 res <- monitor_simple(samp[, , 51:52])
-which_min_eff <- which(res$zsreff == min(res$zsreff))
-cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
-**Result:** Relative efficiency for $p(x_1 < 1)$ is larger than 1. 
-This is possible for antithetic Markov chains, which have negative
-correlation for odd lags.
-
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
-\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
-$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 samp <- as.array(fit_half_nom)
@@ -1742,10 +1737,7 @@ plot_local_reff(samp = samp, par = 1, nalpha = 20)
 
 The relative efficiency is good overall, with only a small dip in tails.
 
-We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for 
-$p(x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is 
-$\alpha$-quantile and $\alpha \in (0,0.025,\ldots,0.975)$.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 samp <- as.array(fit_half_nom)
@@ -1755,11 +1747,12 @@ plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
 Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency 1.0 among x's.
 ```{r}
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
 
-Looks like there are differences in scale of chains.
+Nothing special.
 
 Rank plot visualisation of `lp__`, which has relative efficiency 0.33.
 ```{r}
@@ -1792,40 +1785,39 @@ res <- monitor_simple(samp[, , 101:150])
 plot_rhat(res)
 ```
 
-All Rhats are below 1.01. Classic Rhat's look also good even if the
+All Rhats are below 1.01. Classic split-Rhat's look also good even if the
 classic is not well defined for half-Cauchy distribution.
 
 ```{r, warning=FALSE}
 plot_reff(res) 
 ```
 
-**Result:** Rank normalized relative efficiencies have less variation 
-than classic ones which is not well defined for Cauchy. 
-Based on rank normalized relative efficiencies the alternative 
-parameterization has much lower efficiency than the nominal 
-parameterization with constraint `<lower=0>`.
+**Result:** Rank normalized relative efficiencies have less variation
+than classic ones which is not well defined for Cauchy.  Based on
+bulk-$R_{\rm eff}$ and median-$R_{\rm eff}$ the efficency for central
+quantities is much lower, but based on tail- $R_{\rm eff}$ and
+MAD-$R_{\rm eff}$ the efficency in tails is slightly better. We
+also see that parameterization which is good for Cauchy is not
+necessary good for half-Cauchy as constraint `<lower=0>` adds
+additional change in the parameterization.
 
-We check the indicator function `I` and `lp__`:
+We check `lp__`:
 ```{r}
 res <- monitor_simple(samp[, , 151:152])
-cat('I: r_eff = ', round(res['I','zsreff'],2), '\n')
-cat('lp__: r_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'],2), '\n')
+cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'],2), '\n')
 ```
 
 We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for $p(\hat{Q}_\alpha
-\le x < \hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is
-$\alpha$-quantile and $\alpha \in (0,0.05,\ldots,0.95)$.
+posterior by computing the relative efficiency of small interval
+probability estimates.
 
 ```{r}
 samp <- as.array(fit_half_reparam)
 plot_local_reff(samp = samp, par = 101, nalpha = 20)
 ```
 
-We examine the relative efficiency in different parts of the
-posterior, by computing the relative efficiency for $p(x <
-\hat{Q}_{\alpha+0.05})$, where $\hat{Q}_\alpha$ is $\alpha$-quantile
-and $\alpha \in (0,0.025,\ldots,0.975)$.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 samp <- as.array(fit_half_reparam)
@@ -1841,8 +1833,8 @@ efficiency 0.30 among `x`'s.
 mcmc_hist_r_scale(samp[, , "x[15]"])
 ```
 
-The rank plot is different from uniform, which is expected with lower
-relative efficiency, but would require a reference.
+The rank plots seem to be different from uniform, which is expected
+with lower relative efficiency.
 
 Rank plot visualisation of `lp__`, which has relative efficiency 0.24.
 ```{r}
@@ -1878,7 +1870,7 @@ We do observe divergent transitions, which is sensitive diagnostic for
 this model and we observer also low BFMI, but let's assume we were
 investigating a MCMC algorithm without such diagnostic.
 
-```{r}
+```{r, cache=FALSE}
 sel <- c(
   'sRhat', 'zsRhat', 'zfsRhat', 'reff',
   'zsreff', 'zfsreff', 'medsreff', 'madsreff'
@@ -1887,30 +1879,32 @@ res <- monitor_simple(fit_cp)
 round(res[, sel], 2)
 ```
 
-Some rank-normalized split-Rhats are larger than 1.01. Relative
-efficiencies for tau and lp__ are less than 10%, which is worry-some
+Some rank-normalized split-Rhats are larger than 1.01. Bulk-$R_{\rm
+eff}$ for `tau` and `lp__` are less than 10%, which is worryingly low
 and longer chains should be run.
 
-We examine the relative efficiency of probabilities between quantiles
-(0, 0.05, ..., 1) for `tau`.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 
 ```{r}
 samp <- as.array(fit_cp)
 plot_local_reff(samp = samp, par = "tau", nalpha = 20)
 ```
 
-We see that MCMC has difficulties in exploring small tau values. As
-the efficiency for estimating small tau values is practically zero, we
+We see that MCMC has difficulties in exploring small `tau` values. As
+the efficiency for estimating small `tau` values is practically zero, we
 may assume that we may miss substantial amount of posterior mass and
 get biased estimates.
 
-We examine the relative efficiency of cumulative probabilities below
-quantiles $(0.025, ..., 0.975)$ for `tau`.
+We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
 samp <- as.array(fit_cp)
 plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
 ```
+
+Most of the quantile estimates have worryingly low relative efficiency.
 
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.05 among parameters.
@@ -1930,7 +1924,7 @@ We observe clear problems.
 
 #### Centered parameterization with longer chains
 
-Low r_eff can be sometimes compensated with longer chains. Let's check
+Low R_eff can be sometimes compensated with longer chains. Let's check
 10 times longer chain.
 
 ```{r fit_cp2, cache=TRUE, comment=NA, results='hide'}
@@ -1945,13 +1939,14 @@ res <- monitor_simple(fit_cp2)
 round(res[, sel], 2)
 ```
 
-Some rank-normalized split-Rhats are still larger than 1.01. Relative
-efficiencies for tau and `lp__` are around 1%. A drop in the relative
+Some rank-normalized split-Rhats are still larger than 1.01. Bulk-$R_{\rm
+eff}$ for `tau` and `lp__` are around 1%. A drop in the relative
 efficiency when increasing the number of iterations indicates serious
 problems in mixing.
 
-We examine the relative efficiency of probabilities between quantiles
-$(0, 0.05, ..., 1)$ for `tau`.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 
 ```{r}
 samp <- as.array(fit_cp2)
@@ -1963,28 +1958,32 @@ the efficiency for estimating small `tau` values is practically zero,
 we may assume that we may miss substantial amount of posterior mass and
 get biased estimates.
 
-We examine the relative efficiency of cumulative probabilities below
-quantiles $(0.01, ..., 0.99)$ for `tau`.
-
+We examine also the relative efficiency of different quantile estimates.
 ```{r}
 samp <- as.array(fit_cp2)
 plot_quantile_reff(samp = samp, par = 2, nalpha = 100)
 ```
 
-We examine also other parameters, like `mu` in the following plot.
+Most of the quantile estimates have worryingly low relative efficiency
+and many practically zero efficiency indicating clear failure in
+mixing.
+
+We examine also small probability interval efficiency for `mu` in the following plot.
 ```{r}
 samp <- as.array(fit_cp2)
 plot_local_reff(samp = samp, par = 1, nalpha = 50)
 ```
 
 There are gaps of poor efficiency which indicates sticking of MCMC,
-but the sticking doesn't occur for any specific range of values of `mu`.
+but the sticking doesn't occur for any specific range of values of `mu` as for `tau`.
 
-We examine also other parameters, like `mu` in the following plot.
+We examine also the relative efficiency of different quantiles of `mu`
 ```{r}
 samp <- as.array(fit_cp2)
 plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
 ```
+
+We see clear failure in mixing.
 
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.01 among parameters.
@@ -1992,14 +1991,14 @@ efficiency 0.01 among parameters.
 mcmc_hist_r_scale(samp[, , "tau"])
 ```
 
-We observe clear problems to sample small values of tau.
+We observe clear problems to sample small values of `tau` and sticking of the 4th chain.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.01.
 ```{r}
 mcmc_hist_r_scale(samp[, , "lp__"])
 ```
 
-We observe clear problems sampling different energy levels.
+We observe clear problems sampling different energy levels, which are connected to values of `tau`.
 
 #### Centered parameterization very long chains
 
@@ -2016,42 +2015,47 @@ res <- monitor_simple(fit_cp3)
 round(res[, sel], 2)
 ```
 
-Some rank-normalized split-Rhats are still larger than 1.01. Relative
-efficiencies for tau and lp__ are around 0% and relative efficiencies
-for other parameters are also getting smaller. Drop in the relative
-efficiency when the the sample size was increased indicates serious
+Some rank-normalized split-Rhats are still larger than 1.01. Bulk-$R_{\rm
+eff}$ for `tau` and `lp__` are around 0% and relative efficiencies
+for other parameters are also very small. Drop in the relative
+efficiency when the the sample size is increased indicates serious
 problems in mixing.
 
-We examine the relative efficiency of probabilities between quantiles
-$(0, 0.05, ..., 1)$ for tau.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 ```{r}
 samp <- as.array(fit_cp3)
 plot_local_reff(samp = samp, par = 2, nalpha = 100)
 ```
 
-We see that MCMC has difficulties in exploring small tau values. As
-the efficiency for estimating small tau values is practically zero, we
+We see that MCMC has difficulties in exploring small `tau` values. As
+the efficiency for estimating small `tau` values is practically zero, we
 may assume that we may miss substantial amount of posterior mass and
 get biased estimates. It is good to note that the low efficiency for
-small tau values is due to too large step size, and the low efficiency
+small `tau` values is due to too large step size, and the low efficiency
 for large tau values is partially due to too small step size, but even
 more importantly due to the random walk in energy space.
 
-We examine the relative efficiency of cumulative probabilities below
-quantiles (0.01, ..., 0.99) for tau.
+We examine also the relative efficiency of different quantile estimates.
 ```{r}
 samp <- as.array(fit_cp3)
 plot_quantile_reff(samp = samp, par = 2, nalpha = 100)
 ```
 
-Rank plot visualisation of tau, which has the smallest relative
+Most of the quantile estimates have worryingly low relative efficiency
+and many practically zero efficiency indicating clear failure in
+mixing.
+
+Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.00 among parameters.
 ```{r}
 mcmc_hist_r_scale(samp[, , 2])
 ```
 
-We observe clear problems to sample small values of tau and even with 100000
-draws per chain, the plots don't get crowded as traceplots would.
+We observe clear problems to sample small values of tau.  Even with
+100000 draws per chain, the plots don't get crowded as traceplots
+would, and sticking of chains is easy to see.
 
 Rank plot visualisation of lp__, which has relative
 efficiency 0.01.
@@ -2059,11 +2063,8 @@ efficiency 0.01.
 mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
 ```
 
-We observe clear problems sampling different energy levels, and
-the low efficiency for lp__ comes just from slow random walk
-(autocorrelation for chains 1 and 2 goes to zero after 1000 lags, and
-for chains 3 and 4 after 5000 lags).
-
+We observe clear problems sampling different energy levels and
+sticking in all chains.
 
 ### Non-centered Eight Schools model
 
@@ -2084,8 +2085,7 @@ fit_ncp <- stan(
 ```
 
 We still observe some divergent transitions with the default
-adapt_delta and no divergences with adapt_delta=0.95. Let's analyze
-both samples.
+`adapt_delta=0.8`. Let's analyze the sample.
 
 ```{r}
 res <- monitor_simple(fit_ncp)
@@ -2094,24 +2094,26 @@ round(res[, sel], 2)
 
 All Rhats are close to 1, and relative efficiencies are good.
 
-We examine the relative efficiency of probabilities between quantiles
-$(0, 0.05, ..., 1)$ for tau.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 ```{r}
 samp <- as.array(fit_ncp)
 plot_local_reff(samp = samp, par = 2, nalpha = 20)
 ```
 
-Small tau values are still more difficult to explore, but the relative
+Small `tau` values are still more difficult to explore, but the relative
 efficiency is in a good range.
 
-We examine the relative efficiency of probabilities below quantiles
-(0.025, ..., 0.975) for tau.
+We examine also the relative efficiency of different quantile estimates.
 ```{r}
 samp <- as.array(fit_ncp)
 plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
 ```
 
-Rank plot visualisation of tau, which has the smallest relative
+Small quantile estimates have lower but still useful efficiencies.
+
+Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.57 among parameters.
 
 ```{r}
@@ -2148,14 +2150,15 @@ round(res[, sel], 2)
 All Rhats are close to 1, and relative efficiencies are good and
 slightly better than with the default `adapt_delta`.
 
-We examine the relative efficiency of probabilities between quantiles
-$(0, 0.05, ..., 1)$ for `tau`.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 ```{r}
 samp <- as.array(fit_ncp2)
 plot_local_reff(samp = samp, par = 2, nalpha = 20)
 ```
 
-Small tau values are still more difficult to explore, but the relative
+Small `tau` values are still more difficult to explore, but the relative
 efficiency is in a good range.
 
 Check with a finer resolution
@@ -2167,8 +2170,7 @@ plot_local_reff(samp = samp, par = 2, nalpha = 50)
 Also with a finer resolution the efficiency of MCMC is good for
 different values of tau.
 
-We examine the relative efficiency of probabilities below quantiles
-$(0.025, ..., 0.975)$ for `tau`.
+We examine also the relative efficiency of different quantile estimates.
 ```{r}
 samp <- as.array(fit_ncp2)
 plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
@@ -2180,14 +2182,14 @@ efficiency 0.62 among parameters.
 mcmc_hist_r_scale(samp[, , 2])
 ```
 
-Higher adapt_delta seems to have improved sampling of small values.
+Higher `adapt_delta` value seems to have improved sampling of small values.
 
 Rank plot visualisation of `lp__`, which has relative efficiency 0.44.
 ```{r}
 mcmc_hist_r_scale(samp[, , 19])
 ```
 
-We observe clear problems sampling different energy levels.
+Seems quite ok.
 
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
 
@@ -2206,13 +2208,13 @@ res <- monitor_simple(fit_ncp3)
 round(res[, sel], 2)
 ```
 
-All Rhats are close to 1, and relative efficiencies are good and
-slightly better than with the default adapt_delta. Relative efficiency
-is similar as for shorter chain, which means that running longer
+All Rhats are close to 1, and relative efficiencies are good. Relative efficiencies
+are similar as for shorter chain, which means that running longer
 chains is giving us higher effective sample size.
 
-We examine the relative efficiency of probabilities between quantiles
-$(0, 0.05, ..., 1)$ for `tau`.
+We examine the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `tau`.
 ```{r}
 samp <- as.array(fit_ncp3)
 plot_local_reff(samp = samp, par = "tau", nalpha = 100)
@@ -2221,8 +2223,7 @@ plot_local_reff(samp = samp, par = "tau", nalpha = 100)
 Small `tau` values are still more difficult to explore, but the relative
 efficiency is in a good range.
 
-We examine the relative efficiency of probabilities below quantiles
-$(0.01, ..., 0.99)$ for `tau`.
+We examine also the relative efficiency of different quantile estimates.
 ```{r}
 samp <- as.array(fit_ncp2)
 plot_quantile_reff(samp = samp, par = "tau", nalpha = 100)
@@ -2234,14 +2235,14 @@ efficiency of `r round(monitor_simple(samp[, , "tau"])$zsreff, 2)` among paramet
 mcmc_hist_r_scale(samp[, , "tau"])
 ```
 
-Higher adapt_delta seems to have improved sampling of small values.
+Nothing special.
 
 Rank plot visualisation of `lp__`, which has a relative efficiency of `r round(monitor_simple(samp[, , "lp__"])$zsreff, 2)`.
 ```{r}
 mcmc_hist_r_scale(samp[, , "lp__"])
 ```
 
-We observe clear problems sampling different energy levels.
+Nothing special.
 
 ## Dynamic HMC and effective sample size
 
@@ -2249,6 +2250,8 @@ We have already seen that the relative efficiency of dynamic can be
 higher than with independent draws. The next example illustrates
 interesting relative efficiency phenomena due to properties of the
 dynamic HMC algorithms.
+
+We sample from a simple 16-dimensional unit normal model.
 
 ```{r}
 writeLines(readLines("normal.stan"))
@@ -2267,33 +2270,38 @@ res <- monitor_simple(samp)
 round(res[, sel], 2)
 ```
 
-The relative efficiency for all x is larger than 
-`r round(min(res[1:16, "zsreff"]), 2)`. 
-The relative efficiency for `lp__` is however only 
-`r round(res["lp__", "zsreff"], 2)`. If we take a look at all
-the Stan examples in this notebook, we see that the relative efficiency 
+Bulk-$R_{\rm eff}$ for all $x$ is larger than `r round(min(res[1:16,
+"zsreff"]), 2)`.  However tail-$R_{\rm eff}$ for all $x$ is less than
+`r round(max(res[1:16, "zfsreff"]), 2)`, and bulk-$R_{\rm eff}$ for
+`lp__` is only `r round(res["lp__", "zsreff"], 2)`.  If we take a look
+at all the Stan examples in this notebook, we see that the bulk-$R_{\rm eff}$
 for `lp__` is always below 0.5. `lp__` correlates strongly with the total
 energy in HMC, and that total energy is sampled using random walk
 proposal once per iteration and thus it's likely that `lp__` has some
 random walk behavior leading to autocorrelation and relative
 efficiency below 1. On the other hand, No-U-Turn behavior and sampling
 from the trajectory may make the Markov chain to be antithetic with
-negative odd lag correlation and relative efficiency higher than 1
-for some of its parameters-
+negative odd lag correlation and the bulk relative efficiency higher than 1
+for some parameters.
 
-Let's check the local relative efficiency.
+Let's check the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `x[1]`.
 ```{r}
 plot_local_reff(samp = samp, par = 1, nalpha = 100)
 ```
 
 The relative efficiency for probability estimate for a small interval
 is close to 1 with a slight drop in the tails. This is a good result,
-but far from the relative efficiency for mean estimate.
+but far from the relative efficiency for the bulk, mean, and median estimates.
 
-Let's check the relative efficiency of cumulative probabilities.
+Let's check the relative efficiency of quantiles.
 ```{r}
 plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
 ```
+
+Central quantile estimates have higher relative efficiency than tail
+quantile estimates.
 
 The total energy of HMC should affect how far in the tails a chain in
 one iteration can go. Fat tails of the target have high energy, and
@@ -2306,13 +2314,15 @@ res <- monitor_simple(samp)
 round(res[, sel], 2)
 ```
 
-Mean of the relative efficiencies for $x_j^2$ is 
+Mean of bulk-$R_{\rm eff}$ for $x_j^2$ is 
 `r round(mean(res$zsreff), 2)`, which is quite
-close to the relative efficiency for `lp__`. This is not that
+close to bulk-$R_{\rm eff}$ for `lp__`. This is not that
 surprising as the potential energy in normal model is relative to
 $\sum_{j=1}^J x_j^2$.
 
-Let's check the local relative efficiency
+Let's check the relative efficiency in different parts of the
+posterior by computing the relative efficiency of small interval
+probability estimates for `x[1]^2`.
 ```{r}
 plot_local_reff(samp = samp, par = 1, nalpha = 100)
 ```
@@ -2322,7 +2332,7 @@ tail of $x_1^2$ the relative efficiency drops. This likely due to
 only some iterations have high enough total energy to obtain draws
 from the high energy part of the tail.
 
-Let's check the relative efficiency of cumulative probabilities
+Let's check the relative efficiency of quantiles.
 ```{r}
 plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
 ```
@@ -2351,9 +2361,9 @@ qplot(
 ```
 
 This shows that even if we get high relative efficiency estimates for
-parameters, it is important to look at the relative efficiency of
-`lp__` as it can indicate problems of sampling in tails, which would
-affect the accuracy of variance and tail quantile estimates.
+central quantities (like mean and median), it is important to look at
+relative efficiency of scale and tail quantities, too. The relative
+efficiency of `lp__` can also indicate problems of sampling in tails.
 
 # References {.unnumbered}
 
