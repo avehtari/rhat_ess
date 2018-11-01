@@ -1866,8 +1866,12 @@ relative efficiency, but would require a reference.
 
 ## Hierarchical model: Eight Schools
 
-The models are from Michael Betancourt's case study on
-[Diagnosing Biased Inference with Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
+Eight Schools data is classic example for hierarchical models (Section
+5.5, @BDA3), which despite the apparent simplicity nicely illustrates
+the typical problems in inference for hierarchical models.  The Stan
+models below are from Michael Betancourt's case study on [Diagnosing
+Biased Inference with
+Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
 
 ### A Centered Eight Schools model
 
@@ -1948,6 +1952,12 @@ corresponding S_eff for median of `mu` and `tau`.
 ```{r}
 round(quantile_mcse(samp_cp, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_cp, par="tau", prob=0.5),2)
+```
+
+The proposed default output from Stan would look as follows, with some
+Rhat>1.01 and Reff<0.1 indicating potential convergence problem.
+```{r}
+monitorn(samp_cp, warmup=0)
 ```
 
 #### Centered parameterization with longer chains
@@ -2036,6 +2046,12 @@ round(quantile_mcse(samp_cp2, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_cp2, par="tau", prob=0.5),2)
 ```
 
+The proposed default output from Stan would look as follows, with some
+Rhat>1.01 and Reff<=0.01 indicating convergence problem.
+```{r}
+monitorn(samp_cp2, warmup=0)
+```
+
 #### Centered parameterization very long chains
 
 And for further evidence let's check 100 times longer chains than the default.
@@ -2112,6 +2128,12 @@ round(quantile_mcse(samp_cp3, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_cp3, par="tau", prob=0.5),2)
 ```
 
+The proposed default output from Stan would look as follows, with some
+Rhat>1.01 and Reff<0.01 indicating convergence problem.
+```{r}
+monitorn(samp_cp3, warmup=0)
+```
+
 ### Non-centered Eight Schools model
 
 For hierarchical models, non-centered parameterization often works better
@@ -2184,6 +2206,12 @@ round(quantile_mcse(samp_ncp, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_ncp, par="tau", prob=0.5),2)
 ```
 
+The proposed default output from Stan would look as follows, with all
+Rhat<1.01 and Reff>0.1.
+```{r}
+monitorn(samp_ncp, warmup=0)
+```
+
 #### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
 
 Next we examine the same model but with higher `adapt_delta=0.95`.
@@ -2253,6 +2281,12 @@ round(quantile_mcse(samp_ncp2, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_ncp2, par="tau", prob=0.5),2)
 ```
 
+The proposed default output from Stan would look as follows, with all
+Rhat<1.01 and Reff>0.1.
+```{r}
+monitorn(samp_ncp2, warmup=0)
+```
+
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
 
 If in doubt, we can run longer chains.
@@ -2313,6 +2347,12 @@ for well nehaving chains.
 ```{r, cache=FALSE}
 round(quantile_mcse(samp_ncp3, par="mu", prob=0.5),2)
 round(quantile_mcse(samp_ncp3, par="tau", prob=0.5),2)
+```
+
+The proposed default output from Stan would look as follows, with all
+Rhat<1.01 and Reff>0.1.
+```{r}
+monitorn(samp_ncp3, warmup=0)
 ```
 
 ## Dynamic HMC and effective sample size
