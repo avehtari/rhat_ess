@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
   cache=TRUE,
   fig.width = 10
 )
+options(width=78)
 ```
 
 The code for alternative new *split*-$\widehat{R}$ and $S_{\rm eff}$ versions are in [monitornew.R](monitornew.R).
