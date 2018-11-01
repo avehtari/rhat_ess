@@ -1882,8 +1882,10 @@ fit_cp <- stan(
 ```
 
 We do observe divergent transitions, which is sensitive diagnostic for
-this model and we observer also low BFMI, but let's assume we were
-investigating a MCMC algorithm without such diagnostic.
+this model and we observer also low BFMI, so we already know that the
+results can't be trusted.  We can use Rhat and Reff diagnostics also
+for other MCMC algorithms, but they can also be helpful to recognize
+problematic parts of the posterior.
 
 ```{r, cache=FALSE}
 sel <- c(
@@ -2261,7 +2263,7 @@ Rank plot visualisation of `lp__`, which has relative efficiency 0.44.
 mcmc_hist_r_scale(samp_ncp2[, , 19])
 ```
 
-Seems quite ok.
+Seems ok.
 
 Now we should be able to trust Monte Carlo error estimates, and for
 illustration we show MCSE, interval and corresponding S_eff for median
