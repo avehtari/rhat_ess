@@ -336,8 +336,8 @@ monitorn <- function(sims, warmup = floor(dim(sims)[1] / 2),
     cat(dim_sims[2], " chains: each with iter=", dim_sims[1], "; warmup=", warmup, "):\n\n", sep = "")
     print(round(summary, digits_summary), ...)
  
-    cat("\nFor each parameter, Bulk-R_eff and Tail-R_eff are crude measure of effective\n",
-        "sample size for bulk and tail quantities respectively (good mixing Reff>0.1),\n",
+    cat("\nFor each parameter, Bulk-R_eff and Tail-R_eff are crude measure of relative\n",
+        "effective sample size for bulk and tail quantities respectively (good mixing Reff>0.1),\n",
         "and Rhat is the potential scale reduction factor on rank normalized split chains\n",
         "(at convergence, Rhat=1).\n", sep = '')
   } 
