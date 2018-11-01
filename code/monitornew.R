@@ -286,7 +286,7 @@ quantile_mcse <- function(samp = NULL, par = NULL, prob = NULL) {
 }
 
 monitorn <- function(sims, warmup = floor(dim(sims)[1] / 2), 
-                       probs = c(0.05, 0.50, 0.9), 
+                       probs = c(0.05, 0.50, 0.95), 
                        digits_summary = 2, print = TRUE, ...) { 
   # print the summary for a general simulation results 
   # of 3-d array: # iter * # chains * # parameters 
