@@ -268,6 +268,82 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   invisible(summary) 
 } 
 
+monitorn <- function(sims, warmup = floor(dim(sims)[1] / 2), 
+                       probs = c(0.05, 0.50, 0.9), 
+                       digits_summary = 2, print = TRUE, ...) { 
+  # print the summary for a general simulation results 
+  # of 3-d array: # iter * # chains * # parameters 
+  # Args:
+  #   sims: a 3-d array described above 
+  #   warmup: the number of iterations used for warmup 
+  #   probs: probs of summarizing quantiles 
+  #   print: print out the results
+  # 
+  # Return: 
+  #   A summary array  
+  dim_sims <- dim(sims)
+  if (is.null(dim_sims))
+      dim(sims) <- c(length(sims), 1, 1)
+  if (length(dim_sims) == 2)
+      dim(sims) <- c(dim_sims, 1)
+  if (length(dim_sims) > 3) 
+    stop("'sims' has more than 3 dimensions")
+  dim_sims <- dim(sims)
+  if (warmup > dim_sims[1])
+    stop("warmup is larger than the total number of iterations")
+  if (is(sims, "stanfit")) {
+    warmup <- 0L
+    sims <- as.array(sims)
+  }
+  dimnames_sims <- dimnames(sims)
+  parnames <- dimnames_sims[[3]]
+  num_par <- dim_sims[3]
+  
+  if (is.null(parnames)) parnames <- paste0("V", 1:num_par)
+  sims_wow <- if (warmup >= 1) apply(sims, c(2, 3), FUN = function(x) x[-(1:warmup)]) else sims 
+  dim_sims <- dim(sims_wow)
+  n_samples <- dim_sims[1]
+  n_chains <- dim_sims[2]
+  half_n <- floor(n_samples / 2)
+  idx_2nd <- n_samples - half_n + 1
+  quan <- lapply(1:num_par, FUN = function(i) quantile(sims_wow[,,i], probs = probs))
+  probs_str <- names(quan[[1]])
+  quan <- do.call(rbind, quan)
+  zsplit_rhat <- sapply(1:num_par, FUN = function(i)
+      rhat_rfun(z_scale(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i]))))
+  sims_centered <- sweep(sims_wow,3,apply(sims_wow,3,median))
+  sims_folded <- abs(sims_centered)
+  sims_med <- (sims_centered<0)*1
+  zfsplit_rhat <- sapply(1:num_par, FUN = function(i)
+      rhat_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
+  rhat <- apply(cbind(zsplit_rhat,zfsplit_rhat),1,max)
+  zsplit_ess <- sapply(1:num_par, FUN = function(i)
+    ess_rfun(z_scale(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i]))))
+  zsplit_ress <- zsplit_ess/n_samples/n_chains
+  zfsplit_ess <- sapply(1:num_par, FUN = function(i)
+      ess_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
+  zfsplit_ress <- zfsplit_ess/n_samples/n_chains
+    
+  mcse <- sapply(1:length(probs), FUN = function(j) sapply(1:num_par,
+                                                     FUN = function(i) quantile_mcse(sims_wow, i, probs[j])$mcse))
+  mcse_str <- paste('se',probs_str, sep='')
+    
+  summary <- cbind(quan, mcse, rhat, zsplit_ress, zfsplit_ress)
+  colnames(summary) <- c(probs_str, mcse_str, "Rhat", "Bulk-Reff", "Tail-Reff")
+  rownames(summary) <- parnames 
+  if (print) {
+    cat("Inference for the input samples (")
+    cat(dim_sims[2], " chains: each with iter=", dim_sims[1], "; warmup=", warmup, "):\n\n", sep = "")
+    print(round(summary, digits_summary), ...)
+ 
+    cat("\nFor each parameter, Bulk-R_eff and Tail-R_eff are crude measure of effective\n",
+        "sample size for bulk and tail quantities respectively (good mixing Reff>0.1),\n",
+        "and Rhat is the potential scale reduction factor on rank normalized split chains\n",
+        "(at convergence, Rhat=1).\n", sep = '')
+  } 
+  invisible(summary) 
+} 
+
 monitor_simple <- function(sims, ...) {
   out <- monitornew(sims, warmup = 0, probs = 0.5, print = FALSE, ...)
   out <- as.data.frame(out)
