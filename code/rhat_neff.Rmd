@@ -437,7 +437,7 @@ effective sample size.  This estimate will be well defined even if the
 original distribution does not have finite mean and variance. It is
 not directly applicable to estimate the Monte Carlo error of the mean
 of the original values, but it will provide bijective transformation
-invariant estimate of the mizing efficiency of chains. For simplicity
+invariant estimate of the mixing efficiency of chains. For simplicity
 we propose to report relative efficiency values
 $$
 R_{\rm eff}=\textit{rank-normalized-split-}S_{\rm eff} / S,
@@ -467,8 +467,8 @@ term we use a term *tail relative efficiency* (*tail*-$R_{\rm eff}$).
 Bulk and tail relative efficiency measures introduced above are useful
 as overall efficiency measures. Next we introduce relative efficiency
 estimate of cumulative distribution function, and later we use that to
-introduce relative efficiency of quantiles and even more local
-relative efficiency measure.
+introduce relative efficiency of quantiles and local small probability
+interval relative efficiency diagnostic.
 
 The quantiles and posterior intervals are often reported quantities,
 which are easy to estimate from posterior draws.  Estimating the
@@ -595,7 +595,7 @@ which are closest to $\alpha_1 S$ and $\alpha_2 S$.
 error distribution, report desired quantiles or, use draws or
 quantiles to compute approximate standard error.
 
-The follwing function computes MCSE, interval and S_eff for desired quantile of a quantity. 
+The following function computes MCSE, interval and S_eff for desired quantile of a quantity. 
 ```{r}
 quantile_mcse <- function(samp = NULL, par = NULL, prob = NULL) {
     tmp <- samp[, , par]
@@ -624,7 +624,7 @@ $$
 where $\hat{Q}_\alpha$ is an empirical $\alpha$-quantile, $\delta=1/k$
 is the length of the interval with some positive integer $k$, and
 $\alpha \in (0,\delta,\ldots,1-\delta)$ changes in steps of $\delta$.
-Each interval has $N/k$ draws, and the efficiency measures
+Each interval has $S/k$ draws, and the efficiency measures
 autocorrelation of an indicator function which is one when the values
 are inside the specific interval and zero otherwise. This gives us a
 local efficiency measure which does not depend on the shape of the
@@ -1020,8 +1020,6 @@ mean and variance are finite, the distribution can be far from
 Gaussian. Especially distributions with very long tails cause
 instability for variance and autocorrelation estimates. To alleviate
 these problems we will use Split-Rhat for rank-normalized draws. 
-Ranks are computed by using average for ties, as this is a deterministic 
-procedure and constant chains are mapped to constant chains.
 
 The following Cauchy models are from Michael Betancourt's case study
 [Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html)
@@ -1207,7 +1205,7 @@ plot_local_reff(samp = samp, par = 1, nalpha = 20)
 ```
 
 We see that the efficiency of MCMC is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy)..
+(which is caused by slow mixing in long tails of Cauchy).
 
 Alternative way to examine the relative efficiency in different parts
 of the posterior, is to compute relative efficiency for quantiles (see
@@ -1487,12 +1485,12 @@ Run the alternative model:
 fit_alt1 <- stan(file='cauchy_alt_1.stan', seed=7878, refresh = 0)
 ```
 
+There are no warnings, and the sampling is much faster.
+
 ```{r}
 samp <- as.array(fit_alt1)
 res <- monitor_simple(samp[, , 101:150])
 ```
-
-There are no warnings, and the sampling is much faster.
 
 ```{r}
 plot_rhat(res)
@@ -1523,7 +1521,6 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-samp <- as.array(fit_alt1)
 plot_local_reff(samp = samp, par = 101, nalpha = 20)
 ```
 
@@ -1532,7 +1529,6 @@ The relative efficiency is good in all parts of the posterior.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-samp <- as.array(fit_alt1)
 plot_quantile_reff(samp = samp, par = 101, nalpha = 40)
 ```
 
@@ -1628,14 +1624,12 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-samp <- as.array(fit_alt3)
 plot_local_reff(samp = samp, par = 51, nalpha = 20)
 ```
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-samp <- as.array(fit_alt3)
 plot_quantile_reff(samp = samp, par = 51, nalpha = 40)
 ```
 
@@ -1752,7 +1746,6 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-samp <- as.array(fit_half_nom)
 plot_local_reff(samp = samp, par = 1, nalpha = 20)
 ```
 
@@ -1761,7 +1754,6 @@ The relative efficiency is good overall, with only a small dip in tails.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-samp <- as.array(fit_half_nom)
 plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
 ```
 
@@ -1834,14 +1826,12 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-samp <- as.array(fit_half_reparam)
 plot_local_reff(samp = samp, par = 101, nalpha = 20)
 ```
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-samp <- as.array(fit_half_reparam)
 plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
 ```
 
