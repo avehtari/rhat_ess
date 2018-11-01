@@ -1908,8 +1908,8 @@ posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 
 ```{r}
-samp <- as.array(fit_cp)
-plot_local_reff(samp = samp, par = "tau", nalpha = 20)
+samp_cp <- as.array(fit_cp)
+plot_local_reff(samp = samp_cp, par = "tau", nalpha = 20)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -1920,8 +1920,7 @@ get biased estimates.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-samp <- as.array(fit_cp)
-plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
+plot_quantile_reff(samp = samp_cp, par = 2, nalpha = 40)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency.
@@ -1930,14 +1929,14 @@ Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.05 among parameters.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , "tau"])
+mcmc_hist_r_scale(samp_cp[, , "tau"])
 ```
 
 We observe clear problems.
 
 Rank plot visualisation of `lp__`, which has relative efficiency 0.05.
 ```{r}
-mcmc_hist_r_scale(samp[, , "lp__"])
+mcmc_hist_r_scale(samp_cp[, , "lp__"])
 ```
 
 We observe clear problems.
@@ -1947,8 +1946,8 @@ estimates, but for illustration we show MCSE, interval and
 corresponding S_eff for median of `mu` and `tau`.
 <!-- This needs prettyfying -->
 ```{r}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_cp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_cp, par="tau", prob=0.5),2)
 ```
 
 #### Centered parameterization with longer chains
@@ -1978,8 +1977,8 @@ posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 
 ```{r}
-samp <- as.array(fit_cp2)
-plot_local_reff(samp = samp, par = 2, nalpha = 50)
+samp_cp2 <- as.array(fit_cp2)
+plot_local_reff(samp = samp_cp2, par = 2, nalpha = 50)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -1989,8 +1988,7 @@ get biased estimates.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-samp <- as.array(fit_cp2)
-plot_quantile_reff(samp = samp, par = 2, nalpha = 100)
+plot_quantile_reff(samp = samp_cp2, par = 2, nalpha = 100)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency
@@ -1999,8 +1997,7 @@ mixing.
 
 We examine also small probability interval efficiency for `mu` in the following plot.
 ```{r}
-samp <- as.array(fit_cp2)
-plot_local_reff(samp = samp, par = 1, nalpha = 50)
+plot_local_reff(samp = samp_cp2, par = 1, nalpha = 50)
 ```
 
 There are gaps of poor efficiency which indicates sticking of MCMC,
@@ -2008,8 +2005,7 @@ but the sticking doesn't occur for any specific range of values of `mu` as for `
 
 We examine also the relative efficiency of different quantiles of `mu`
 ```{r}
-samp <- as.array(fit_cp2)
-plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
+plot_quantile_reff(samp = samp_cp2, par = 1, nalpha = 100)
 ```
 
 We see clear failure in mixing.
@@ -2017,14 +2013,14 @@ We see clear failure in mixing.
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.01 among parameters.
 ```{r}
-mcmc_hist_r_scale(samp[, , "tau"])
+mcmc_hist_r_scale(samp_cp2[, , "tau"])
 ```
 
 We observe clear problems to sample small values of `tau` and sticking of the 4th chain.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.01.
 ```{r}
-mcmc_hist_r_scale(samp[, , "lp__"])
+mcmc_hist_r_scale(samp_cp2[, , "lp__"])
 ```
 
 We observe clear problems sampling different energy levels, which are connected to values of `tau`.
@@ -2036,8 +2032,8 @@ shorter MCMC run, 10 times more draws has not reduced the MCSE to one
 third as would be expected without problems in in mixing.
 <!-- This needs prettyfying -->
 ```{r}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_cp2, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_cp2, par="tau", prob=0.5),2)
 ```
 
 #### Centered parameterization very long chains
@@ -2065,8 +2061,8 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp <- as.array(fit_cp3)
-plot_local_reff(samp = samp, par = 2, nalpha = 100)
+samp_cp3 <- as.array(fit_cp3)
+plot_local_reff(samp = samp_cp3, par = 2, nalpha = 100)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -2079,8 +2075,7 @@ more importantly due to the random walk in energy space.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-samp <- as.array(fit_cp3)
-plot_quantile_reff(samp = samp, par = 2, nalpha = 100)
+plot_quantile_reff(samp = samp_cp3, par = 2, nalpha = 100)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency
@@ -2090,7 +2085,7 @@ mixing.
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.00 among parameters.
 ```{r}
-mcmc_hist_r_scale(samp[, , 2])
+mcmc_hist_r_scale(samp_cp3[, , 2])
 ```
 
 We observe clear problems to sample small values of tau.  Even with
@@ -2100,7 +2095,7 @@ would, and sticking of chains is easy to see.
 Rank plot visualisation of lp__, which has relative
 efficiency 0.01.
 ```{r}
-mcmc_hist(r_scale(samp[,,11]), breaks = seq(0,prod(dim(samp)[1:2]),by=prod(dim(samp)[1:2])/100)+0.5)
+mcmc_hist(r_scale(samp_cp3[,,11]), breaks = seq(0,prod(dim(samp_cp3)[1:2]),by=prod(dim(samp_cp3)[1:2])/100)+0.5)
 ```
 
 We observe clear problems sampling different energy levels and
@@ -2113,8 +2108,8 @@ shorter MCMC run, 100 times more draws has not reduced the MCSE to one
 tenths as would be expected without problems in in mixing.
 <!-- This needs prettyfying -->
 ```{r}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_cp3, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_cp3, par="tau", prob=0.5),2)
 ```
 
 ### Non-centered Eight Schools model
@@ -2149,8 +2144,8 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp <- as.array(fit_ncp)
-plot_local_reff(samp = samp, par = 2, nalpha = 20)
+samp_ncp <- as.array(fit_ncp)
+plot_local_reff(samp = samp_ncp, par = 2, nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2158,8 +2153,7 @@ efficiency is in a good range.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-samp <- as.array(fit_ncp)
-plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
+plot_quantile_reff(samp = samp_ncp, par = 2, nalpha = 40)
 ```
 
 Small quantile estimates have lower but still useful efficiencies.
@@ -2168,14 +2162,14 @@ Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.57 among parameters.
 
 ```{r}
-mcmc_hist_r_scale(samp[, , 2])
+mcmc_hist_r_scale(samp_ncp[, , 2])
 ```
 
 We can see problems in sampling small values of tau.
 
 Rank plot visualisation of lp__, which has relative efficiency 0.01.
 ```{r}
-mcmc_hist_r_scale(samp[, , 19])
+mcmc_hist_r_scale(samp_ncp[, , 19])
 ```
 
 We observe clear problems sampling different energy levels.
@@ -2186,8 +2180,8 @@ corresponding S_eff for median of `mu` and `tau`. MCSE is much smaller
 than with the problematic centered parameterization.
 <!-- This needs prettyfying -->
 ```{r}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_ncp, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_ncp, par="tau", prob=0.5),2)
 ```
 
 #### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
@@ -2215,8 +2209,8 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp <- as.array(fit_ncp2)
-plot_local_reff(samp = samp, par = 2, nalpha = 20)
+samp_ncp2 <- as.array(fit_ncp2)
+plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2224,8 +2218,7 @@ efficiency is in a good range.
 
 Check with a finer resolution
 ```{r}
-samp <- as.array(fit_ncp2)
-plot_local_reff(samp = samp, par = 2, nalpha = 50)
+plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 50)
 ```
 
 Also with a finer resolution the efficiency of MCMC is good for
@@ -2233,21 +2226,20 @@ different values of tau.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-samp <- as.array(fit_ncp2)
-plot_quantile_reff(samp = samp, par = 2, nalpha = 40)
+plot_quantile_reff(samp = samp_ncp2, par = 2, nalpha = 40)
 ```
 
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.62 among parameters.
 ```{r}
-mcmc_hist_r_scale(samp[, , 2])
+mcmc_hist_r_scale(samp_ncp2[, , 2])
 ```
 
 Higher `adapt_delta` value seems to have improved sampling of small values.
 
 Rank plot visualisation of `lp__`, which has relative efficiency 0.44.
 ```{r}
-mcmc_hist_r_scale(samp[, , 19])
+mcmc_hist_r_scale(samp_ncp2[, , 19])
 ```
 
 Seems quite ok.
@@ -2257,8 +2249,8 @@ illustration we show MCSE, interval and corresponding S_eff for median
 of `mu` and `tau`. The change compared to `adapt_delta=0.8` is small.
 <!-- This needs prettyfying -->
 ```{r}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_ncp2, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_ncp2, par="tau", prob=0.5),2)
 ```
 
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
@@ -2286,8 +2278,8 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp <- as.array(fit_ncp3)
-plot_local_reff(samp = samp, par = "tau", nalpha = 100)
+samp_ncp3 <- as.array(fit_ncp3)
+plot_local_reff(samp = samp_ncp3, par = "tau", nalpha = 100)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2295,20 +2287,20 @@ efficiency is in a good range.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r, cache=FALSE}
-plot_quantile_reff(samp = samp, par = "tau", nalpha = 100)
+plot_quantile_reff(samp = samp_ncp3, par = "tau", nalpha = 100)
 ```
 
 Rank plot visualisation of `tau`, which has the smallest relative
-efficiency of `r round(monitor_simple(samp[, , "tau"])$zsreff, 2)` among parameters.
+efficiency of `r round(monitor_simple(samp_ncp3[, , "tau"])$zsreff, 2)` among parameters.
 ```{r}
-mcmc_hist_r_scale(samp[, , "tau"])
+mcmc_hist_r_scale(samp_ncp3[, , "tau"])
 ```
 
 Nothing special.
 
-Rank plot visualisation of `lp__`, which has a relative efficiency of `r round(monitor_simple(samp[, , "lp__"])$zsreff, 2)`.
+Rank plot visualisation of `lp__`, which has a relative efficiency of `r round(monitor_simple(samp_ncp3[, , "lp__"])$zsreff, 2)`.
 ```{r}
-mcmc_hist_r_scale(samp[, , "lp__"])
+mcmc_hist_r_scale(samp_ncp3[, , "lp__"])
 ```
 
 Nothing special.
@@ -2319,8 +2311,8 @@ of `mu` and `tau`. Longer chains have reduced MCSE as we would expect
 for well nehaving chains.
 <!-- This needs prettyfying -->
 ```{r, cache=FALSE}
-round(quantile_mcse(samp, par="mu", prob=0.5),2)
-round(quantile_mcse(samp, par="tau", prob=0.5),2)
+round(quantile_mcse(samp_ncp3, par="mu", prob=0.5),2)
+round(quantile_mcse(samp_ncp3, par="tau", prob=0.5),2)
 ```
 
 ## Dynamic HMC and effective sample size
