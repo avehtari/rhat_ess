@@ -40,6 +40,7 @@ library(gridExtra)
 library(latex2exp)
 source('monitornew.R')
 source('monitorplot.R')
+source('stan_utility.R')
 ```
 
 # Introduction
@@ -528,12 +529,12 @@ small interval.  This gives us a local efficiency measure which does not
 depend on the shape of the distribution.
 
 ```{r}
-samp <- as.array(fit_nom)
-plot_local_reff(samp = samp, par = which_min_eff, nalpha = 20)
+plot_local_reff(fit = fit_nom, par = which_min_eff, nalpha = 20)
 ```
 
 We see that the efficiency of MCMC is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy).
+(which is caused by slow mixing in long tails of Cauchy). Orange ticks
+show chains with maximum treedepth.
 
 Alternative way to examine the relative efficiency in different parts
 of the posterior, is to compute relative efficiency for quantiles (see
@@ -543,14 +544,16 @@ mixing of an indicator function which indicates when the
 values are inside the specific interval. 
 
 ```{r, cahce=FALSE}
-plot_quantile_reff(samp = samp, par = which_min_eff, nalpha = 40)
+plot_quantile_reff(fit = fit_nom, par = which_min_eff, nalpha = 40)
 ```
 We see that the efficiency of MCMC is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy).
+(which is caused by slow mixing in long tails of Cauchy). Orange ticks
+show chains with maximum treedepth.
 
 We can further analyze potential problems using rank plots.
 
 ```{r}
+samp <- as.array(fit_nom)
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
@@ -595,8 +598,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-samp <- as.array(fit_alt1)
-plot_local_reff(samp = samp, par = 100+which_min_eff, nalpha = 20)
+plot_local_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 20)
 ```
 
 The relative efficiency is good in all parts of the posterior.
@@ -604,10 +606,11 @@ The relative efficiency is good in all parts of the posterior.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 100+which_min_eff, nalpha = 40)
+plot_quantile_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 40)
 ```
 
 ```{r}
+samp <- as.array(fit_alt1)
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
@@ -695,19 +698,20 @@ posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 
 ```{r}
-samp_cp <- as.array(fit_cp)
-plot_local_reff(samp = samp_cp, par = "tau", nalpha = 20)
+plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
-the efficiency for estimating small `tau` values is practically zero, we
-may assume that we may miss substantial amount of posterior mass and
-get biased estimates.
+the efficiency for estimating small `tau` values is practically zero,
+we may assume that we may miss substantial amount of posterior mass
+and get biased estimates. Red ticks show chains with divergences which
+have concentrated to small `tau` values, indicating problems exploring
+even smaller values which is likely to cause bias.
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp_cp, par = 2, nalpha = 40)
+plot_quantile_reff(fit = fit_cp, par = 2, nalpha = 40)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency.
@@ -715,6 +719,7 @@ Most of the quantile estimates have worryingly low relative efficiency.
 Rank plot visualisation of `tau`.
 
 ```{r}
+samp_cp <- as.array(fit_cp)
 mcmc_hist_r_scale(samp_cp[, , "tau"])
 ```
 
@@ -753,8 +758,7 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp_ncp2 <- as.array(fit_ncp2)
-plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 20)
+plot_local_reff(fit = fit_ncp2, par = 2, nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -762,7 +766,7 @@ efficiency is in a good range.
 
 Check with a finer resolution
 ```{r}
-plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 50)
+plot_local_reff(fit = fit_ncp2, par = 2, nalpha = 50)
 ```
 
 Also with a finer resolution the efficiency of MCMC is good for
@@ -770,12 +774,13 @@ different values of tau.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-plot_quantile_reff(samp = samp_ncp2, par = 2, nalpha = 40)
+plot_quantile_reff(fit = fit_ncp2, par = 2, nalpha = 40)
 ```
 
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.62 among parameters.
 ```{r}
+samp_ncp2 <- as.array(fit_ncp2)
 mcmc_hist_r_scale(samp_ncp2[, , 2])
 ```
 

@@ -114,7 +114,45 @@ plot_reff <- function(res) {
   grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 }
 
-plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
+## plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
+##   delta <- 1 / nalpha
+##   alphas <- seq(0, 1 - delta, by = delta)
+##   zsreffs <- rep(NA, length(alphas))
+##   for (i in seq_along(alphas)) {
+##     alpha <- alphas[i]
+##     tmp <- samp[, , par]
+##     I <- tmp >= quantile(tmp, alpha) & tmp < quantile(tmp, alpha + delta)
+##     rs <- monitor_simple(I)
+##     zsreffs[i] <- rs$zsreff[1]
+##   }
+##   df <- data.frame(
+##     quantile = seq(0, 1, by = delta), 
+##     zsreff = c(zsreffs, zsreffs[nalpha])
+##   )
+##   ggplot(data=df, aes(x=quantile, y=zsreff)) + 
+##     geom_step() + 
+##     geom_hline(yintercept = c(0,1)) + 
+##     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+##     scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
+##     scale_y_continuous(
+##       breaks = seq(0, 1, by=0.25), 
+##       limits = c(0, 1.1)
+##     ) +
+##     labs(x='Quantile', y='R_eff')
+## }
+
+plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL) {
+  samp <- as.array(fit)
+  nom_params <- rstan::extract(fit, permuted=FALSE)
+  n_chains <- dim(nom_params)[2]
+  params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
+  sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
+  divergent <- do.call(rbind, sampler_params)[,'divergent__']
+  max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
+  treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
+  params$divergent <- divergent
+  params$max_depth <- (treedepths == max_depth)*1
+  params$urank <- u_scale(params[,par])
   delta <- 1 / nalpha
   alphas <- seq(0, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -138,10 +176,52 @@ plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
       breaks = seq(0, 1, by=0.25), 
       limits = c(0, 1.1)
     ) +
-    labs(x='Quantile', y='R_eff')
+    labs(x='Quantile', y='R_eff') +
+    geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
+    geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
 }
 
-plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
+## plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
+##   delta <- 1 / nalpha
+##   alphas <- seq(delta, 1 - delta, by = delta)
+##   zsreffs <- rep(NA, length(alphas))
+##   for (i in seq_along(alphas)) {
+##     alpha <- alphas[i]
+##     tmp <- samp[, , par]
+##     I <- tmp < quantile(tmp, alpha)
+##     rs <- monitor_simple(I)
+##     zsreffs[i] <- rs$zsreff[1]
+##   }
+##   df <- data.frame(
+##     quantile = seq(delta, 1 - delta, by = delta), 
+##     zsreff = zsreffs
+##   )
+##   ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
+##   ggplot(df, aes(x=quantile, y=zsreff)) + 
+##     geom_point() + 
+##     geom_hline(yintercept = c(0,1)) + 
+##     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+##     scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
+##     scale_y_continuous(
+##       breaks = seq(0, ymax, by = 0.25), 
+##       limits = c(0, ymax)
+##     ) +
+##     labs(x='Quantile', y='R_eff')
+## }
+
+plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL) {
+  samp <- as.array(fit)
+  nom_params <- rstan::extract(fit, permuted=FALSE)
+  n_chains <- dim(nom_params)[2]
+  params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
+
+  sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
+  divergent <- do.call(rbind, sampler_params)[,'divergent__']
+  max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
+  treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
+  params$divergent <- divergent
+  params$max_depth <- (treedepths == max_depth)*1
+  params$urank <- u_scale(params[,par])
   delta <- 1 / nalpha
   alphas <- seq(delta, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -166,5 +246,7 @@ plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
       breaks = seq(0, ymax, by = 0.25), 
       limits = c(0, ymax)
     ) +
-    labs(x='Quantile', y='R_eff')
+    labs(x='Quantile', y='R_eff') +
+    geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
+    geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
 }
