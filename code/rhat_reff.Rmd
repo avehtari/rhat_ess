@@ -693,12 +693,17 @@ mon <- monitorn(fit_cp)
 Several Rhat>1.01 and tau Rhat<0.1 and the results can not be trusted.
 [rhat_reff_extra.Rmd](rhat_reff_extra.html) has results for longer chains.
 
-We examine the relative efficiency in different parts of the
-posterior by computing the relative efficiency of small interval
-probability estimates for `tau`.
+We examine the relative efficiency in different parts of the posterior
+by computing the relative efficiency of small interval probability
+estimates for `tau`. We can plot showing either quantiles or parameter
+values at the vertical axis.
 
 ```{r}
 plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20)
+```
+
+```{r}
+plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20, rank = FALSE)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -708,10 +713,16 @@ and get biased estimates. Red ticks show chains with divergences which
 have concentrated to small `tau` values, indicating problems exploring
 even smaller values which is likely to cause bias.
 
-We examine also the relative efficiency of different quantile estimates.
+We examine also the relative efficiency of different quantile
+estimates. We can plot showing either quantiles or parameter values at
+the vertical axis.
 
 ```{r}
 plot_quantile_reff(fit = fit_cp, par = 2, nalpha = 40)
+```
+
+```{r}
+plot_quantile_reff(fit = fit_cp, par = 2, nalpha = 40, rank = FALSE)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency.

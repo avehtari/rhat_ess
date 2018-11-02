@@ -77,35 +77,35 @@ plot_reff <- function(res) {
   
   p1 <- ggplot(res, aes(x=par, y=reff)) + 
     geom_point() + 
-    ggtitle('Classic R_eff (reff)') + 
+    ggtitle('Classic Reff') + 
     geom_hline(yintercept = c(0,1)) +
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits) 
   
   p2 <- ggplot(res, aes(x=par, y=zsreff)) + 
     geom_point() + 
-    ggtitle('New Bulk-R_eff') + 
+    ggtitle('New Bulk-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
   p3 <- ggplot(res, aes(x=par, y=zfsreff)) + 
     geom_point() + 
-    ggtitle('New Tail-R_eff') + 
+    ggtitle('New Tail-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
   p4 <- ggplot(res, aes(x=par, y=medsreff)) + 
     geom_point() + 
-    ggtitle('Median-R_eff') + 
+    ggtitle('Median-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
   p5 <- ggplot(res, aes(x=par, y=madsreff)) + 
     geom_point() + 
-    ggtitle('MAD-R_eff') + 
+    ggtitle('MAD-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
@@ -138,10 +138,10 @@ plot_reff <- function(res) {
 ##       breaks = seq(0, 1, by=0.25), 
 ##       limits = c(0, 1.1)
 ##     ) +
-##     labs(x='Quantile', y='R_eff')
+##     labs(x='Quantile', y='Reff')
 ## }
 
-plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL) {
+plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL, rank = TRUE) {
   samp <- as.array(fit)
   nom_params <- rstan::extract(fit, permuted=FALSE)
   n_chains <- dim(nom_params)[2]
@@ -153,6 +153,7 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL) {
   params$divergent <- divergent
   params$max_depth <- (treedepths == max_depth)*1
   params$urank <- u_scale(params[,par])
+  params$value <- params[,par]
   delta <- 1 / nalpha
   alphas <- seq(0, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -164,21 +165,37 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL) {
     zsreffs[i] <- rs$zsreff[1]
   }
   df <- data.frame(
-    quantile = seq(0, 1, by = delta), 
-    zsreff = c(zsreffs, zsreffs[nalpha])
+      quantile = seq(0, 1, by = delta),
+      value = quantile(params$value, seq(0, 1, by = delta)),
+      zsreff = c(zsreffs, zsreffs[nalpha])
   )
-  ggplot(data=df, aes(x=quantile, y=zsreff)) + 
-    geom_step() + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
-    scale_y_continuous(
-      breaks = seq(0, 1, by=0.25), 
-      limits = c(0, 1.1)
-    ) +
-    labs(x='Quantile', y='R_eff') +
-    geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
-    geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
+  if (rank) {
+      ggplot(data=df, aes(x=quantile, y=zsreff)) + 
+          geom_step() + 
+          geom_hline(yintercept = c(0,1)) + 
+          geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+          scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
+          scale_y_continuous(
+              breaks = seq(0, 1, by=0.25), 
+              limits = c(0, 1.1)
+          ) +
+          labs(x='Quantile', y='Reff') +
+          geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
+          geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
+  } else {
+      if (!is.character(par)) {par=colnames(params)[par]}
+      ggplot(data=df, aes(x=value, y=zsreff)) + 
+          geom_step() + 
+          geom_hline(yintercept = c(0,1)) + 
+          geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+          scale_y_continuous(
+              breaks = seq(0, 1, by=0.25), 
+              limits = c(0, 1.1)
+          ) +
+          labs(x=par, y='Reff') +
+          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red") +
+          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange")
+  }
 }
 
 ## plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
@@ -206,10 +223,10 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL) {
 ##       breaks = seq(0, ymax, by = 0.25), 
 ##       limits = c(0, ymax)
 ##     ) +
-##     labs(x='Quantile', y='R_eff')
+##     labs(x='Quantile', y='Reff')
 ## }
 
-plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL) {
+plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL, rank=TRUE) {
   samp <- as.array(fit)
   nom_params <- rstan::extract(fit, permuted=FALSE)
   n_chains <- dim(nom_params)[2]
@@ -222,6 +239,7 @@ plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL) {
   params$divergent <- divergent
   params$max_depth <- (treedepths == max_depth)*1
   params$urank <- u_scale(params[,par])
+  params$value <- params[,par]
   delta <- 1 / nalpha
   alphas <- seq(delta, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -234,19 +252,35 @@ plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL) {
   }
   df <- data.frame(
     quantile = seq(delta, 1 - delta, by = delta), 
+    value = quantile(params$value, seq(delta, 1 - delta, by = delta)),
     zsreff = zsreffs
   )
   ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
-  ggplot(df, aes(x=quantile, y=zsreff)) + 
-    geom_point() + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
-    scale_y_continuous(
-      breaks = seq(0, ymax, by = 0.25), 
-      limits = c(0, ymax)
-    ) +
-    labs(x='Quantile', y='R_eff') +
-    geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
-    geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
+  if (rank) {
+      ggplot(df, aes(x=quantile, y=zsreff)) + 
+          geom_point() + 
+          geom_hline(yintercept = c(0,1)) + 
+          geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+          scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
+          scale_y_continuous(
+              breaks = seq(0, ymax, by = 0.25), 
+              limits = c(0, ymax)
+          ) +
+          labs(x='Quantile', y='Reff') +
+          geom_rug(data=params[params$divergent==1,], aes(x=urank,y=NULL), sides="b", color="red") +
+          geom_rug(data=params[params$max_depth==1,], aes(x=urank,y=NULL), sides="b", color="orange")
+  } else {
+      if (!is.character(par)) {par=colnames(params)[par]}
+      ggplot(df, aes(x=value, y=zsreff)) + 
+          geom_point() + 
+          geom_hline(yintercept = c(0,1)) + 
+          geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+          scale_y_continuous(
+              breaks = seq(0, ymax, by = 0.25), 
+              limits = c(0, ymax)
+          ) +
+          labs(x=par, y='Reff') +
+          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red") +
+          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange")
+  }
 }
