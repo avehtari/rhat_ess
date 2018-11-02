@@ -546,6 +546,7 @@ values are inside the specific interval.
 ```{r, cahce=FALSE}
 plot_quantile_reff(fit = fit_nom, par = which_min_eff, nalpha = 40)
 ```
+
 We see that the efficiency of MCMC is worryingly low in the tails
 (which is caused by slow mixing in long tails of Cauchy). Orange ticks
 show chains with maximum treedepth.
@@ -709,7 +710,7 @@ plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20, rank = FALSE)
 We see that MCMC has difficulties in exploring small `tau` values. As
 the efficiency for estimating small `tau` values is practically zero,
 we may assume that we may miss substantial amount of posterior mass
-and get biased estimates. Red ticks show chains with divergences which
+and get biased estimates. Red ticks which show chains with divergences
 have concentrated to small `tau` values, indicating problems exploring
 even smaller values which is likely to cause bias.
 

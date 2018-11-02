@@ -20,7 +20,7 @@ csl: harvard-cite-them-right.csl
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   comment=NA, 
-  cache=TRUE,
+  cache=FALSE,
   fig.width = 10
 )
 options(width=78)
@@ -39,6 +39,8 @@ library(tidyverse)
 library(gridExtra)
 library(latex2exp)
 source('monitornew.R')
+source('monitorplot.R')
+source('stan_utility.R')
 ```
 
 # Introduction
@@ -281,11 +283,11 @@ pessimistic, this had negligible effect on any inference.
 However, it may have led to an underestimation of Stan's efficiency
 when compared to other packages performing MCMC sampling.
 
-# New *split*-$\widehat{R}$ and relative efficiency estimate
+# Rank normalized *split*-$\widehat{R}$ and relative efficiency estimates
 
 As *split*-$\widehat{R}$, and $S_{\rm eff}$ are well defined only if
 the marginal posteriors have finite mean and variance, we next
-describe approaches which are well defined for all distributions and
+describe variants which are well defined for all distributions and
 more robust for long tailed distributions.
 
 <!--
@@ -312,10 +314,10 @@ Rank normalization is commonly used, for example, in Spearman's rank
 correlation coefficient and to transform predictor values in
 epidemiology.
 
-1. Ranking: Replace each value $\theta^{(nm)}$ by its rank $r^{(nm)}$. Average
+1. Rank: Replace each value $\theta^{(nm)}$ by its rank $r^{(nm)}$. Average
 rank for ties are used to conserve the number of unique values of discrete
 quantities. Ranks are computed jointly for all draws from all chains.
-2. Normalization: Normalize ranks by inverse normal transformation $z^{(nm)} =
+2. Normalize: Normalize ranks by inverse normal transformation $z^{(nm)} =
 \phi^{-1}((r^{(nm)}-1/2)/S)$. 
 
 For continuous variables and $S \rightarrow \infty$, the rank normalized values are normally distributed and rank normalization performs non-parametric transformation to normal distribution. Using normalized ranks instead of ranks directly, has the benefit that the behavior of $\widehat{R}$ and $S_{\rm eff}$ do not change for normally distributed $\theta$.
@@ -595,30 +597,11 @@ which are closest to $\alpha_1 S$ and $\alpha_2 S$.
 error distribution, report desired quantiles or, use draws or
 quantiles to compute approximate standard error.
 
-The following function computes MCSE, interval and S_eff for desired quantile of a quantity. 
-```{r}
-quantile_mcse <- function(samp = NULL, par = NULL, prob = NULL) {
-    tmp <- samp[, , par]
-    I <- tmp < quantile(tmp, prob)
-    rs <- monitor_simple(I)
-    Seff <- rs$zsneff[1]
-    a <- qbeta(c(0.1586553, 0.8413447, 0.05, 0.95),Seff*prob+1,Seff*(1-prob)+1)
-    a <- qbeta(c(0.02275013, 0.9772499, 0.05, 0.95),Seff*prob,Seff*(1-prob))
-    stmp <- sort(tmp)
-    S <- length(stmp)
-    th1 <- stmp[max(round(a[1]*S),1)]
-    th2 <- stmp[min(round(a[2]*S),S)]
-    mcse <- (th2-th1)/4
-    th1 <- stmp[max(round(a[3]*S),1)]
-    th2 <- stmp[min(round(a[4]*S),S)]
-    data.frame(mcse=mcse, q05=th1, q95=th2, Seff=Seff)
-}
-```
-
 ## Relative efficiency of small interval probability estimates {#small_interval_R_eff}
 
 We can get more local relative efficiency estimate by considering
-small intervals. We propose to compute the relative efficiency for
+small probability intervals. We propose to compute the relative
+efficiency for
 $$
 \bar{I} = p(\hat{Q}_\alpha \le \theta < \hat{Q}_{\alpha+\delta}),
 $$
@@ -1062,33 +1045,6 @@ which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 ```{r}
-plot_rhat <- function(res) {
-  p1 <- ggplot(res, aes(x=par, y=sRhat)) + 
-    geom_point() + 
-    ggtitle('Classic split-Rhat') + 
-    geom_hline(yintercept = 1.005, linetype = 'dashed') + 
-    geom_hline(yintercept = 1) + 
-    ylim(c(.99 ,1.26))
-
-  p2 <- ggplot(res, aes(x=par, y=zsRhat)) + 
-    geom_point() + 
-    ggtitle('Rank normalized split-Rhat') + 
-    geom_hline(yintercept = 1.005, linetype = 'dashed') + 
-    geom_hline(yintercept = 1) + 
-    ylim(c(.99,1.26))
-  
-  p3 <- ggplot(res, aes(x=par, y=zfsRhat)) + 
-    geom_point() + 
-    ggtitle('Folded rank norm. split-Rhat') + 
-    geom_hline(yintercept = 1.005, linetype = 'dashed') + 
-    geom_hline(yintercept = 1) + 
-    ylim(c(.99,1.26))
-  
-  grid.arrange(p1, p2, p3, nrow = 1)
-}
-```
-
-```{r}
 plot_rhat(res)
 ```
 
@@ -1096,52 +1052,6 @@ For one parameter, Rhats exceed the classic threshold of 1.1. Depending on the
 Rhat estimate, a few others also exceed the threshold 1.01. The rank normalized
 split-Rhat have several values over 1.01. Please note that the classic
 split-Rhat is not well defined in this example.
-
-```{r}
-plot_reff <- function(res) {
-  ymax <- 2
-  ybreaks <- seq(0, ymax, by = 0.25)
-  ylimits <- c(0, ymax)
-  
-  p1 <- ggplot(res, aes(x=par, y=reff)) + 
-    geom_point() + 
-    ggtitle('Classic R_eff (reff)') + 
-    geom_hline(yintercept = c(0,1)) +
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits) 
-  
-  p2 <- ggplot(res, aes(x=par, y=zsreff)) + 
-    geom_point() + 
-    ggtitle('New Bulk-R_eff') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
-  
-  p3 <- ggplot(res, aes(x=par, y=zfsreff)) + 
-    geom_point() + 
-    ggtitle('New Tail-R_eff') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
-  
-  p4 <- ggplot(res, aes(x=par, y=medsreff)) + 
-    geom_point() + 
-    ggtitle('Median-R_eff') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
-  
-  p5 <- ggplot(res, aes(x=par, y=madsreff)) + 
-    geom_point() + 
-    ggtitle('MAD-R_eff') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
-  
-  blank <- grid::grid.rect(gp = grid::gpar(col="white"), draw = FALSE)
-  grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
-}
-```
 
 ```{r, warning=FALSE}
 plot_reff(res) 
@@ -1162,7 +1072,11 @@ cat('lp__: Bulk-R_eff = ', round(res['lp__','zsreff'], 2), '\n')
 cat('lp__: Tail-R_eff = ', round(res['lp__','zfsreff'], 2), '\n')
 ```
 
-Next, we examine the relative efficiency in different parts of the
+We can further analyze potential problems using local relative
+efficiency and rank plots.  We examine x[`r which_min_eff`], which has
+the smallest bulk relative efficiency `r round(min(res$zsreff), 2)`.
+
+We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates (see [Section Relative efficiency of small
 interval probability estimates](#small_interval_R_eff)).  Each
@@ -1172,41 +1086,13 @@ function which indicates when the values are inside the specific
 small interval.  This gives us a local efficiency measure which does not
 depend on the shape of the distribution.
 
-```{r plot_local_reff, cahce=FALSE}
-plot_local_reff <- function(samp = NULL, par = NULL, nalpha = NULL) {
-  delta <- 1 / nalpha
-  alphas <- seq(0, 1 - delta, by = delta)
-  zsreffs <- rep(NA, length(alphas))
-  for (i in seq_along(alphas)) {
-    alpha <- alphas[i]
-    tmp <- samp[, , par]
-    I <- tmp >= quantile(tmp, alpha) & tmp < quantile(tmp, alpha + delta)
-    rs <- monitor_simple(I)
-    zsreffs[i] <- rs$zsreff[1]
-  }
-  df <- data.frame(
-    quantile = seq(0, 1, by = delta), 
-    zsreff = c(zsreffs, zsreffs[nalpha])
-  )
-  ggplot(data=df, aes(x=quantile, y=zsreff)) + 
-    geom_step() + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
-    scale_y_continuous(
-      breaks = seq(0, 1, by=0.25), 
-      limits = c(0, 1.1)
-    ) +
-    labs(x='Quantile', y='R_eff')
-}
-```
-
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 20)
+plot_local_reff(fit = fit_nom, par = which_min_eff, nalpha = 20)
 ```
 
 We see that the efficiency of MCMC is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy).
+(which is caused by slow mixing in long tails of Cauchy). Orange ticks
+show chains with maximum treedepth.
 
 Alternative way to examine the relative efficiency in different parts
 of the posterior, is to compute relative efficiency for quantiles (see
@@ -1215,61 +1101,23 @@ interval has specified proportion of draws, and the efficiency measures
 mixing of an indicator function which indicates when the
 values are inside the specific interval. 
 
-```{r plot_quantile_reff, cahce=FALSE}
-plot_quantile_reff <- function(samp = NULL, par = NULL, nalpha=NULL) {
-  delta <- 1 / nalpha
-  alphas <- seq(delta, 1 - delta, by = delta)
-  zsreffs <- rep(NA, length(alphas))
-  for (i in seq_along(alphas)) {
-    alpha <- alphas[i]
-    tmp <- samp[, , par]
-    I <- tmp < quantile(tmp, alpha)
-    rs <- monitor_simple(I)
-    zsreffs[i] <- rs$zsreff[1]
-  }
-  df <- data.frame(
-    quantile = seq(delta, 1 - delta, by = delta), 
-    zsreff = zsreffs
-  )
-  ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
-  ggplot(df, aes(x=quantile, y=zsreff)) + 
-    geom_point() + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_x_continuous(breaks = seq(0,1, by=0.1)) + 
-    scale_y_continuous(
-      breaks = seq(0, ymax, by = 0.25), 
-      limits = c(0, ymax)
-    ) +
-    labs(x='Quantile', y='R_eff')
-}
-```
-
 ```{r, cahce=FALSE}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
+plot_quantile_reff(fit = fit_nom, par = which_min_eff, nalpha = 40)
 ```
 
 We see that the efficiency of MCMC is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy).
+(which is caused by slow mixing in long tails of Cauchy). Orange ticks
+show chains with maximum treedepth.
 
 We can further analyze potential problems using rank plots.
-Rank plot visualisation of x[1], which has bulk relative efficiency 
-`r round(res$zsreff[1], 2)`.
-
-```{r}
-mcmc_hist_r_scale(samp[, , 1])
-```
-
-The chains clearly have different rank plots.
-
-The rank plot visualisation of x[`r which_min_eff`], which has a 
-bulk relative efficiency of `r round(min(res$zsreff), 2)`, 
-also indicates clear problems with mixing.
 
 ```{r}
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
+
+The chains clearly have different rank plots.
+
 
 #### Default Stan options + `max_treedepth=20`
 
@@ -1339,7 +1187,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 20)
+plot_local_reff(fit = fit_nom_td20, par = which_min_eff, nalpha = 20)
 ```
 
 It seems that increasing `max_treedepth` has not much improved the efficiency in the tails.
@@ -1347,7 +1195,7 @@ It seems that increasing `max_treedepth` has not much improved the efficiency in
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
+plot_quantile_reff(fit = fit_nom_td20, par = which_min_eff, nalpha = 40)
 ```
 
 Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
@@ -1426,7 +1274,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 20)
+plot_local_reff(fit = fit_nom_td20l, par = which_min_eff, nalpha = 20)
 ```
 
 Increasing chain length did not seem to change the relative
@@ -1434,7 +1282,7 @@ efficiency. With more draws from the longer chains we can use
 finer resolution for the local efficiency estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 100)
+plot_local_reff(fit = fit_nom_td20l, par = which_min_eff, nalpha = 100)
 ```
 
 The efficiency far in the tails is worryingly low. This was more
@@ -1442,7 +1290,7 @@ difficult to see previously with less draws from the tails. We see
 similar problems in the plot of relative efficiency of quantiles.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
+plot_quantile_reff(fit = fit_nom_td20l, par = which_min_eff, nalpha = 100)
 ```
 
 The rank plot visualisation of x[`r which_min_eff`], which has the smallest relative efficiency `r round(min(res$zsreff), 2)` among the x's.
@@ -1491,6 +1339,7 @@ There are no warnings, and the sampling is much faster.
 ```{r}
 samp <- as.array(fit_alt1)
 res <- monitor_simple(samp[, , 101:150])
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 ```{r}
@@ -1522,7 +1371,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 101, nalpha = 20)
+plot_local_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 20)
 ```
 
 The relative efficiency is good in all parts of the posterior.
@@ -1530,7 +1379,7 @@ The relative efficiency is good in all parts of the posterior.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 101, nalpha = 40)
+plot_quantile_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 40)
 ```
 
 We compare mean relative efficiencies of underlying parameters in the new
@@ -1557,7 +1406,6 @@ Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
 efficiency `r round(min(res$zsreff), 2)` among x's.
 
 ```{r}
-which_min_eff <- which(res$zsreff == min(res$zsreff))
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
@@ -1591,6 +1439,7 @@ nominal model.
 ```{r}
 samp <- as.array(fit_alt3)
 res <- monitor_simple(samp[, , 51:100])
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 ```{r}
@@ -1625,13 +1474,13 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 51, nalpha = 20)
+plot_local_reff(fit = fit_alt3, par = 50+which_min_eff, nalpha = 20)
 ```
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 51, nalpha = 40)
+plot_quantile_reff(fit = fit_alt3, par = 50+which_min_eff, nalpha = 40)
 ```
 
 The relative efficiency in tails is worse than for the first
@@ -1643,7 +1492,6 @@ parameterization and the actual x we are interested in.
 
 ```{r}
 res <- monitor_simple(samp[, , 51:100])
-which_min_eff <- which(res$zsreff == min(res$zsreff))
 res1 <- monitor_simple(samp[, , 1:50])
 cat('Mean bulk-R_eff for x\'s = ' , round(mean(res[,'zsreff']),2), '\n')
 cat('Mean tail-R_eff for x\'s = ' , round(mean(res[,'zfsreff']),2), '\n')
@@ -1698,6 +1546,7 @@ Cauchy nominal model.
 ```{r}
 samp <- as.array(fit_half_nom)
 res <- monitor_simple(samp[, , 1:50])
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 ```{r}
@@ -1747,7 +1596,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 20)
+plot_local_reff(fit = fit_half_nom, par = which_min_eff, nalpha = 20)
 ```
 
 The relative efficiency is good overall, with only a small dip in tails.
@@ -1755,13 +1604,12 @@ The relative efficiency is good overall, with only a small dip in tails.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
+plot_quantile_reff(fit = fit_half_nom, par = which_min_eff, nalpha = 40)
 ```
 
 Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
-efficiency 1.0 among x's.
+efficiency of `r round( min(res$zsreff), 2)` among x's.
 ```{r}
-which_min_eff <- which(res$zsreff == min(res$zsreff))
 xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
@@ -1793,6 +1641,7 @@ nominal model.
 ```{r}
 samp <- as.array(fit_half_reparam)
 res <- monitor_simple(samp[, , 101:150])
+which_min_eff <- which(res$zsreff == min(res$zsreff))
 ```
 
 ```{r}
@@ -1827,21 +1676,22 @@ posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(samp = samp, par = 101, nalpha = 20)
+plot_local_reff(fit = fit_half_reparam, par = 100+which_min_eff, nalpha = 20)
 ```
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 40)
+plot_quantile_reff(fit = fit_half_reparam, par = 100+which_min_eff, nalpha = 40)
 ```
 
 The relative efficiency near zero is much worse than for the
 half-Cauchy with nominal parameterization and constraint `<lower=0>`.
 
-Rank plot visualisation of `x[15]`, which has the smallest relative
-efficiency 0.30 among `x`'s.
+Rank plot visualisation of x[`r which_min_eff`], which has the smallest relative
+efficiency `r round( min(res$zsreff), 2)` among `x`'s.
 ```{r}
+xmin <- paste0("x[", which_min_eff, "]")
 mcmc_hist_r_scale(samp[, , "x[15]"])
 ```
 
@@ -1903,22 +1753,23 @@ and longer chains should be run.
 
 We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
-probability estimates for `tau`.
+probability estimates for `tau`. 
 
 ```{r}
-samp_cp <- as.array(fit_cp)
-plot_local_reff(samp = samp_cp, par = "tau", nalpha = 20)
+plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
 the efficiency for estimating small `tau` values is practically zero, we
 may assume that we may miss substantial amount of posterior mass and
-get biased estimates.
+get biased estimates. Red ticks which show chains with divergences
+have concentrated to small `tau` values, indicating problems exploring
+even smaller values which is likely to cause bias.
 
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(samp = samp_cp, par = 2, nalpha = 40)
+plot_quantile_reff(fit = fit_cp, par = "tau", nalpha = 40)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency.
@@ -1927,6 +1778,7 @@ Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.05 among parameters.
 
 ```{r}
+samp_cp <- as.array(fit_cp)
 mcmc_hist_r_scale(samp_cp[, , "tau"])
 ```
 
@@ -1951,7 +1803,7 @@ round(quantile_mcse(samp_cp, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<0.1 indicating potential convergence problem.
 ```{r}
-monitorn(samp_cp, warmup=0)
+monitorn(fit_cp)
 ```
 
 #### Centered parameterization with longer chains
@@ -1981,8 +1833,7 @@ posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 
 ```{r}
-samp_cp2 <- as.array(fit_cp2)
-plot_local_reff(samp = samp_cp2, par = 2, nalpha = 50)
+plot_local_reff(fit = fit_cp2, par = "tau", nalpha = 50)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -1992,7 +1843,7 @@ get biased estimates.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-plot_quantile_reff(samp = samp_cp2, par = 2, nalpha = 100)
+plot_quantile_reff(fit = fit_cp2, par = "tau", nalpha = 100)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency
@@ -2001,7 +1852,7 @@ mixing.
 
 We examine also small probability interval efficiency for `mu` in the following plot.
 ```{r}
-plot_local_reff(samp = samp_cp2, par = 1, nalpha = 50)
+plot_local_reff(fit = fit_cp2, par = "mu", nalpha = 50)
 ```
 
 There are gaps of poor efficiency which indicates sticking of MCMC,
@@ -2009,7 +1860,7 @@ but the sticking doesn't occur for any specific range of values of `mu` as for `
 
 We examine also the relative efficiency of different quantiles of `mu`
 ```{r}
-plot_quantile_reff(samp = samp_cp2, par = 1, nalpha = 100)
+plot_quantile_reff(fit = fit_cp2, par = "mu", nalpha = 100)
 ```
 
 We see clear failure in mixing.
@@ -2017,6 +1868,7 @@ We see clear failure in mixing.
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.01 among parameters.
 ```{r}
+samp_cp2 <- as.array(fit_cp2)
 mcmc_hist_r_scale(samp_cp2[, , "tau"])
 ```
 
@@ -2043,7 +1895,7 @@ round(quantile_mcse(samp_cp2, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<=0.01 indicating convergence problem.
 ```{r}
-monitorn(samp_cp2, warmup=0)
+monitorn(fit_cp2)
 ```
 
 #### Centered parameterization very long chains
@@ -2071,8 +1923,7 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp_cp3 <- as.array(fit_cp3)
-plot_local_reff(samp = samp_cp3, par = 2, nalpha = 100)
+plot_local_reff(fit = fit_cp3, par = "tau", nalpha = 100)
 ```
 
 We see that MCMC has difficulties in exploring small `tau` values. As
@@ -2085,7 +1936,7 @@ more importantly due to the random walk in energy space.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-plot_quantile_reff(samp = samp_cp3, par = 2, nalpha = 100)
+plot_quantile_reff(fit = fit_cp3, par = "tau", nalpha = 100)
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency
@@ -2095,6 +1946,7 @@ mixing.
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.00 among parameters.
 ```{r}
+samp_cp3 <- as.array(fit_cp3)
 mcmc_hist_r_scale(samp_cp3[, , 2])
 ```
 
@@ -2125,7 +1977,7 @@ round(quantile_mcse(samp_cp3, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<0.01 indicating convergence problem.
 ```{r}
-monitorn(samp_cp3, warmup=0)
+monitorn(fit_cp3)
 ```
 
 ### Non-centered Eight Schools model
@@ -2160,8 +2012,7 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp_ncp <- as.array(fit_ncp)
-plot_local_reff(samp = samp_ncp, par = 2, nalpha = 20)
+plot_local_reff(fit = fit_ncp, par = "tau", nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2169,7 +2020,7 @@ efficiency is in a good range.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-plot_quantile_reff(samp = samp_ncp, par = 2, nalpha = 40)
+plot_quantile_reff(fit = fit_ncp, par = "tau", nalpha = 40)
 ```
 
 Small quantile estimates have lower but still useful efficiencies.
@@ -2178,6 +2029,7 @@ Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.57 among parameters.
 
 ```{r}
+samp_ncp <- as.array(fit_ncp)
 mcmc_hist_r_scale(samp_ncp[, , 2])
 ```
 
@@ -2203,7 +2055,7 @@ round(quantile_mcse(samp_ncp, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(samp_ncp, warmup=0)
+monitorn(fit_ncp, warmup=0)
 ```
 
 #### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
@@ -2231,8 +2083,7 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp_ncp2 <- as.array(fit_ncp2)
-plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 20)
+plot_local_reff(fit = fit_ncp2, par = "mu", nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2240,7 +2091,7 @@ efficiency is in a good range.
 
 Check with a finer resolution
 ```{r}
-plot_local_reff(samp = samp_ncp2, par = 2, nalpha = 50)
+plot_local_reff(fit = fit_ncp2, par = "mu", nalpha = 50)
 ```
 
 Also with a finer resolution the efficiency of MCMC is good for
@@ -2248,12 +2099,13 @@ different values of tau.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r}
-plot_quantile_reff(samp = samp_ncp2, par = 2, nalpha = 40)
+plot_quantile_reff(fit = fit_ncp2, par = "mu", nalpha = 40)
 ```
 
 Rank plot visualisation of `tau`, which has the smallest relative
 efficiency 0.62 among parameters.
 ```{r}
+samp_ncp2 <- as.array(fit_ncp2)
 mcmc_hist_r_scale(samp_ncp2[, , 2])
 ```
 
@@ -2278,7 +2130,7 @@ round(quantile_mcse(samp_ncp2, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(samp_ncp2, warmup=0)
+monitorn(fit_ncp2)
 ```
 
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
@@ -2306,8 +2158,7 @@ We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `tau`.
 ```{r}
-samp_ncp3 <- as.array(fit_ncp3)
-plot_local_reff(samp = samp_ncp3, par = "tau", nalpha = 100)
+plot_local_reff(fit = fit_ncp3, par = "tau", nalpha = 100)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
@@ -2315,12 +2166,13 @@ efficiency is in a good range.
 
 We examine also the relative efficiency of different quantile estimates.
 ```{r, cache=FALSE}
-plot_quantile_reff(samp = samp_ncp3, par = "tau", nalpha = 100)
+plot_quantile_reff(fit = fit_ncp3, par = "tau", nalpha = 100)
 ```
 
 Rank plot visualisation of `tau`, which has the smallest relative
-efficiency of `r round(monitor_simple(samp_ncp3[, , "tau"])$zsreff, 2)` among parameters.
+efficiency of `r round(res["tau","zsreff"], 2)` among parameters.
 ```{r}
+samp_ncp3 <- as.array(fit_ncp3)
 mcmc_hist_r_scale(samp_ncp3[, , "tau"])
 ```
 
@@ -2346,7 +2198,7 @@ round(quantile_mcse(samp_ncp3, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(samp_ncp3, warmup=0)
+monitorn(fit_ncp3)
 ```
 
 ## Dynamic HMC and effective sample size
@@ -2393,7 +2245,7 @@ Let's check the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `x[1]`.
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 100)
+plot_local_reff(fit = fit_n, par = 1, nalpha = 100)
 ```
 
 The relative efficiency for probability estimate for a small interval
@@ -2402,7 +2254,7 @@ but far from the relative efficiency for the bulk, mean, and median estimates.
 
 Let's check the relative efficiency of quantiles.
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
+plot_quantile_reff(fit = fit_n, par = 1, nalpha = 100)
 ```
 
 Central quantile estimates have higher relative efficiency than tail
@@ -2429,7 +2281,7 @@ Let's check the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates for `x[1]^2`.
 ```{r}
-plot_local_reff(samp = samp, par = 1, nalpha = 100)
+plot_local_reff(fit = samp, par = 1, nalpha = 100)
 ```
 
 The relative efficiency is mostly a bit below 1, but for the right
@@ -2439,7 +2291,7 @@ from the high energy part of the tail.
 
 Let's check the relative efficiency of quantiles.
 ```{r}
-plot_quantile_reff(samp = samp, par = 1, nalpha = 100)
+plot_quantile_reff(fit = samp, par = 1, nalpha = 100)
 ```
 
 We can see the correlation between `lp__` and magnitude of `x[1]` in

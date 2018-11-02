@@ -274,12 +274,11 @@ quantile_mcse <- function(samp = NULL, par = NULL, prob = NULL) {
     rs <- monitor_simple(I)
     Seff <- rs$zsneff[1]
     a <- qbeta(c(0.1586553, 0.8413447, 0.05, 0.95),Seff*prob+1,Seff*(1-prob)+1)
-    a <- qbeta(c(0.02275013, 0.9772499, 0.05, 0.95),Seff*prob,Seff*(1-prob))
     stmp <- sort(tmp)
     S <- length(stmp)
     th1 <- stmp[max(round(a[1]*S),1)]
     th2 <- stmp[min(round(a[2]*S),S)]
-    mcse <- (th2-th1)/4
+    mcse <- (th2-th1)/2
     th1 <- stmp[max(round(a[3]*S),1)]
     th2 <- stmp[min(round(a[4]*S),S)]
     data.frame(mcse=mcse, q05=th1, q95=th2, Seff=Seff)

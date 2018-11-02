@@ -143,17 +143,24 @@ plot_reff <- function(res) {
 
 plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL, rank = TRUE) {
   samp <- as.array(fit)
-  nom_params <- rstan::extract(fit, permuted=FALSE)
-  n_chains <- dim(nom_params)[2]
-  params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
-  sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
-  divergent <- do.call(rbind, sampler_params)[,'divergent__']
-  max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
-  treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
-  params$divergent <- divergent
-  params$max_depth <- (treedepths == max_depth)*1
-  params$urank <- u_scale(params[,par])
-  params$value <- params[,par]
+  if (class(fit)=="stanfit") {
+    nom_params <- rstan::extract(fit, permuted=FALSE)
+    n_chains <- dim(nom_params)[2]
+    params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
+    sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
+    divergent <- do.call(rbind, sampler_params)[,'divergent__']
+    max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
+    treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
+    params$divergent <- divergent
+    params$max_depth <- (treedepths == max_depth)*1
+    params$urank <- u_scale(params[,par])
+    params$value <- params[,par]
+  } else {
+    params <- data.frame(value = as.vector(samp[, , par]))
+    params$divergent <- 0
+    params$max_depth <- 0
+    params$urank <- u_scale(params$value)
+  }      
   delta <- 1 / nalpha
   alphas <- seq(0, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -193,8 +200,8 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL, rank = TRUE) 
               limits = c(0, 1.1)
           ) +
           labs(x=par, y='Reff') +
-          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red") +
-          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange")
+          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red", alpha=0.3) +
+          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange", alpha=0.3)
   }
 }
 
@@ -228,18 +235,24 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL, rank = TRUE) 
 
 plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL, rank=TRUE) {
   samp <- as.array(fit)
-  nom_params <- rstan::extract(fit, permuted=FALSE)
-  n_chains <- dim(nom_params)[2]
-  params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
-
-  sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
-  divergent <- do.call(rbind, sampler_params)[,'divergent__']
-  max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
-  treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
-  params$divergent <- divergent
-  params$max_depth <- (treedepths == max_depth)*1
-  params$urank <- u_scale(params[,par])
-  params$value <- params[,par]
+  if (class(fit)=="stanfit") {
+      nom_params <- rstan::extract(fit, permuted=FALSE)
+      n_chains <- dim(nom_params)[2]
+      params <- as.data.frame(do.call(rbind, lapply(1:n_chains, function(n) nom_params[,n,])))
+      sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
+      divergent <- do.call(rbind, sampler_params)[,'divergent__']
+      max_depth <- attr(fit@sim$samples[[1]], "args")$control$max_treedepth
+      treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
+      params$divergent <- divergent
+      params$max_depth <- (treedepths == max_depth)*1
+      params$urank <- u_scale(params[,par])
+      params$value <- params[,par]
+  } else {
+    params <- data.frame(value = as.vector(samp[, , par]))
+    params$divergent <- 0
+    params$max_depth <- 0
+    params$urank <- u_scale(params$value)
+  }      
   delta <- 1 / nalpha
   alphas <- seq(delta, 1 - delta, by = delta)
   zsreffs <- rep(NA, length(alphas))
@@ -280,7 +293,7 @@ plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL, rank=TRUE) {
               limits = c(0, ymax)
           ) +
           labs(x=par, y='Reff') +
-          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red") +
-          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange")
+          geom_rug(data=params[params$divergent==1,], aes(x=value,y=NULL), sides="b", color="red", alpha=0.3) +
+          geom_rug(data=params[params$max_depth==1,], aes(x=value,y=NULL), sides="b", color="orange", alpha=0.3)
   }
 }
