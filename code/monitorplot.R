@@ -168,8 +168,7 @@ plot_local_reff <- function(fit = NULL, par = NULL, nalpha = NULL, rank = TRUE) 
     alpha <- alphas[i]
     tmp <- samp[, , par]
     I <- tmp >= quantile(tmp, alpha) & tmp < quantile(tmp, alpha + delta)
-    rs <- monitor_simple(I)
-    zsreffs[i] <- rs$zsreff[1]
+    zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
   }
   df <- data.frame(
       quantile = seq(0, 1, by = delta),
@@ -260,8 +259,7 @@ plot_quantile_reff <- function(fit = NULL, par = NULL, nalpha=NULL, rank=TRUE) {
     alpha <- alphas[i]
     tmp <- samp[, , par]
     I <- tmp < quantile(tmp, alpha)
-    rs <- monitor_simple(I)
-    zsreffs[i] <- rs$zsreff[1]
+    zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
   }
   df <- data.frame(
     quantile = seq(delta, 1 - delta, by = delta), 

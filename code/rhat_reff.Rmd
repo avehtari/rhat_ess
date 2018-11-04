@@ -19,11 +19,11 @@ csl: harvard-cite-them-right.csl
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  comment=NA, 
-  cache=FALSE,
+  comment = NA, 
+  cache = FALSE,
   fig.width = 10
 )
-options(width=78)
+options(width = 78)
 ```
 
 The code for alternative new *split*-$\widehat{R}$ and $S_{\rm eff}$ versions are in [monitornew.R](monitornew.R) and code for diagnostic plots are in [monitorplot.R](monitorplot.R).
@@ -40,7 +40,6 @@ library(gridExtra)
 library(latex2exp)
 source('monitornew.R')
 source('monitorplot.R')
-source('stan_utility.R')
 ```
 
 # Introduction
@@ -495,7 +494,7 @@ writeLines(readLines("cauchy_nom.stan"))
 
 Run the nominal model:
 ```{r fit_nom, cache=TRUE, comment=NA, results='hide'}
-fit_nom <- stan(file='cauchy_nom.stan', seed=7878, refresh = 0)
+fit_nom <- stan(file = 'cauchy_nom.stan', seed = 7878, refresh = 0)
 ```
 
 Treedepth exceedence and Bayesian Fraction of Missing Information are
@@ -507,8 +506,8 @@ estimated Bayesian fraction of missing information also indicating
 slow mixing.
 
 ```{r}
-mon <- monitorn(fit_nom)
-which_min_eff <- which(mon[,'Bulk-Reff'] == min(mon[,'Bulk-Reff']))
+mon <- monitornew(fit_nom)
+which_min_eff <- which.min(mon[1:50, 'Bulk_Reff'])
 ```
 
 Several Rhat>1.01 and some Rhat<0.1 and the results can not be trusted.
@@ -516,7 +515,7 @@ Several Rhat>1.01 and some Rhat<0.1 and the results can not be trusted.
 
 We can further analyze potential problems using local relative
 efficiency and rank plots.  We examine x[`r which_min_eff`], which has
-the smallest bulk relative efficiency `r round(min(mon[,'Bulk-Reff']), 2)`.
+the smallest bulk relative efficiency `r round(min(mon[,'Bulk_Reff']), 2)`.
 
 We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
@@ -577,29 +576,29 @@ writeLines(readLines("cauchy_alt_1.stan"))
 Run the alternative model:
 
 ```{r fit_alt1, cache=TRUE, comment=NA, results='hide'}
-fit_alt1 <- stan(file='cauchy_alt_1.stan', seed=7878, refresh = 0)
+fit_alt1 <- stan(file = 'cauchy_alt_1.stan', seed = 7878, refresh = 0)
 ```
 
 There are no warnings, and the sampling is much faster.
 
 ```{r}
-mon <- monitorn(fit_alt1)
-which_min_eff <- which(mon[101:150,'Bulk-Reff'] == min(mon[101:150,'Bulk-Reff']))
+mon <- monitornew(fit_alt1)
+which_min_eff <- which.min(mon[101:150, 'Bulk_Reff'])
 ```
 
 All Rhat<1.01 and Rhat>0.1 and the MCMC works much better with the alternative parameterization.
 [rhat_reff_extra.Rmd](rhat_reff_extra.html) has results for other alternative parameterizations, too.
 
-We can further analyze potential problems using local relative
-efficiency and rank plots.  We examine x[`r which_min_eff`], which has
-the smallest bulk relative efficiency `r round(min(mon[,'Bulk-Reff']), 2)`.
+We can further analyze potential problems using local relative efficiency and
+rank plots.  We examine x[`r which_min_eff`], which has the smallest bulk
+relative efficiency `r round(mon[which_min_eff, 'Bulk_Reff'], 2)`.
 
 We examine the relative efficiency in different parts of the
 posterior by computing the relative efficiency of small interval
 probability estimates.
 
 ```{r}
-plot_local_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 20)
+plot_local_reff(fit = fit_alt1, par = which_min_eff + 100, nalpha = 20)
 ```
 
 The relative efficiency is good in all parts of the posterior.
@@ -607,7 +606,7 @@ The relative efficiency is good in all parts of the posterior.
 We examine also the relative efficiency of different quantile estimates.
 
 ```{r}
-plot_quantile_reff(fit = fit_alt1, par = 100+which_min_eff, nalpha = 40)
+plot_quantile_reff(fit = fit_alt1, par = which_min_eff + 100, nalpha = 40)
 ```
 
 ```{r}
@@ -636,14 +635,14 @@ writeLines(readLines("half_cauchy_nom.stan"))
 Run the half-Cauchy with nominal parameterization (and positive constraint).
 
 ```{r fit_half_nom, cache=TRUE, comment=NA, results='hide'}
-fit_half_nom <- stan(file='half_cauchy_nom.stan', seed=7878, refresh = 0)
+fit_half_nom <- stan(file = 'half_cauchy_nom.stan', seed = 7878, refresh = 0)
 ```
 
 There are no warnings, and the sampling is much faster than for the
 Cauchy nominal model.
 
 ```{r}
-mon <- monitorn(fit_half_nom)
+mon <- monitornew(fit_half_nom)
 ```
 
 All Rhat<1.01 and Rhat>0.1 and the MCMC works much better than the
@@ -676,8 +675,8 @@ Run centered parameterization model with default MCMC options.
 ```{r fit_cp, cache=TRUE, comment=NA, results='hide'}
 input_data <- read_rdump("eight_schools.data.R")
 fit_cp <- stan(
-  file='eight_schools_cp.stan', data=input_data,
-  iter=2000, chains=4, seed=483892929, refresh=0
+  file = 'eight_schools_cp.stan', data = input_data,
+  iter = 2000, chains = 4, seed=483892929, refresh = 0
 )
 ```
 
@@ -688,7 +687,7 @@ for other MCMC algorithms, but they can also be helpful to recognize
 problematic parts of the posterior.
 
 ```{r}
-mon <- monitorn(fit_cp)
+mon <- monitornew(fit_cp)
 ```
 
 Several Rhat>1.01 and tau Rhat<0.1 and the results can not be trusted.
@@ -751,16 +750,16 @@ Run non-centered parameterization model with default options plus `adapt_delta=0
 
 ```{r fit_ncp2, cache=TRUE, comment=NA, results='hide'}
 fit_ncp2 <- stan(
-  file='eight_schools_ncp.stan', data=input_data,
-  iter=2000, chains=4, control=list(adapt_delta = 0.95), 
-  seed=483892929, refresh=0
+  file = 'eight_schools_ncp.stan', data = input_data,
+  iter = 2000, chains = 4, control = list(adapt_delta = 0.95), 
+  seed = 483892929, refresh = 0
 )
 ```
 
 We get zero divergences with `adapt_delta = 0.95`.
 
 ```{r}
-mon <- monitorn(fit_ncp2)
+mon <- monitornew(fit_ncp2)
 ```
 
 All Rhat<1.01 and Rhat>0.1 and the MCMC works much better with the

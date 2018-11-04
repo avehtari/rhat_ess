@@ -1803,7 +1803,7 @@ round(quantile_mcse(samp_cp, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<0.1 indicating potential convergence problem.
 ```{r}
-monitorn(fit_cp)
+monitornew(fit_cp)
 ```
 
 #### Centered parameterization with longer chains
@@ -1895,7 +1895,7 @@ round(quantile_mcse(samp_cp2, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<=0.01 indicating convergence problem.
 ```{r}
-monitorn(fit_cp2)
+monitornew(fit_cp2)
 ```
 
 #### Centered parameterization very long chains
@@ -1977,7 +1977,7 @@ round(quantile_mcse(samp_cp3, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with some
 Rhat>1.01 and Reff<0.01 indicating convergence problem.
 ```{r}
-monitorn(fit_cp3)
+monitornew(fit_cp3)
 ```
 
 ### Non-centered Eight Schools model
@@ -2055,7 +2055,7 @@ round(quantile_mcse(samp_ncp, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(fit_ncp, warmup=0)
+monitornew(fit_ncp, warmup=0)
 ```
 
 #### Non-centered parameterization default MCMC options plus `adapt_delta=0.95`
@@ -2130,7 +2130,7 @@ round(quantile_mcse(samp_ncp2, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(fit_ncp2)
+monitornew(fit_ncp2)
 ```
 
 #### Non-centered parameterization default MCMC options + adapt_delta=0.95 + longer chains
@@ -2198,7 +2198,7 @@ round(quantile_mcse(samp_ncp3, par="tau", prob=0.5),2)
 The proposed default output from Stan would look as follows, with all
 Rhat<1.01 and Reff>0.1.
 ```{r}
-monitorn(fit_ncp3)
+monitornew(fit_ncp3)
 ```
 
 ## Dynamic HMC and effective sample size
