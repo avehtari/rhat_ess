@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
   cache = FALSE,
   fig.width = 10
 )
-options(width = 78)
+options(width = 90)
 ```
 
 The code for alternative new *split*-$\widehat{R}$ and $S_{\rm eff}$ versions are in [monitornew.R](monitornew.R) and code for diagnostic plots are in [monitorplot.R](monitorplot.R).
@@ -543,7 +543,7 @@ interval has specified proportion of draws, and the efficiency measures
 mixing of an indicator function which indicates when the
 values are inside the specific interval. 
 
-```{r, cahce=FALSE}
+```{r, cache=FALSE}
 plot_quantile_reff(fit = fit_nom, par = which_min_eff, nalpha = 40)
 ```
 
@@ -582,7 +582,7 @@ fit_alt1 <- stan(file = 'cauchy_alt_1.stan', seed = 7878, refresh = 0)
 
 There are no warnings, and the sampling is much faster.
 
-```{r}
+```{r, cache=FALSE}
 mon <- monitornew(fit_alt1)
 print(mon)
 which_min_eff <- which.min(mon[101:150, 'Bulk_Reff'])
@@ -643,7 +643,7 @@ fit_half_nom <- stan(file = 'half_cauchy_nom.stan', seed = 7878, refresh = 0)
 There are no warnings, and the sampling is much faster than for the
 Cauchy nominal model.
 
-```{r}
+```{r, cache=FALSE}
 mon <- monitornew(fit_half_nom)
 print(mon)
 ```
@@ -689,7 +689,7 @@ results can't be trusted.  We can use Rhat and Reff diagnostics also
 for other MCMC algorithms, but they can also be helpful to recognize
 problematic parts of the posterior.
 
-```{r}
+```{r, cache=FALSE}
 mon <- monitornew(fit_cp)
 print(mon)
 ```
@@ -762,7 +762,7 @@ fit_ncp2 <- stan(
 
 We get zero divergences with `adapt_delta = 0.95`.
 
-```{r}
+```{r, cache=FALSE}
 mon <- monitornew(fit_ncp2)
 print(mon)
 ```
