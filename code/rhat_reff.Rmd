@@ -507,6 +507,7 @@ slow mixing.
 
 ```{r}
 mon <- monitornew(fit_nom)
+print(mon)
 which_min_eff <- which.min(mon[1:50, 'Bulk_Reff'])
 ```
 
@@ -583,6 +584,7 @@ There are no warnings, and the sampling is much faster.
 
 ```{r}
 mon <- monitornew(fit_alt1)
+print(mon)
 which_min_eff <- which.min(mon[101:150, 'Bulk_Reff'])
 ```
 
@@ -643,6 +645,7 @@ Cauchy nominal model.
 
 ```{r}
 mon <- monitornew(fit_half_nom)
+print(mon)
 ```
 
 All Rhat<1.01 and Rhat>0.1 and the MCMC works much better than the
@@ -688,6 +691,7 @@ problematic parts of the posterior.
 
 ```{r}
 mon <- monitornew(fit_cp)
+print(mon)
 ```
 
 Several Rhat>1.01 and tau Rhat<0.1 and the results can not be trusted.
@@ -760,6 +764,7 @@ We get zero divergences with `adapt_delta = 0.95`.
 
 ```{r}
 mon <- monitornew(fit_ncp2)
+print(mon)
 ```
 
 All Rhat<1.01 and Rhat>0.1 and the MCMC works much better with the

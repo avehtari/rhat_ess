@@ -201,8 +201,7 @@ split_chains <- function(sims) {
 }
 
 monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2), 
-                        probs = c(0.05, 0.50, 0.95), 
-                        digits = 2, print = TRUE, ...) { 
+                       probs = c(0.05, 0.50, 0.95), ...) { 
   # print the summary for a general simulation results 
   # of 3D array: # iter * # chains * # parameters 
   # Args:
@@ -212,6 +211,10 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   #   print: print out the results
   # Return: 
   #   A summary array  
+  if (is(sims, "stanfit")) {
+    warmup <- 0L
+    sims <- as.array(sims)
+  }
   dim_sims <- dim(sims)
   if (is.null(dim_sims))
     dim(sims) <- c(length(sims), 1, 1)
@@ -222,10 +225,6 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   dim_sims <- dim(sims)
   if (warmup > dim_sims[1])
     stop("warmup is larger than the total number of iterations")
-  if (is(sims, "stanfit")) {
-    warmup <- 0L
-    sims <- as.array(sims)
-  }
 
   dimnames_sims <- dimnames(sims)
   parnames <- dimnames_sims[[3]]
@@ -269,29 +268,41 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   mcse_str <- paste0("SE_", probs_str)
   colnames(summary) <- c(probs_str, mcse_str, "Rhat", "Bulk_Reff", "Tail_Reff")
   rownames(summary) <- parnames
-  if (print) {
-    cat(
-      "Inference for the input samples (", 
-      dim_sims[2], " chains: each with iter=", dim_sims[1], 
-      "; warmup=", warmup, "):\n\n", sep = ""
-    )
-    print(round(summary, digits), ...)
-    cat(
-      "\nFor each parameter, Bulk_Reff and Tail_Reff are crude measure of relative\n",
-      "effective sample size for bulk and tail quantities respectively (good mixing\n",
-      "Reff>0.1), and Rhat is the potential scale reduction factor on rank normalized\n",
-      "split chains (at convergence, Rhat=1).\n", sep = ""
-    )
-  } 
-  invisible(summary) 
+  structure(
+    summary,
+    chains = n_chains,
+    iter = n_samples,
+    warmup = warmup,
+    class = "simsummary" 
+  )
 } 
 
-monitor_simple <- function(sims, ...) {
-  out <- monitornew(sims, warmup = 0, probs = 0.5, print = FALSE, ...)
-  out <- as.data.frame(out)
-  out$par <- seq_len(nrow(out))
-  out
+print.simsummary <- function(x, digits = 2, ...) {
+  atts <- attributes(x)
+  rm_atts <- c("chains", "iter", "warmup")
+  attributes(x)[rm_atts] <- NULL
+  cat(
+    "Inference for the input samples (", atts$chains, 
+    " chains: each with iter = ", atts$iter, 
+    "; warmup = ", atts$warmup, "):\n\n", sep = ""
+  )
+  class(x) <- "matrix"
+  print(round(x, digits), ...)
+  cat(
+    "\nFor each parameter, Bulk_Reff and Tail_Reff are crude measures of relative\n",
+    "effective sample size for bulk and tail quantities respectively (good mixing\n",
+    "Reff > 0.1), and Rhat is the potential scale reduction factor on rank normalized\n",
+    "split chains (at convergence, Rhat = 1).\n", sep = ""
+  )
+  invisible(x)
 }
+
+# monitor_simple <- function(sims, ...) {
+#   out <- monitornew(sims, warmup = 0, probs = 0.5, print = FALSE, ...)
+#   out <- as.data.frame(out)
+#   out$par <- seq_len(nrow(out))
+#   out
+# }
 
 # outdated version of 'monitornew'
 # monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2), 
