@@ -1,6 +1,6 @@
 # This file is part of RStan
 # Copyright (C) 2012, 2013, 2014, 2015, 2016, 2017 Trustees of Columbia University
-# Copyright (C) 2018 Aki Vehtari
+# Copyright (C) 2018 Aki Vehtari, Paul Bürkner
 #
 # RStan is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -200,48 +200,47 @@ split_chains <- function(sims) {
   cbind(sims[1:half, ], sims[(half + 1):niter, ])
 }
 
-monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2), 
-                       probs = c(0.05, 0.50, 0.95), ...) { 
+monitornew <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
   # print the summary for a general simulation results 
   # of 3D array: # iter * # chains * # parameters 
   # Args:
-  #   sims: a 3-d array described above 
+  #   sims: a 3D array described above 
   #   warmup: the number of iterations used for warmup 
   #   probs: probs of summarizing quantiles 
   #   print: print out the results
   # Return: 
-  #   A summary array  
-  if (is(sims, "stanfit")) {
-    warmup <- 0L
+  #   A summary matrix of class 'simsummary'
+  if (inherits(sims, "stanfit")) {
+    chains <- sims@sim$chains
+    iter <- sims@sim$iter
+    warmup <- sims@sim$warmup
+    parnames <- names(sims)
     sims <- as.array(sims)
+  } else {
+    dim_sims <- dim(sims)
+    if (is.null(dim_sims)) {
+      dim(sims) <- c(length(sims), 1, 1) 
+    } else if (length(dim_sims) == 2) {
+      dim(sims) <- c(dim_sims, 1)
+    } else if (length(dim_sims) > 3) {
+      stop("'sims' has more than 3 dimensions") 
+    }
+    parnames <- dimnames(sims)[[3]]
+    if (is.null(parnames)) {
+      parnames <- paste0("V", seq_len(dim(sims)[3]))
+    }
+    iter <- dim(sims)[1]
+    chains <- dim(sims)[2]
+    if (warmup > dim(sims)[1]) {
+      stop("warmup is larger than the total number of iterations")
+    }
+    if (warmup >= 1) {
+      sims <- sims[-seq_len(warmup), , , drop = FALSE] 
+    }
   }
-  dim_sims <- dim(sims)
-  if (is.null(dim_sims))
-    dim(sims) <- c(length(sims), 1, 1)
-  if (length(dim_sims) == 2)
-    dim(sims) <- c(dim_sims, 1)
-  if (length(dim_sims) > 3) 
-    stop("'sims' has more than 3 dimensions")
-  dim_sims <- dim(sims)
-  if (warmup > dim_sims[1])
-    stop("warmup is larger than the total number of iterations")
-
-  dimnames_sims <- dimnames(sims)
-  parnames <- dimnames_sims[[3]]
-  num_par <- dim_sims[3]
   
-  if (is.null(parnames)) 
-    parnames <- paste0("V", seq_len(num_par))
-  if (warmup >= 1) {
-    sims <- sims[-seq_len(warmup), , , drop = FALSE] 
-  }
-  
-  dim_sims <- dim(sims)
-  n_samples <- dim_sims[1]
-  n_chains <- dim_sims[2]
   mcse_fun <- function(p, sims) quantile_mcse(sims, p)$mcse
-  
-  summary <- vector("list", num_par)
+  summary <- vector("list", length(parnames))
   summary <- setNames(summary, parnames)
   for (i in seq_along(summary)) {
     sims_i <- sims[, , i]
@@ -251,13 +250,13 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
     zsplit_ess <- ess_rfun(zsims_split)
-    zsplit_ress <- zsplit_ess / n_samples / n_chains
+    zsplit_ress <- zsplit_ess / prod(dim(sims_i))
     
     sims_folded <- abs(sims_i - median(sims_i))
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
     zfsplit_ess <- ess_rfun(zsims_folded_split)
-    zfsplit_ress <- zfsplit_ess / n_samples / n_chains
+    zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
     rhat <- max(zsplit_rhat, zfsplit_rhat)
 
     summary[[i]] <- c(quan, mcse, rhat, zsplit_ress, zfsplit_ress)
@@ -270,8 +269,8 @@ monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2),
   rownames(summary) <- parnames
   structure(
     summary,
-    chains = n_chains,
-    iter = n_samples,
+    chains = chains,
+    iter = iter,
     warmup = warmup,
     class = "simsummary" 
   )
