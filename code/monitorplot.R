@@ -158,7 +158,7 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   zsreffs <- rep(NA, length(alphas))
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
-    I <- sims >= quantile(sims, alpha) & sims < quantile(sims, alpha + delta)
+    I <- sims > quantile(sims, alpha) & sims <= quantile(sims, alpha + delta)
     zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
   }
   
@@ -180,18 +180,19 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
     ) +
     geom_rug(
       data = params[params$divergent == 1,], 
-      aes(x = urank,y = NULL), sides = "b", color = "red"
+      aes(x = urank, y = NULL), sides = "b", color = "red"
     ) +
     geom_rug(
       data = params[params$max_depth == 1,], 
-      aes(x = urank,y = NULL), sides = "b", color = "orange"
-    )
+      aes(x = urank, y = NULL), sides = "b", color = "orange"
+    ) +
+    ylab('Reff of small intervals')
   if (rank) {
     out <- out +
       scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
-      labs(x = 'Quantile', y = 'Reff')
+      xlab('Quantile')
   } else {
-    out <- out + labs(x = par, y = 'Reff')
+    out <- out + xlab(par)
   }
   out
 }
@@ -231,7 +232,7 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   zsreffs <- rep(NA, length(alphas))
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
-    I <- sims < quantile(sims, alpha)
+    I <- sims <= quantile(sims, alpha)
     zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
   }
   
@@ -258,13 +259,14 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
     geom_rug(
       data = params[params$max_depth == 1,], 
       aes(x = urank, y = NULL), sides = "b", color = "orange"
-    )
+    ) +
+    ylab("Reff of quantiles")
   if (rank) {
     out <- out +
       scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
-      labs(x = 'Quantile', y = 'Reff')
+      xlab('Quantile')
   } else {
-    out <- out + labs(x = par, y = 'Reff')
+    out <- out + xlab(par)
   }
   out
 }

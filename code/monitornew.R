@@ -168,16 +168,16 @@ rhat_rfun <- function(sims) {
   sqrt((var_between/var_within + n_samples - 1) / n_samples)
 } 
 
-quantile_mcse <- function(sims, prob = NULL) {
+quantile_mcse <- function(sims, prob) {
   # compute Markov-chain SE of quantiles for a single parameter
-  # prob must be a single quantile
+  # prob must be a single probability for the quantile of interest
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
   }
-  I <- sims < quantile(sims, prob)
+  I <- sims <= quantile(sims, prob)
   Seff <- ess_rfun(z_scale(split_chains(I)))
-  q <- c(0.1586553, 0.8413447, 0.05, 0.95)
-  a <- qbeta(q, Seff * prob + 1, Seff * (1 - prob) + 1)
+  p <- c(0.1586553, 0.8413447, 0.05, 0.95)
+  a <- qbeta(p, Seff * prob + 1, Seff * (1 - prob) + 1)
   ssims <- sort(sims)
   S <- length(ssims)
   th1 <- ssims[max(round(a[1] * S), 1)]
