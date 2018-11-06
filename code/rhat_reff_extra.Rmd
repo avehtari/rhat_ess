@@ -11,7 +11,7 @@ output:
     number_sections: TRUE
     toc_float:
       smooth_scroll: FALSE
-bibliography: rhat_neff.bib
+bibliography: rhat_reff.bib
 csl: harvard-cite-them-right.csl
 ---
 
