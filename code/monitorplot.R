@@ -170,6 +170,7 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   )
   ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
   xname <- if (rank) "quantile" else "value"
+  xrug <- if (rank) "urank" else "value"
   out <- ggplot(data = df, aes_string(x = xname, y = "zsreff")) +
     geom_step() + 
     geom_hline(yintercept = c(0, 1)) + 
@@ -179,12 +180,12 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
       limits = c(0, ymax)
     ) +
     geom_rug(
-      data = params[params$divergent == 1,], 
-      aes(x = urank, y = NULL), sides = "b", color = "red"
+      data = params[params$divergent == 1, ], 
+      aes_string(x = xrug, y = NULL), sides = "b", color = "red"
     ) +
     geom_rug(
-      data = params[params$max_depth == 1,], 
-      aes(x = urank, y = NULL), sides = "b", color = "orange"
+      data = params[params$max_depth == 1, ], 
+      aes_string(x = xrug, y = NULL), sides = "b", color = "orange"
     ) +
     ylab('Reff of small intervals')
   if (rank) {
@@ -244,6 +245,7 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   )
   ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
   xname <- if (rank) "quantile" else "value"
+  xrug <- if (rank) "urank" else "value"
   out <- ggplot(data = df, aes_string(x = xname, y = "zsreff")) +
     geom_point() + 
     geom_hline(yintercept = c(0, 1)) + 
@@ -253,12 +255,12 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
       limits = c(0, ymax)
     ) +
     geom_rug(
-      data = params[params$divergent == 1,], 
-      aes(x = urank, y = NULL), sides = "b", color = "red"
+      data = params[params$divergent == 1, ], 
+      aes_string(x = xrug, y = NULL), sides = "b", color = "red"
     ) +
     geom_rug(
-      data = params[params$max_depth == 1,], 
-      aes(x = urank, y = NULL), sides = "b", color = "orange"
+      data = params[params$max_depth == 1, ], 
+      aes_string(x = xrug, y = NULL), sides = "b", color = "orange"
     ) +
     ylab("Reff of quantiles")
   if (rank) {

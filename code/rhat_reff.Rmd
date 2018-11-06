@@ -737,7 +737,8 @@ results of longer chains.
 We examine the relative efficiency in different parts of the posterior by
 computing the relative efficiency of small interval estimates for
 the between school standard deviation `tau`. These plots may either show
-quantiles or parameter values at the vertical axis.
+quantiles or parameter values at the vertical axis. Red ticks show
+divergent transitions.
 
 ```{r}
 plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20)
