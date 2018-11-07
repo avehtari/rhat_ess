@@ -140,7 +140,7 @@ $\mbox{var}(\theta \mid y)$, in expectation.
 A nice introductory reference for analyzing MCMC results in general
 and effective sample size in particular is provided by @Geyer:2011
 [see also @Geyer:1992].  The particular calculations used by Stan
-[@Stan.2.18] follow those for split-$\hat{R}$, which involve both
+[@Stan.2.18] follow those for split-$\widehat{R}$, which involve both
 between-chain (mean) and within-chain calculations
 (autocorrelation). They were introduced in the Stan manual
 [@StanManual.2.18.0] and explained in more detail in @BDA3.
@@ -191,8 +191,8 @@ Is this intentional?
 
 Effective sample size $N_{\rm eff}$ can be larger than $N$ in case of antithetic
 Markov chains, which have negative autocorrelations on odd lags. The Dynamic
-Hamiltonian Monte-Carlo algorithms used in Stan [@Hoffman+Gelman:2014] can
-produce $N_{\rm eff}>N$ for parameters with a close to Gaussian posterior
+Hamiltonian Monte-Carlo algorithms used in Stan [@Hoffman+Gelman:2014,@betancourt2017conceptual] can
+produce $N_{\rm eff}>N$ for parameters with a close to Gaussian posterior (in the unconstrained space)
 and low dependency on other parameters.
 
 ### Estimation of the Effective Sample Size
@@ -201,7 +201,7 @@ In practice, the probability function in question cannot be tractably
 integrated and thus neither autocorrelation nor the effective sample size
 can be calculated. Instead, these quantities must be estimated
 from the samples themselves. The rest of this section describes an
-autocorrelation and split-$\hat{R}$ based effective sample
+autocorrelation and split-$\widehat{R}$ based effective sample
 size estimator, based on multiple split chains. For simplicity, 
 each chain will be assumed to be of the same length $N$.
 
@@ -271,7 +271,7 @@ compared to other packages performing MCMC sampling.
 
 As *split*-$\widehat{R}$, and $S_{\rm eff}$ are well defined only if
 the marginal posteriors have finite mean and variance, we next
-describe variants which are well defined for all distributions and
+introduce variants which are well defined for all distributions and
 more robust for long tailed distributions.
 
 ## Rank normalization
@@ -296,16 +296,16 @@ What's the importance of "non-parametric" here?
 I think the purpose of this statement needs to be better explained
 -->
 
-## Rank normalized *Split*-$\widehat{R}$
+## Rank normalized *split*-$\widehat{R}$
 
-Rank normalized *Split*-$\widehat{R}$ is computed using the equations in
+Rank normalized *split*-$\widehat{R}$ is computed using the equations in
 [Section *Split*-$\widehat{R}$](#SplitRhat) by replacing the original parameter
 values $\theta^{(nm)}$ with their corresponding rank normalized values
 $z^{(nm)}$.
 
-## Rank normalized folded *split*-$\widehat{R}$
+## Rank normalized *folded-split*-$\widehat{R}$
 
-Both original and rank-normalized *Split*-$\widehat{R}$ can be fooled if
+Both original and rank-normalized *split*-$\widehat{R}$ can be fooled if
 chains have different scales but the same location. To alleviate this problem,
 we propose to compute rank normalized *folded-split*-$\widehat{R}$
 using *folded* split chains by rank normalizing absolute deviations from
@@ -320,8 +320,8 @@ Paul: I like the current notation as it is super explicit
 -->
 
 To obtain a single conservative $\widehat{R}$ estimate, we propose to
-report the maximum of *rank-normalized-split*-$\widehat{R}$ and
-*rank-normalized-folded-split*-$\widehat{R}$ for each parameter.
+report the maximum of rank normalized *split*-$\widehat{R}$ and
+rank normalized *folded-split*-$\widehat{R}$ for each parameter.
 
 ## Relative efficiency using rank normalized values
 
@@ -394,7 +394,7 @@ directly on the indictor function's results.
 
 ## Relative efficiency of quantiles {#quantile_R_eff}
 
-Assuming that we know the CDF to be a certain contionous function $F$ which is
+Assuming that we know the CDF to be a certain continuous function $F$ which is
 smooth near an $\alpha$-quantile of interest, we could use the delta method to
 compute a variance estimate for $F^{-1}(\bar{I}_\alpha)$. Although we
 don't usually know $F$, the delta method approach reveals that the variance of
@@ -436,7 +436,7 @@ on the median and other quantiles, instead.
 
 Median, MAD and quantiles are well defined even when the distribution does not
 have finite mean and variance, and they are asymptotically normal for continuous
-distributions which non-zero in the relevant neighborhood. As the delta method
+distributions which are non-zero in the relevant neighborhood. As the delta method
 for computing the variance would require explicit knowledge of the normalized 
 posterior density, we propose the following alternative approach:
 
@@ -546,9 +546,9 @@ print(mon)
 which_min_eff <- which.min(mon[1:50, 'Bulk_Reff'])
 ```
 
-Several Rhat < 1.01 and some Reff > 0.1 indicate that the results should not be 
+Several Rhat > 1.01 and some Reff < 0.1 indicate that the results should not be 
 trusted. The extended case study [rhat_reff_extra](rhat_reff_extra.html) has 
-some results for longer chains as well.
+more results with longer chains as well.
 
 We can further analyze potential problems using local relative efficiency and
 rank plots. We specifically investigate x[`r which_min_eff`], which has the
@@ -558,7 +558,7 @@ We examine the relative efficiency in different parts of the posterior by
 computing the relative efficiency of small interval probability estimates (see
 Section [Relative efficiency of small interval probability
 estimates](#small_interval_R_eff)). Each interval contains $1/k$ of the draws
-(e.g., $5\%$ each if $k=20$). The small interval efficiency measures mixing of
+(e.g., $5\%$ each, if $k=20$). The small interval efficiency measures mixing of
 an function which indicates when the values are inside or outside the specific
 small interval. As detailed above, this gives us a local efficiency measure
 which does not depend on the shape of the distribution.
@@ -624,7 +624,7 @@ which_min_eff <- which.min(mon[101:150, 'Bulk_Reff'])
 
 All Rhat < 1.01 and Reff > 0.1 indicate the sampling worked much better with 
 the alternative parameterization. The extended case study 
-[rhat_reff_extra](rhat_reff_extra.html) has results for more alternative 
+[rhat_reff_extra](rhat_reff_extra.html) has more results using alternative 
 parameterizations.
 
 We can further analyze potential problems using local relative efficiency and
@@ -656,7 +656,7 @@ mcmc_hist_r_scale(samp[, , xmin])
 
 In summary, the alterative parameterization produces results that look much
 better than for the nominal parameterization. There are still some differences
-in the tails, which we also identified via tail the relative efficiencies.
+in the tails, which we also identified via the tail relative efficiency estimates.
 
 
 ### Half-Cauchy with nominal parameterization
@@ -721,7 +721,7 @@ fit_cp <- stan(
 )
 ```
 
-Depite an increased `adapt_delta`, we still observe a lot of divergent
+Despite an increased `adapt_delta`, we still observe a lot of divergent
 transitions, which in itself is already sufficient to not trust the results.
 Still, we can use Rhat and Reff diagnostics to recognize problematic parts of
 the posterior.
@@ -734,11 +734,13 @@ print(mon)
 See the extended case study [rhat_reff_extra](rhat_reff_extra.html) for 
 results of longer chains.
 
-We examine the relative efficiency in different parts of the posterior by
-computing the relative efficiency of small interval estimates for
-the between school standard deviation `tau`. These plots may either show
-quantiles or parameter values at the vertical axis. Red ticks show
-divergent transitions.
+Bulk-$R_{\rm eff}$ for the between school standard deviation `tau` is
+0.05<0.01, indicating we should investigate that parameter more
+carefully.  We thus examine the relative efficiency in different parts
+of the posterior by computing the relative efficiency of small
+interval estimates for `tau`. These plots may either show quantiles or
+parameter values at the vertical axis. Red ticks show divergent
+transitions.
 
 ```{r}
 plot_local_reff(fit = fit_cp, par = "tau", nalpha = 20)
@@ -752,8 +754,8 @@ We see that the sampler has difficulties in exploring small `tau` values. As
 the efficiency for estimating small `tau` values is practically zero,
 we may assume that we may miss substantial amount of posterior mass
 and get biased estimates. Red ticks, which show iterations with divergences,
-have concentrated to small `tau` values, indicating problems exploring
-even smaller values which is likely to cause more bias.
+have concentrated to small `tau` values, indicate also problems exploring
+small values which is likely to cause bias.
 
 We examine also the relative efficiency of different quantile estimates. Again,
 these plots may either show quantiles or parameter values at the vertical axis.
