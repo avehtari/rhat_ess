@@ -103,7 +103,7 @@ ess_rfun <- function(sims) {
   chains <- ncol(sims)
   n_samples <- nrow(sims)
 
-  acov <- lapply(seq_len(chains), FUN = function(i) autocovariance(sims[, i])) 
+  acov <- lapply(seq_len(chains), function(i) autocovariance(sims[, i])) 
   acov <- do.call(cbind, acov)
   chain_mean <- apply(sims, 2, mean)
   mean_var <- mean(acov[1, ]) * n_samples / (n_samples - 1) 
@@ -200,16 +200,15 @@ split_chains <- function(sims) {
   cbind(sims[1:half, ], sims[(half + 1):niter, ])
 }
 
-monitornew <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
-  # print the summary for a general simulation results 
+monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
+  # print a summary for general simulation results 
   # of 3D array: # iter * # chains * # parameters 
   # Args:
   #   sims: a 3D array described above 
   #   warmup: the number of iterations used for warmup 
   #   probs: probs of summarizing quantiles 
-  #   print: print out the results
   # Return: 
-  #   A summary matrix of class 'simsummary'
+  #   A summary data.frame of class 'simsummary'
   if (inherits(sims, "stanfit")) {
     chains <- sims@sim$chains
     iter <- sims@sim$iter
@@ -262,7 +261,7 @@ monitornew <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     summary[[i]] <- c(quan, mcse, rhat, zsplit_ress, zfsplit_ress)
   }
   
-  summary <- do.call(rbind, summary)
+  summary <- as.data.frame(do.call(rbind, summary))
   probs_str <- paste0("Q", probs * 100)
   mcse_str <- paste0("SE_", probs_str)
   colnames(summary) <- c(probs_str, mcse_str, "Rhat", "Bulk_Reff", "Tail_Reff")
@@ -272,134 +271,137 @@ monitornew <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     chains = chains,
     iter = iter,
     warmup = warmup,
-    class = "simsummary" 
+    class = c("simsummary", "data.frame") 
   )
 } 
 
+monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
+  # print an extended summary for general simulation results 
+  # of 3D array: # iter * # chains * # parameters 
+  # Args:
+  #   sims: a 3D array described above 
+  #   warmup: the number of iterations used for warmup 
+  #   probs: probs of summarizing quantiles 
+  #   print: print out the results
+  # Return: 
+  #   A summary data.frame of class 'simsummary'
+  if (inherits(sims, "stanfit")) {
+    chains <- sims@sim$chains
+    iter <- sims@sim$iter
+    warmup <- sims@sim$warmup
+    parnames <- names(sims)
+    sims <- as.array(sims)
+  } else {
+    dim_sims <- dim(sims)
+    if (is.null(dim_sims)) {
+      dim(sims) <- c(length(sims), 1, 1) 
+    } else if (length(dim_sims) == 2) {
+      dim(sims) <- c(dim_sims, 1)
+    } else if (length(dim_sims) > 3) {
+      stop("'sims' has more than 3 dimensions") 
+    }
+    parnames <- dimnames(sims)[[3]]
+    if (is.null(parnames)) {
+      parnames <- paste0("V", seq_len(dim(sims)[3]))
+    }
+    iter <- dim(sims)[1]
+    chains <- dim(sims)[2]
+    if (warmup > dim(sims)[1]) {
+      stop("warmup is larger than the total number of iterations")
+    }
+    if (warmup >= 1) {
+      sims <- sims[-seq_len(warmup), , , drop = FALSE] 
+    }
+  }
+  
+  mcse_fun <- function(p, sims) quantile_mcse(sims, p)$mcse
+  summary <- vector("list", length(parnames))
+  summary <- setNames(summary, parnames)
+  for (i in seq_along(summary)) {
+    sims_i <- sims[, , i]
+    nsamples <- prod(dim(sims_i))
+    mean <- mean(sims_i)
+    sd <- sd(sims_i)
+    quan <- unname(quantile(sims_i, probs = probs))
+    ess <- ess_rfun(sims_i)
+    ress <- ess / nsamples
+    sem <- sd / sqrt(ess)
+    rhat <- rhat_rfun(sims_i)
+    
+    split_ess <- ess_rfun(split_chains(sims_i))
+    split_rhat <- rhat_rfun(split_chains(sims_i))
+    zess <- ess_rfun(z_scale(sims_i))
+    zrhat <- rhat_rfun(z_scale(sims_i))
+    
+    zsims_split <- z_scale(split_chains(sims_i))
+    zsplit_rhat <- rhat_rfun(zsims_split)
+    zsplit_ess <- ess_rfun(zsims_split)
+    zsplit_ress <- zsplit_ess / nsamples
+    
+    sims_centered <- sims_i - median(sims_i)
+    sims_folded <- abs(sims_centered)
+    zsims_folded_split <- z_scale(split_chains(sims_folded))
+    zfsplit_rhat <- rhat_rfun(zsims_folded_split)
+    zfsplit_ess <- ess_rfun(zsims_folded_split)
+    zfsplit_ress <- zfsplit_ess / nsamples
+    
+    sims_med <- (sims_centered <= 0) * 1
+    sims_mad <- ((sims_folded - median(sims_folded)) <= 0) * 1
+    medsplit_ess <- ess_rfun(z_scale(split_chains(sims_med)))
+    medsplit_ress <- medsplit_ess / nsamples 
+    madsplit_ess <- ess_rfun(z_scale(split_chains(sims_mad)))
+    madsplit_ress <- madsplit_ess / nsamples 
+    
+    summary[[i]] <- c(
+      mean, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, 
+      rhat, split_rhat, zrhat, zsplit_rhat, zfsplit_rhat, zfsplit_ess, 
+      zfsplit_ress, medsplit_ess, medsplit_ress, madsplit_ess, madsplit_ress
+    )
+  }
+  
+  summary <- as.data.frame(do.call(rbind, summary))
+  probs_str <- paste0("Q", probs * 100)
+  colnames(summary) <- c(
+    "mean", "se_mean", "sd", probs_str, "neff", "reff", "sneff", "zneff", 
+    "zsneff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", 
+    "zfsneff", "zfsreff", "medsneff", "medsreff", "madsneff", "madsreff"
+  )
+  rownames(summary) <- parnames
+  structure(
+    summary,
+    chains = chains,
+    iter = iter,
+    warmup = warmup,
+    extra = TRUE,
+    class = c("simsummary", "data.frame") 
+  )
+}
+
 print.simsummary <- function(x, digits = 2, ...) {
   atts <- attributes(x)
-  rm_atts <- c("chains", "iter", "warmup")
+  rm_atts <- c("chains", "iter", "warmup", "extra")
   attributes(x)[rm_atts] <- NULL
+  px <- x
+  if (isTRUE(atts$extra)) {
+    neff_vars <- names(px)[grepl("neff", names(px))]
+    for (v in neff_vars) {
+      px[, v] <- round(px[, v], 0)
+    }
+  }
   cat(
     "Inference for the input samples (", atts$chains, 
     " chains: each with iter = ", atts$iter, 
     "; warmup = ", atts$warmup, "):\n\n", sep = ""
   )
-  class(x) <- "matrix"
-  print(round(x, digits), ...)
-  cat(
-    "\nFor each parameter, Bulk_Reff and Tail_Reff are crude measures of relative\n",
-    "effective sample size for bulk and tail quantities respectively (good mixing\n",
-    "Reff > 0.1), and Rhat is the potential scale reduction factor on rank normalized\n",
-    "split chains (at convergence, Rhat = 1).\n", sep = ""
-  )
+  class(px) <- "data.frame"
+  print(round(px, digits), ...)
+  if (!isTRUE(atts$extra)) {
+    cat(
+      "\nFor each parameter, Bulk_Reff and Tail_Reff are crude measures of relative\n",
+      "effective sample size for bulk and tail quantities respectively (good mixing\n",
+      "Reff > 0.1), and Rhat is the potential scale reduction factor on rank normalized\n",
+      "split chains (at convergence, Rhat = 1).\n", sep = ""
+    )
+  }
   invisible(x)
 }
-
-# monitor_simple <- function(sims, ...) {
-#   out <- monitornew(sims, warmup = 0, probs = 0.5, print = FALSE, ...)
-#   out <- as.data.frame(out)
-#   out$par <- seq_len(nrow(out))
-#   out
-# }
-
-# outdated version of 'monitornew'
-# monitornew <- function(sims, warmup = floor(dim(sims)[1] / 2), 
-#                        probs = c(0.025, 0.25, 0.50, 0.75, 0.975), 
-#                        digits_summary = 1, print = TRUE, ...) { 
-#   # print the summary for a general simulation results 
-#   # of 3-d array: # iter * # chains * # parameters 
-#   # Args:
-#   #   sims: a 3-d array described above 
-#   #   warmup: the number of iterations used for warmup 
-#   #   probs: probs of summarizing quantiles 
-#   #   print: print out the results
-#   # 
-#   # Return: 
-#   #   A summary array  
-#   dim_sims <- dim(sims)
-#   if (is.null(dim_sims))
-#       dim(sims) <- c(length(sims), 1, 1)
-#   if (length(dim_sims) == 2)
-#       dim(sims) <- c(dim_sims, 1)
-#   if (length(dim_sims) > 3) 
-#     stop("'sims' has more than 3 dimensions")
-#   dim_sims <- dim(sims)
-#   if (warmup > dim_sims[1])
-#     stop("warmup is larger than the total number of iterations")
-#   if (is(sims, "stanfit")) {
-#     warmup <- 0L
-#     sims <- as.array(sims)
-#   }
-#   dimnames_sims <- dimnames(sims)
-#   parnames <- dimnames_sims[[3]]
-#   num_par <- dim_sims[3]
-#   
-#   if (is.null(parnames)) parnames <- paste0("V", 1:num_par)
-#   sims_wow <- if (warmup >= 1) apply(sims, c(2, 3), FUN = function(x) x[-(1:warmup)]) else sims 
-#   dim_sims <- dim(sims_wow)
-#   n_samples <- dim_sims[1]
-#   n_chains <- dim_sims[2]
-#   half_n <- floor(n_samples / 2)
-#   idx_2nd <- n_samples - half_n + 1
-#   m <- apply(sims_wow, 3, mean)
-#   sd <- sapply(1:num_par, FUN = function(i) sd(as.vector(sims_wow[,,i]))) 
-#   quan <- lapply(1:num_par, FUN = function(i) quantile(sims_wow[,,i], probs = probs))
-#   probs_str <- names(quan[[1]])
-#   quan <- do.call(rbind, quan)
-#   rhat <- sapply(1:num_par, FUN = function(i) rhat_rfun(sims_wow[,,i]))
-#   split_rhat <- sapply(1:num_par, FUN = function(i)
-#     rhat_rfun(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i])))
-#   ess <- sapply(1:num_par, FUN = function(i) ess_rfun(sims_wow[,,i]))
-#   ress <-ess/n_samples/n_chains
-#   split_ess <- sapply(1:num_par, FUN = function(i)
-#     ess_rfun(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i])))
-#   sem <- sd / sqrt(ess)
-#   zrhat <- sapply(1:num_par, FUN = function(i) rhat_rfun(z_scale(sims_wow[,,i])))
-#   zsplit_rhat <- sapply(1:num_par, FUN = function(i)
-#       rhat_rfun(z_scale(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i]))))
-#   sims_centered <- sweep(sims_wow,3,apply(sims_wow,3,median))
-#   sims_folded <- abs(sims_centered)
-#   sims_med <- (sims_centered<0)*1
-#   sims_mad <- (sweep(sims_folded,3,apply(sims_folded,3,median))<0)*1
-#   zfsplit_rhat <- sapply(1:num_par, FUN = function(i)
-#       rhat_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
-#   ## zfsplit_rhat2 <- sapply(1:num_par, FUN = function(i) {
-#   ##     sims_split <- cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i])
-#   ##     sims_folded <- abs(sweep(sims_split,2,apply(sims_split,2,median)))
-#   ##     rhat_rfun(z_scale(sims_folded))
-#   ## })
-#   zess <- sapply(1:num_par, FUN = function(i) ess_rfun(z_scale(sims_wow[,,i])))
-#   zsplit_ess <- sapply(1:num_par, FUN = function(i)
-#     ess_rfun(z_scale(cbind(sims_wow[1:half_n,,i],sims_wow[idx_2nd:n_samples,,i]))))
-#   zsplit_ress <- zsplit_ess/n_samples/n_chains
-#   zfsplit_ess <- sapply(1:num_par, FUN = function(i)
-#       ess_rfun(z_scale(cbind(sims_folded[1:half_n,,i],sims_folded[idx_2nd:n_samples,,i]))))
-#   zfsplit_ress <- zfsplit_ess/n_samples/n_chains
-#   medsplit_ess <- sapply(1:num_par, FUN = function(i)
-#       ess_rfun(z_scale(cbind(sims_med[1:half_n,,i],sims_med[idx_2nd:n_samples,,i]))))
-#   medsplit_ress <- medsplit_ess/n_samples/n_chains
-#   madsplit_ess <- sapply(1:num_par, FUN = function(i)
-#       ess_rfun(z_scale(cbind(sims_mad[1:half_n,,i],sims_mad[idx_2nd:n_samples,,i]))))
-#   madsplit_ress <- madsplit_ess/n_samples/n_chains
-#   sem <- sd / sqrt(ess)
-#   
-#   summary <- cbind(m, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, rhat, split_rhat, zrhat, zsplit_rhat, zfsplit_rhat, zfsplit_ess, zfsplit_ress, medsplit_ess, medsplit_ress, madsplit_ess, madsplit_ress)
-#   colnames(summary) <- c("mean", "se_mean", "sd", probs_str, "neff", "reff", "sneff", "zneff", "zsneff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", "zfsneff", "zfsreff", "medsneff", "medsreff", "madsneff", "madsreff")
-#   rownames(summary) <- parnames 
-#   if (print) {
-#     cat("Inference for the input samples (")
-#     cat(dim_sims[2], " chains: each with iter=", dim_sims[1], "; warmup=", warmup, "):\n\n", sep = "")
-#     # round n_eff to integers
-#     summary[, 'neff'] <- round(summary[, 'neff'], 0)
-#     summary[, 'sneff'] <- round(summary[, 'sneff'], 0)
-#     summary[, 'zneff'] <- round(summary[, 'zneff'], 0)
-#     summary[, 'zsneff'] <- round(summary[, 'zsneff'], 0)
-#     print(round(summary, digits_summary), ...)
-#  
-#     cat("\nFor each parameter, n_eff is a crude measure of effective sample size,\n", 
-#         "and Rhat is the potential scale reduction factor on split chains (at \n",
-#         "convergence, Rhat=1).\n", sep = '')
-#   } 
-#   invisible(summary) 
-# } 

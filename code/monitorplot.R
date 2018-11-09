@@ -43,7 +43,7 @@ plotranknorm <- function(theta, n, m = 1, interval = NULL) {
       ylab('ECDF + normal approximated 95% interval')
     out <- grid.arrange(p2b, p3b, p3c, nrow = 1)
   }
-  out
+  invisible(out)
 }
 
 mcmc_hist_r_scale <- function(x, nbreaks = 50) {
@@ -55,7 +55,8 @@ mcmc_hist_r_scale <- function(x, nbreaks = 50) {
 }
 
 plot_rhat <- function(res) {
-  p1 <- ggplot(res, aes(x=par, y=sRhat)) + 
+  res$par <- rownames(res)
+  p1 <- ggplot(res, aes(x = par, y = sRhat)) + 
     geom_point() + 
     ggtitle('Classic split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
@@ -83,6 +84,7 @@ plot_reff <- function(res) {
   ymax <- 2
   ybreaks <- seq(0, ymax, by = 0.25)
   ylimits <- c(0, ymax)
+  res$par <- rownames(res)
   
   p1 <- ggplot(res, aes(x=par, y=reff)) + 
     geom_point() + 
