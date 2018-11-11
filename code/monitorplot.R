@@ -1,6 +1,6 @@
 # Copyright (C) 2018 Aki Vehtari, Paul Bürkner
 
-plotranknorm <- function(theta, n, m = 1, interval = NULL) {
+plotranknorm <- function(theta, n, m = 1, interval = FALSE) {
   df <- data.frame(theta = theta) %>%
     mutate(
       gid = gl(m, n),
@@ -8,24 +8,18 @@ plotranknorm <- function(theta, n, m = 1, interval = NULL) {
       u = u_scale(theta),
       z = z_scale(theta)
     )
+  size <- 1.1
+  alpha <- if (m > 1) 0.5 else 1
   blue <- color_scheme_get(scheme = 'blue', i = 4)[[1]]
   p2 <- ggplot(df, aes(x = theta, grp = gid)) +
-    stat_ecdf(color = blue, alpha = 0.5, pad = FALSE) +
+    stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
     labs(x = TeX('$\\theta$'), y = 'ECDF')
   p3 <- ggplot(df, aes(x = r / (n * m), grp = gid)) +
-    stat_ecdf(color = blue, alpha = 0.5, pad = FALSE) +
+    stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
     labs(x = 'Scaled rank', y = 'ECDF')
   
-  if (is.null(interval)) {
-    p1 <- mcmc_hist(as.data.frame(theta)) +
-      xlab(TeX('$\\theta$'))
-    p4 <- ggplot(df, aes(x = z, grp = gid)) +
-      stat_ecdf(color = blue, alpha = 0.5, pad = FALSE) +
-      labs(x = 'z', y = 'ECDF')
-    out <- grid.arrange(p1, p2, p3, p4, nrow = 1)
-  } else {
-  	df <- mutate(df,
-  	  # psd = sqrt(n*u*(1-u))/n,
+  if (interval) {
+    df <- df %>% mutate(
       psd = sqrt((r + 1) * (n - r + 1) / (n + 2)^2 / (n + 3)),
       pm2sd = (r + 1) / (n + 2) - 1.96 * psd,
       pp2sd = (r + 1) / (n + 2) + 1.96 * psd,
@@ -33,15 +27,25 @@ plotranknorm <- function(theta, n, m = 1, interval = NULL) {
       p025 = qbeta(0.025, r + 1, n - r + 1)
     )
     p2b <- p2 + 
-      geom_linerange(data = df, aes(ymin = p025, ymax = p975), color = blue) +
+      geom_line(data = df, aes(y = p025), color = blue) +
+      geom_line(data = df, aes(y = p975), color = blue) +
       ylab('ECDF + beta 95% interval')
     p3b <- p3 + 
-      geom_linerange(data = df, aes(ymin = p025, ymax = p975), color = blue) + 
+      geom_line(data = df, aes(y = p025), color = blue) +
+      geom_line(data = df, aes(y = p975), color = blue) + 
       ylab('ECDF + beta 95% interval')
     p3c <- p3 + 
-      geom_linerange(data = df, aes(ymin = pm2sd, ymax = pp2sd), color = blue) +
+      geom_line(data = df, aes(y = pm2sd), color = blue) +
+      geom_line(data = df, aes(y = pp2sd), color = blue) +
       ylab('ECDF + normal approximated 95% interval')
     out <- grid.arrange(p2b, p3b, p3c, nrow = 1)
+  } else {
+    p1 <- mcmc_hist(as.data.frame(theta)) +
+      xlab(TeX('$\\theta$'))
+    p4 <- ggplot(df, aes(x = z, grp = gid)) +
+      stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
+      labs(x = 'z', y = 'ECDF')
+    out <- grid.arrange(p1, p2, p3, p4, nrow = 1)
   }
   invisible(out)
 }
@@ -63,14 +67,14 @@ plot_rhat <- function(res) {
     geom_hline(yintercept = 1) + 
     ylim(c(.99 ,1.26))
 
-  p2 <- ggplot(res, aes(x=par, y=zsRhat)) + 
+  p2 <- ggplot(res, aes(x = par, y = zsRhat)) + 
     geom_point() + 
     ggtitle('Rank normalized split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
     ylim(c(.99,1.26))
   
-  p3 <- ggplot(res, aes(x=par, y=zfsRhat)) + 
+  p3 <- ggplot(res, aes(x = par, y = zfsRhat)) + 
     geom_point() + 
     ggtitle('Folded rank norm. split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
@@ -86,42 +90,42 @@ plot_reff <- function(res) {
   ylimits <- c(0, ymax)
   res$par <- rownames(res)
   
-  p1 <- ggplot(res, aes(x=par, y=reff)) + 
+  p1 <- ggplot(res, aes(x = par, y = reff)) + 
     geom_point() + 
     ggtitle('Classic Reff') + 
     geom_hline(yintercept = c(0,1)) +
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits) 
   
-  p2 <- ggplot(res, aes(x=par, y=zsreff)) + 
+  p2 <- ggplot(res, aes(x = par, y = zsreff)) + 
     geom_point() + 
     ggtitle('New Bulk-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p3 <- ggplot(res, aes(x=par, y=zfsreff)) + 
+  p3 <- ggplot(res, aes(x = par, y = zfsreff)) + 
     geom_point() + 
     ggtitle('New Tail-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p4 <- ggplot(res, aes(x=par, y=medsreff)) + 
+  p4 <- ggplot(res, aes(x = par, y = medsreff)) + 
     geom_point() + 
     ggtitle('Median-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p5 <- ggplot(res, aes(x=par, y=madsreff)) + 
+  p5 <- ggplot(res, aes(x = par, y = madsreff)) + 
     geom_point() + 
     ggtitle('MAD-Reff') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  blank <- grid::grid.rect(gp = grid::gpar(col="white"), draw = FALSE)
+  blank <- grid::grid.rect(gp = grid::gpar(col = "white"), draw = FALSE)
   grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 }
 

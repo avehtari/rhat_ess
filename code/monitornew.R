@@ -185,7 +185,7 @@ quantile_mcse <- function(sims, prob) {
   mcse <- (th2 - th1) / 2
   th1 <- ssims[max(round(a[3] * S), 1)]
   th2 <- ssims[min(round(a[4] * S), S)]
-  data.frame(mcse = mcse, q05 = th1, q95 = th2, Seff = Seff)
+  data.frame(mcse = mcse, Q05 = th1, Q95 = th2, Seff = Seff)
 }
 
 split_chains <- function(sims) {
