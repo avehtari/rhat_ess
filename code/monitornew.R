@@ -196,8 +196,8 @@ split_chains <- function(sims) {
     dim(sims) <- c(length(sims), 1)
   }
   niter <- dim(sims)[1]
-  half <- floor(niter / 2)
-  cbind(sims[1:half, ], sims[(half + 1):niter, ])
+  half <- niter / 2
+  cbind(sims[1:floor(half), ], sims[ceiling(half+1):niter, ])
 }
 
 monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
