@@ -13,7 +13,7 @@ plotranknorm <- function(theta, n, m = 1, interval = FALSE) {
   blue <- color_scheme_get(scheme = 'blue', i = 4)[[1]]
   p2 <- ggplot(df, aes(x = theta, grp = gid)) +
     stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
-    labs(x = TeX('$\\theta$'), y = 'ECDF')
+    labs(x = 'theta', y = 'ECDF')
   p3 <- ggplot(df, aes(x = r / (n * m), grp = gid)) +
     stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
     labs(x = 'Scaled rank', y = 'ECDF')
@@ -41,7 +41,7 @@ plotranknorm <- function(theta, n, m = 1, interval = FALSE) {
     out <- grid.arrange(p2b, p3b, p3c, nrow = 1)
   } else {
     p1 <- mcmc_hist(as.data.frame(theta)) +
-      xlab(TeX('$\\theta$'))
+      xlab('theta')
     p4 <- ggplot(df, aes(x = z, grp = gid)) +
       stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
       labs(x = 'z', y = 'ECDF')

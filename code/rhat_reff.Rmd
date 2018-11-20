@@ -560,7 +560,6 @@ First, we load all the necessary R packages and additional functions.
 ```{r, comment=NA, message=FALSE, warning=FALSE, results='hide', cache=FALSE}
 library(tidyverse)
 library(gridExtra)
-library(latex2exp)
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
