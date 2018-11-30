@@ -540,8 +540,8 @@ more strict convergence diagnostics and relative efficiency warning
 limits could be used. We propose the following warning thresholds
 although additional experiments would be useful:
 
- - Rhat<1.01
- - Reff>0.1 or Seff>400
+ - Rhat > 1.01
+ - Seff < 400
 
 Plots shown in the upcoming sections have dashed lines based on these thresholds
 (in continuous plots, a dashed line at 1.005 is plotted instead of 1.01, as
