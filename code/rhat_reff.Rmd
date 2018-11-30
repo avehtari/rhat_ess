@@ -2078,6 +2078,14 @@ We also examine the relative efficiency of different quantile estimates.
 plot_quantile_reff(fit = fit_cp2, par = "tau", nalpha = 100)
 ```
 
+Let's see how the estimated relative efficiency changes when we
+use more and more draws.
+
+```{r, cache=FALSE}
+plot_change_reff(fit = fit_cp2, par = "tau", type = "bulk")
+plot_change_reff(fit = fit_cp2, par = "tau", type = "tail")
+```
+
 Most of the quantile estimates have worryingly low relative efficiency. That
 many of the are practically zero indicates clear failure in mixing. The rank
 plot visualisation of `tau` reveals substantially differences across chains.
