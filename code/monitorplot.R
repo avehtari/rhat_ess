@@ -278,3 +278,40 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   }
   out
 }
+
+plot_change_reff <- function(fit, par, type = c("bulk", "tail"), 
+                             breaks = seq(0.1, 1, 0.05), rank = TRUE) {
+  if (length(par) != 1L) {
+    stop("'par' should be of length 1.")
+  }
+  type <- match.arg(type)
+  if (inherits(fit, "stanfit")) {
+    if (!is.character(par)) {
+      par <- names(fit)[par]
+    }
+    sims <- as.array(fit, pars = par)[, , 1]
+  } else {
+    if (!is.character(par)) {
+      par <- dimnames(fit)[[3]][par]
+    }
+    sims <- fit[, , par]
+  }
+  
+  iter_breaks <- round(breaks * NROW(sims))
+  df <- data.frame(breaks = breaks, ress = NA)
+  for (i in seq_along(iter_breaks)) {
+    tmp <- sims[seq_len(iter_breaks[i]), ]
+    if (type == "tail") {
+      tmp <- abs(tmp - median(tmp))
+    }
+    tmp <- split_chains(tmp)
+    if (rank) {
+      tmp <- z_scale(tmp)
+    }
+    df$ress[i] <- ess_rfun(tmp) / prod(dim(tmp))
+  }
+  ggplot(df, aes(breaks, ress)) +
+    geom_point() +
+    xlab("percentage of total draws") +
+    ylab(paste(type, "relative efficiency"))
+}
