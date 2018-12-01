@@ -658,8 +658,7 @@ likely not solve the convergence issues. In the plots below, we see how unstable
 both bulk and tail relative efficiency are for this example.
 
 ```{r, cache=FALSE}
-plot_change_reff(fit = fit_nom, par = which_min_eff, type = "bulk")
-plot_change_reff(fit = fit_nom, par = which_min_eff, type = "tail")
+plot_change_reff(fit = fit_nom, par = which_min_eff)
 ```
 
 We can further analyze potential problems using rank plots in which we clearly
@@ -852,8 +851,7 @@ Let's see how the estimated relative efficiency changes when we
 use more and more draws.
 
 ```{r, cache=FALSE}
-plot_change_reff(fit = fit_cp, par = "tau", type = "bulk")
-plot_change_reff(fit = fit_cp, par = "tau", type = "tail")
+plot_change_reff(fit = fit_cp, par = "tau")
 ```
 
 In lines with these findings, the rank plots of `tau` clearly show problems
@@ -2082,8 +2080,7 @@ Let's see how the estimated relative efficiency changes when we
 use more and more draws.
 
 ```{r, cache=FALSE}
-plot_change_reff(fit = fit_cp2, par = "tau", type = "bulk")
-plot_change_reff(fit = fit_cp2, par = "tau", type = "tail")
+plot_change_reff(fit = fit_cp2, par = "tau")
 ```
 
 Most of the quantile estimates have worryingly low relative efficiency. That

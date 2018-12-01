@@ -279,12 +279,11 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   out
 }
 
-plot_change_reff <- function(fit, par, type = c("bulk", "tail"), 
-                             breaks = seq(0.4, 1, 0.05), rank = TRUE) {
+plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
+                             rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
-  type <- match.arg(type)
   if (inherits(fit, "stanfit")) {
     if (!is.character(par)) {
       par <- names(fit)[par]
@@ -298,21 +297,31 @@ plot_change_reff <- function(fit, par, type = c("bulk", "tail"),
   }
   
   iter_breaks <- round(breaks * NROW(sims))
-  df <- data.frame(breaks = breaks, ress = NA)
+  nbreaks <- length(iter_breaks)
+  reff <- freff <- rep(NA, length(nbreaks))
   for (i in seq_along(iter_breaks)) {
     tmp <- sims[seq_len(iter_breaks[i]), ]
-    if (type == "tail") {
-      tmp <- abs(tmp - median(tmp))
-    }
+    ftmp <- abs(tmp - median(tmp))
     tmp <- split_chains(tmp)
+    ftmp <- split_chains(ftmp)
     if (rank) {
       tmp <- z_scale(tmp)
+      ftmp <- z_scale(ftmp)
     }
-    df$ress[i] <- ess_rfun(tmp) / prod(dim(tmp))
+    reff[i] <- ess_rfun(tmp) / prod(dim(tmp))
+    freff[i] <- ess_rfun(ftmp) / prod(dim(ftmp))
   }
-  ggplot(df, aes(breaks, ress)) +
+  df <- data.frame(
+    breaks = breaks,
+    reff = c(reff, freff), 
+    type = rep(c("bulk", "tail"), each = nbreaks)
+  )
+  blues <- color_scheme_get(scheme = "blue", i = c(4, 2))
+  blues <- unname(unlist(blues))
+  ggplot(df, aes(breaks, reff, color = type)) +
     geom_line() +
     geom_point() +
     xlab("percentage of total draws") +
-    ylab(paste(type, "relative efficiency"))
+    ylab("relative efficiency") +
+    scale_colour_manual(values = blues)
 }
