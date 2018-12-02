@@ -321,6 +321,7 @@ plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   ggplot(df, aes(breaks, reff, color = type)) +
     geom_line() +
     geom_point() +
+    geom_hline(yintercept = 0, linetype = 2) +
     xlab("percentage of total draws") +
     ylab("relative efficiency") +
     scale_colour_manual(values = blues)
