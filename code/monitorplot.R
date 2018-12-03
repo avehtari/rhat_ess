@@ -313,16 +313,17 @@ plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   }
   df <- data.frame(
     breaks = breaks,
+    ndraws = iter_breaks * NCOL(sims),
     reff = c(reff, freff), 
     type = rep(c("bulk", "tail"), each = nbreaks)
   )
   blues <- color_scheme_get(scheme = "blue", i = c(4, 2))
   blues <- unname(unlist(blues))
-  ggplot(df, aes(breaks, reff, color = type)) +
+  ggplot(df, aes(ndraws, reff, color = type)) +
     geom_line() +
     geom_point() +
     geom_hline(yintercept = 0, linetype = 2) +
-    xlab("percentage of total draws") +
+    xlab("number of draws") +
     ylab("relative efficiency") +
     scale_colour_manual(values = blues)
 }
