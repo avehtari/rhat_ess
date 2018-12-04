@@ -280,10 +280,11 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
 }
 
 plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
-                             rank = TRUE) {
+                             yaxis = c("absolute", "relative"), rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
+  yaxis <- match.arg(yaxis)
   if (inherits(fit, "stanfit")) {
     if (!is.character(par)) {
       par <- names(fit)[par]
@@ -298,7 +299,7 @@ plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   
   iter_breaks <- round(breaks * NROW(sims))
   nbreaks <- length(iter_breaks)
-  reff <- freff <- rep(NA, length(nbreaks))
+  eff <- feff <- reff <- freff <- rep(NA, length(nbreaks))
   for (i in seq_along(iter_breaks)) {
     tmp <- sims[seq_len(iter_breaks[i]), ]
     ftmp <- abs(tmp - median(tmp))
@@ -308,22 +309,33 @@ plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
       tmp <- z_scale(tmp)
       ftmp <- z_scale(ftmp)
     }
-    reff[i] <- ess_rfun(tmp) / prod(dim(tmp))
-    freff[i] <- ess_rfun(ftmp) / prod(dim(ftmp))
+    eff[i] <- ess_rfun(tmp)
+    feff[i] <- ess_rfun(ftmp)
+    reff[i] <- eff[i] / prod(dim(tmp))
+    freff[i] <- feff[i] / prod(dim(ftmp))
   }
   df <- data.frame(
     breaks = breaks,
     ndraws = iter_breaks * NCOL(sims),
+    eff = c(eff, feff),
     reff = c(reff, freff), 
     type = rep(c("bulk", "tail"), each = nbreaks)
   )
-  blues <- color_scheme_get(scheme = "blue", i = c(4, 2))
+  blues <- bayesplot::color_scheme_get(scheme = "blue", i = c(4, 2))
   blues <- unname(unlist(blues))
-  ggplot(df, aes(ndraws, reff, color = type)) +
+  if (yaxis == "absolute") {
+    out <- ggplot(df, aes(ndraws, eff, color = type)) +
+      ylab("effective sample size") +
+      geom_hline(yintercept = 0, linetype = 2) +
+      geom_hline(yintercept = 400, linetype = 2)
+  } else if (yaxis == "relative") {
+    out <- ggplot(df, aes(ndraws, reff, color = type)) +
+      ylab("relative efficiency") +
+      geom_hline(yintercept = 0, linetype = 2)
+  }
+  out +  
     geom_line() +
     geom_point() +
-    geom_hline(yintercept = 0, linetype = 2) +
-    xlab("number of draws") +
-    ylab("relative efficiency") +
+    xlab("total number of draws") +
     scale_colour_manual(values = blues)
 }

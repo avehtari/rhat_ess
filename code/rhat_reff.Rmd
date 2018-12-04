@@ -651,11 +651,12 @@ Similar as above, we see that the efficiency of our posterior draws is worryingl
 low in the tails. Again, orange ticks show iterations that exceeded the maximum
 treedepth.
 
-We may also investigate how the estimated relative efficiency changes when we
-use more and more draws. If the relative efficiency is highly unstable or
-decreases with more draws, this indicates that simply running longer chains will
-likely not solve the convergence issues. In the plots below, we see how unstable
-both bulk and tail relative efficiency are for this example.
+We may also investigate how the estimated effective sample size changes when we
+use more and more draws. If the effective sample size is highly unstable, does
+not increase proportionally with more draws, or even decreases, this indicates
+that simply running longer chains will likely not solve the convergence issues.
+In the plot below, we see how unstable both bulk and tail efficiencies are for
+this example.
 
 ```{r, cache=FALSE}
 plot_change_reff(fit = fit_nom, par = which_min_eff)
@@ -847,8 +848,8 @@ plot_quantile_reff(fit = fit_cp, par = "tau", nalpha = 40, rank = FALSE)
 
 Most of the quantile estimates have worryingly low relative efficiency.
 
-Let's see how the estimated relative efficiency changes when we
-use more and more draws.
+Let's see how the estimated effective sample size changes when we use more and
+more draws.
 
 ```{r, cache=FALSE}
 plot_change_reff(fit = fit_cp, par = "tau")
@@ -2076,8 +2077,8 @@ We also examine the relative efficiency of different quantile estimates.
 plot_quantile_reff(fit = fit_cp2, par = "tau", nalpha = 100)
 ```
 
-Let's see how the estimated relative efficiency changes when we
-use more and more draws.
+Let's see how the estimated effective sample size changes when we use more and
+more draws.
 
 ```{r, cache=FALSE}
 plot_change_reff(fit = fit_cp2, par = "tau")
