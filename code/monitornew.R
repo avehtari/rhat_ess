@@ -197,18 +197,27 @@ split_chains <- function(sims) {
   }
   niter <- dim(sims)[1]
   half <- niter / 2
-  cbind(sims[1:floor(half), ], sims[ceiling(half+1):niter, ])
+  cbind(sims[1:floor(half), ], sims[ceiling(half + 1):niter, ])
 }
 
-monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
+monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95), 
+                    estimates = NULL) { 
   # print a summary for general simulation results 
   # of 3D array: # iter * # chains * # parameters 
   # Args:
   #   sims: a 3D array described above 
   #   warmup: the number of iterations used for warmup 
   #   probs: probs of summarizing quantiles 
+  #   estimates: names of additional quantities to compute;
+  #     currently supported are 'mean', and 'sd' and 'mad'
   # Return: 
   #   A summary data.frame of class 'simsummary'
+  more_names <- character(0)
+  if (!is.null(estimates)) {
+    choices <- c("mean", "sd", "mad")
+    estimates <- match.arg(estimates, choices, several.ok = TRUE)
+    more_names <- c(estimates, paste0("SE_", estimates))
+  }
   if (inherits(sims, "stanfit")) {
     chains <- sims@sim$chains
     iter <- sims@sim$iter
@@ -257,14 +266,40 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     zfsplit_ess <- ess_rfun(zsims_folded_split)
     zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
     rhat <- max(zsplit_rhat, zfsplit_rhat)
-
-    summary[[i]] <- c(quan, mcse, rhat, zsplit_ress, zfsplit_ress)
+    
+    more_values <- numeric(0)
+    if (!is.null(estimates)) {
+      more_values <- setNames(rep(NA, length(more_names)), more_names)
+      ess <- ess_rfun(sims_i)
+      mean <- mean(sims_i)
+      sd <- sd(sims_i)
+      mad <- mad(sims_i)
+      if ("mean" %in% estimates) {
+        se_mean <- sd / sqrt(ess)
+        more_values["mean"] <- mean
+        more_values["SE_mean"] <- se_mean
+      }
+      if ("sd" %in% estimates) {
+        # se_sd assumes normality and uses stirling's approximation
+        fac_se_sd <- sqrt(exp(1) * (1 - 1 / ess)^(ess - 1) - 1)
+        se_sd <- sd * fac_se_sd
+        more_values["sd"] <- sd
+        more_values["SE_sd"] <- se_sd
+      }
+      if ("mad" %in% estimates) {
+        more_values["mad"] <- mad
+        # TODO: add SE_mad
+      }
+    }
+    summary[[i]] <- c(quan, mcse, rhat, zsplit_ress, zfsplit_ress, more_values)
   }
   
   summary <- as.data.frame(do.call(rbind, summary))
   probs_str <- paste0("Q", probs * 100)
   mcse_str <- paste0("SE_", probs_str)
-  colnames(summary) <- c(probs_str, mcse_str, "Rhat", "Bulk_Reff", "Tail_Reff")
+  colnames(summary) <- c(
+    probs_str, mcse_str, "Rhat", "Bulk_Reff", "Tail_Reff", more_names
+  )
   rownames(summary) <- parnames
   structure(
     summary,
@@ -282,7 +317,6 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   #   sims: a 3D array described above 
   #   warmup: the number of iterations used for warmup 
   #   probs: probs of summarizing quantiles 
-  #   print: print out the results
   # Return: 
   #   A summary data.frame of class 'simsummary'
   if (inherits(sims, "stanfit")) {
