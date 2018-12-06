@@ -84,43 +84,43 @@ plot_rhat <- function(res) {
   grid.arrange(p1, p2, p3, nrow = 1)
 }
 
-plot_reff <- function(res) {
+plot_ess <- function(res) {
   ymax <- 2
   ybreaks <- seq(0, ymax, by = 0.25)
   ylimits <- c(0, ymax)
   res$par <- rownames(res)
   
-  p1 <- ggplot(res, aes(x = par, y = reff)) + 
+  p1 <- ggplot(res, aes(x = par, y = seff)) + 
     geom_point() + 
-    ggtitle('Classic Reff') + 
+    ggtitle('Classic ESS') + 
     geom_hline(yintercept = c(0,1)) +
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits) 
   
-  p2 <- ggplot(res, aes(x = par, y = zsreff)) + 
+  p2 <- ggplot(res, aes(x = par, y = zsseff)) + 
     geom_point() + 
-    ggtitle('New Bulk-Reff') + 
+    ggtitle('New Bulk-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p3 <- ggplot(res, aes(x = par, y = zfsreff)) + 
+  p3 <- ggplot(res, aes(x = par, y = zfsseff)) + 
     geom_point() + 
-    ggtitle('New Tail-Reff') + 
+    ggtitle('New Tail-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p4 <- ggplot(res, aes(x = par, y = medsreff)) + 
+  p4 <- ggplot(res, aes(x = par, y = medsseff)) + 
     geom_point() + 
-    ggtitle('Median-Reff') + 
+    ggtitle('Median-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
   
-  p5 <- ggplot(res, aes(x = par, y = madsreff)) + 
+  p5 <- ggplot(res, aes(x = par, y = madsseff)) + 
     geom_point() + 
-    ggtitle('MAD-Reff') + 
+    ggtitle('MAD-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(breaks = ybreaks, limits = ylimits)
@@ -129,7 +129,7 @@ plot_reff <- function(res) {
   grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 }
 
-plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
+plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
@@ -158,31 +158,32 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
     params$urank <- u_scale(params$value)
   }   
   
-  # compute local Reff
+  # compute local Seff
   delta <- 1 / nalpha
   alphas <- seq(0, 1 - delta, by = delta)
-  zsreffs <- rep(NA, length(alphas))
+  zsseffs <- rep(NA, length(alphas))
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
     I <- sims > quantile(sims, alpha) & sims <= quantile(sims, alpha + delta)
-    zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
+    zsseffs[i] <- ess_rfun(z_scale(split_chains(I)))
   }
+  S <- prod(dim(I))
   
   # create the plot
   df <- data.frame(
     quantile = seq(0, 1, by = delta),
     value = quantile(params$value, seq(0, 1, by = delta)),
-    zsreff = c(zsreffs, zsreffs[nalpha])
+    zsseff = c(zsseffs, zsseffs[nalpha])
   )
-  ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
+  ymax <- max(S, round(max(zsseffs, na.rm = TRUE)*1.15, 1))
   xname <- if (rank) "quantile" else "value"
   xrug <- if (rank) "urank" else "value"
-  out <- ggplot(data = df, aes_string(x = xname, y = "zsreff")) +
+  out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
     geom_step() + 
     geom_hline(yintercept = c(0, 1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(
-      breaks = seq(0, ymax, by = 0.25), 
+      breaks = seq(0, ymax, by = round(0.25*S)), 
       limits = c(0, ymax)
     ) +
     geom_rug(
@@ -193,7 +194,7 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
       data = params[params$max_depth == 1, ], 
       aes_string(x = xrug, y = NULL), sides = "b", color = "orange"
     ) +
-    ylab('Reff of small intervals')
+    ylab('ESS for small intervals')
   if (rank) {
     out <- out +
       scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
@@ -204,7 +205,7 @@ plot_local_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   out
 }
 
-plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
+plot_quantile_seff <- function(fit, par, nalpha = 20, rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
@@ -233,31 +234,32 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
     params$urank <- u_scale(params$value)
   }
   
-  # compute quantile Reff
+  # compute quantile Seff
   delta <- 1 / nalpha
   alphas <- seq(delta, 1 - delta, by = delta)
-  zsreffs <- rep(NA, length(alphas))
+  zsseffs <- rep(NA, length(alphas))
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
     I <- sims <= quantile(sims, alpha)
-    zsreffs[i] <- ess_rfun(z_scale(split_chains(I))) / prod(dim(I))
+    zsseffs[i] <- ess_rfun(z_scale(split_chains(I)))
   }
+  S <- prod(dim(I))
   
   # create the plot
   df <- data.frame(
     quantile = seq(delta, 1 - delta, by = delta), 
     value = quantile(params$value, seq(delta, 1 - delta, by = delta)),
-    zsreff = zsreffs
+    zsseff = zsseffs
   )
-  ymax <- max(1, round(max(zsreffs, na.rm = TRUE) + 0.15, 1))
+  ymax <- max(S, round(max(zsseffs, na.rm = TRUE)*1.15, 1))
   xname <- if (rank) "quantile" else "value"
   xrug <- if (rank) "urank" else "value"
-  out <- ggplot(data = df, aes_string(x = xname, y = "zsreff")) +
+  out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
     geom_point() + 
     geom_hline(yintercept = c(0, 1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(
-      breaks = seq(0, ymax, by = 0.25), 
+      breaks = seq(0, ymax, by = round(0.25*S)), 
       limits = c(0, ymax)
     ) +
     geom_rug(
@@ -268,7 +270,7 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
       data = params[params$max_depth == 1, ], 
       aes_string(x = xrug, y = NULL), sides = "b", color = "orange"
     ) +
-    ylab("Reff of quantiles")
+    ylab("ESS for quantiles")
   if (rank) {
     out <- out +
       scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
@@ -279,7 +281,7 @@ plot_quantile_reff <- function(fit, par, nalpha = 20, rank = TRUE) {
   out
 }
 
-plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
+plot_change_seff <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
                              yaxis = c("absolute", "relative"), rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
@@ -325,12 +327,12 @@ plot_change_reff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   blues <- unname(unlist(blues))
   if (yaxis == "absolute") {
     out <- ggplot(df, aes(ndraws, eff, color = type)) +
-      ylab("effective sample size") +
+      ylab("ESS") +
       geom_hline(yintercept = 0, linetype = 2) +
       geom_hline(yintercept = 400, linetype = 2)
   } else if (yaxis == "relative") {
     out <- ggplot(df, aes(ndraws, reff, color = type)) +
-      ylab("relative efficiency") +
+      ylab("Relative efficiency ESS/S") +
       geom_hline(yintercept = 0, linetype = 2)
   }
   out +  

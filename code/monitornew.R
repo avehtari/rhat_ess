@@ -298,7 +298,7 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
   probs_str <- paste0("Q", probs * 100)
   mcse_str <- paste0("SE_", probs_str)
   colnames(summary) <- c(
-    probs_str, mcse_str, "Rhat", "Bulk_Reff", "Tail_Reff", more_names
+    probs_str, mcse_str, "Rhat", "Bulk_ESS", "Tail_ESS", more_names
   )
   rownames(summary) <- parnames
   structure(
@@ -396,9 +396,9 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   summary <- as.data.frame(do.call(rbind, summary))
   probs_str <- paste0("Q", probs * 100)
   colnames(summary) <- c(
-    "mean", "se_mean", "sd", probs_str, "neff", "reff", "sneff", "zneff", 
-    "zsneff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", 
-    "zfsneff", "zfsreff", "medsneff", "medsreff", "madsneff", "madsreff"
+    "mean", "se_mean", "sd", probs_str, "seff", "reff", "sseff", "zseff", 
+    "zsseff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", 
+    "zfsseff", "zfsreff", "medsseff", "medsreff", "madsseff", "madsreff"
   )
   rownames(summary) <- parnames
   structure(
@@ -417,8 +417,8 @@ print.simsummary <- function(x, digits = 2, ...) {
   attributes(x)[rm_atts] <- NULL
   px <- x
   if (isTRUE(atts$extra)) {
-    neff_vars <- names(px)[grepl("neff", names(px))]
-    for (v in neff_vars) {
+    seff_vars <- names(px)[grepl("seff", names(px))]
+    for (v in seff_vars) {
       px[, v] <- round(px[, v], 0)
     }
   }
@@ -431,9 +431,9 @@ print.simsummary <- function(x, digits = 2, ...) {
   print(round(px, digits), ...)
   if (!isTRUE(atts$extra)) {
     cat(
-      "\nFor each parameter, Bulk_Reff and Tail_Reff are crude measures of relative\n",
-      "effective sample size for bulk and tail quantities respectively (good mixing\n",
-      "Reff > 0.1), and Rhat is the potential scale reduction factor on rank normalized\n",
+      "\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
+      "effective sample size for bulk and tail quantities respectively (good values is \n",
+      "Seff > 400), and Rhat is the potential scale reduction factor on rank normalized\n",
       "split chains (at convergence, Rhat = 1).\n", sep = ""
     )
   }
