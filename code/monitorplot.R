@@ -1,6 +1,6 @@
 # Copyright (C) 2018 Aki Vehtari, Paul Bürkner
 
-plotranknorm <- function(theta, n, m = 1, interval = FALSE) {
+plot_ranknorm <- function(theta, n, m = 1, interval = FALSE) {
   df <- data.frame(theta = theta) %>%
     mutate(
       gid = gl(m, n),
@@ -85,8 +85,13 @@ plot_rhat <- function(res) {
 }
 
 plot_ess <- function(res) {
-  ymax <- 2
-  ybreaks <- seq(0, ymax, by = 0.25)
+  att <- attributes(res)
+  max_seff <- with(res,
+    max(c(seff, zsseff, zfsseff, medsseff, madsseff), na.rm = TRUE)
+  )
+  S <- att$iter * att$chains
+  if (!length(S)) S <- max_seff
+  ymax <- round(max(S, max_seff * 1.15))
   ylimits <- c(0, ymax)
   res$par <- rownames(res)
   
@@ -95,35 +100,35 @@ plot_ess <- function(res) {
     ggtitle('Classic ESS') + 
     geom_hline(yintercept = c(0,1)) +
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits) 
+    scale_y_continuous(limits = ylimits) 
   
   p2 <- ggplot(res, aes(x = par, y = zsseff)) + 
     geom_point() + 
     ggtitle('New Bulk-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
+    scale_y_continuous(limits = ylimits) 
   
   p3 <- ggplot(res, aes(x = par, y = zfsseff)) + 
     geom_point() + 
     ggtitle('New Tail-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
+    scale_y_continuous(limits = ylimits) 
   
   p4 <- ggplot(res, aes(x = par, y = medsseff)) + 
     geom_point() + 
     ggtitle('Median-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
+    scale_y_continuous(limits = ylimits) 
   
   p5 <- ggplot(res, aes(x = par, y = madsseff)) + 
     geom_point() + 
     ggtitle('MAD-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-    scale_y_continuous(breaks = ybreaks, limits = ylimits)
+    scale_y_continuous(limits = ylimits) 
   
   blank <- grid::grid.rect(gp = grid::gpar(col = "white"), draw = FALSE)
   grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
@@ -175,7 +180,7 @@ plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
     value = quantile(params$value, seq(0, 1, by = delta)),
     zsseff = c(zsseffs, zsseffs[nalpha])
   )
-  ymax <- max(S, round(max(zsseffs, na.rm = TRUE)*1.15, 1))
+  ymax <- max(S, round(max(zsseffs, na.rm = TRUE) * 1.15, 1))
   xname <- if (rank) "quantile" else "value"
   xrug <- if (rank) "urank" else "value"
   out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
@@ -205,7 +210,7 @@ plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   out
 }
 
-plot_quantile_seff <- function(fit, par, nalpha = 20, rank = TRUE) {
+plot_quantile_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
@@ -251,7 +256,7 @@ plot_quantile_seff <- function(fit, par, nalpha = 20, rank = TRUE) {
     value = quantile(params$value, seq(delta, 1 - delta, by = delta)),
     zsseff = zsseffs
   )
-  ymax <- max(S, round(max(zsseffs, na.rm = TRUE)*1.15, 1))
+  ymax <- max(S, round(max(zsseffs, na.rm = TRUE) * 1.15, 1))
   xname <- if (rank) "quantile" else "value"
   xrug <- if (rank) "urank" else "value"
   out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
@@ -281,8 +286,8 @@ plot_quantile_seff <- function(fit, par, nalpha = 20, rank = TRUE) {
   out
 }
 
-plot_change_seff <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
-                             yaxis = c("absolute", "relative"), rank = TRUE) {
+plot_change_ess <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
+                            yaxis = c("absolute", "relative"), rank = TRUE) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
@@ -332,12 +337,12 @@ plot_change_seff <- function(fit, par, breaks = seq(0.1, 1, 0.05),
       geom_hline(yintercept = 400, linetype = 2)
   } else if (yaxis == "relative") {
     out <- ggplot(df, aes(ndraws, reff, color = type)) +
-      ylab("Relative efficiency ESS/S") +
+      ylab("Relative efficiency") +
       geom_hline(yintercept = 0, linetype = 2)
   }
   out +  
     geom_line() +
     geom_point() +
-    xlab("total number of draws") +
+    xlab("Total number of draws") +
     scale_colour_manual(values = blues)
 }

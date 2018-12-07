@@ -258,13 +258,13 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
     zsplit_ess <- ess_rfun(zsims_split)
-    zsplit_ress <- zsplit_ess / prod(dim(sims_i))
+    # zsplit_ress <- zsplit_ess / prod(dim(sims_i))
     
     sims_folded <- abs(sims_i - median(sims_i))
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
     zfsplit_ess <- ess_rfun(zsims_folded_split)
-    zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
+    # zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
     rhat <- max(zsplit_rhat, zfsplit_rhat)
     
     more_values <- numeric(0)
@@ -291,7 +291,7 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
         # TODO: add SE_mad
       }
     }
-    summary[[i]] <- c(quan, mcse, rhat, zsplit_ress, zfsplit_ress, more_values)
+    summary[[i]] <- c(quan, mcse, rhat, zsplit_ess, zfsplit_ess, more_values)
   }
   
   summary <- as.data.frame(do.call(rbind, summary))
@@ -433,7 +433,7 @@ print.simsummary <- function(x, digits = 2, ...) {
     cat(
       "\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
       "effective sample size for bulk and tail quantities respectively (good values is \n",
-      "Seff > 400), and Rhat is the potential scale reduction factor on rank normalized\n",
+      "ESS > 400), and Rhat is the potential scale reduction factor on rank normalized\n",
       "split chains (at convergence, Rhat = 1).\n", sep = ""
     )
   }
