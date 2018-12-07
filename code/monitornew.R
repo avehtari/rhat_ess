@@ -257,13 +257,13 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
     
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
-    zsplit_ess <- ess_rfun(zsims_split)
+    zsplit_ess <- round(ess_rfun(zsims_split))
     # zsplit_ress <- zsplit_ess / prod(dim(sims_i))
     
     sims_folded <- abs(sims_i - median(sims_i))
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
-    zfsplit_ess <- ess_rfun(zsims_folded_split)
+    zfsplit_ess <- round(ess_rfun(zsims_folded_split))
     # zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
     rhat <- max(zsplit_rhat, zfsplit_rhat)
     
