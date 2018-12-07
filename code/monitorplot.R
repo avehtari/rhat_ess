@@ -186,7 +186,7 @@ plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
     geom_step() + 
     geom_hline(yintercept = c(0, 1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(
       breaks = seq(0, ymax, by = round(0.25*S)), 
       limits = c(0, ymax)
@@ -262,7 +262,7 @@ plot_quantile_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   out <- ggplot(data = df, aes_string(x = xname, y = "zsseff")) +
     geom_point() + 
     geom_hline(yintercept = c(0, 1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(
       breaks = seq(0, ymax, by = round(0.25*S)), 
       limits = c(0, ymax)
