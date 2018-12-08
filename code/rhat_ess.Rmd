@@ -29,7 +29,7 @@ options(width = 100)
 The Split-$\widehat{R}$ statistic and the effective sample size (abbreviated as
 ESS or $S_{\rm eff}$; previously called $N_{\rm eff}$ or $n_{\rm eff}$) are
 routinely used to monitor the convergence of iterative simulations, which are
-omnipresent in Bayesian statistics in the form of Markov-Chain Monto-Carlo
+omnipresent in Bayesian statistics in the form of Markov-Chain Monte-Carlo
 samples. The original $\widehat{R}$ statistic [@Gelman+Rubin:1992;
 @Brooks+Gelman:1998] and *split*-$\widehat{R}$ [@BDA3] are both based on the
 ratio of between and within-chain marginal variances of the simulations, while
@@ -337,7 +337,7 @@ normal, rank normalization can be seen as a near optimal non-parametric
 transformation.
 
 <!--
-Paul: Do we have a citation for the last statment?
+Paul: Do we have a citation for the last statement?
 -->
 
 The effective sample size using rank normalized values is a
@@ -387,7 +387,7 @@ where $I()$ is the indicator function. The indicator function transforms
 simulation draws to 0's and 1's, and thus the subsequent computations are
 bijectively invariant. Efficiency estimates of the ECDF at any $\theta_\alpha$ can
 now be obtained by applying rank-normalizing and subsequent computations
-directly on the indictor function's results. See [Appendix
+directly on the indicator function's results. See [Appendix
 C](#AppendixC) for an illustration of variance of ECDF.
 
 ## Efficiency estimates for quantiles {#quantile_S_eff}
@@ -720,7 +720,7 @@ xmin <- paste0("x[", which_min_ess, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
 
-In summary, the alterative parameterization produces results that look much
+In summary, the alternative parameterization produces results that look much
 better than for the nominal parameterization. There are still some differences
 in the tails, which we also identified via the tail-ESS.
 
@@ -753,7 +753,7 @@ print(mon)
 
 All Rhat < 1.01 and ESS > 400 indicate good performance of the sampler. We see
 that the Stan's automatic (and implicit) transformation of constraint parameters
-can have a big effect on the sampling performance. More experimentes with
+can have a big effect on the sampling performance. More experiments with
 different parameterizations of the half-Cauchy distribution can be found in
 [Appendix E](#AppendixE).
 
@@ -1293,7 +1293,7 @@ ggplot(data = res, aes(y = zfsseff, x = scale)) +
 ```
 
 **Result:** The effective sample size of the standard deviation 
-does see the problem as it focuses explicitely on the scale of the chains.
+does see the problem as it focuses explicitly on the scale of the chains.
 
 Rank plots can be used to visualize differences between chains. Here, we show
 rank plots for the case of 4 chains, 250 draws per chain, and with one chain
@@ -1423,7 +1423,7 @@ interval has a specified proportion of draws, and the efficiency measures
 mixing of an indicator function's results which indicate when the
 values are inside the specific interval. 
 
-```{r, cahce=FALSE}
+```{r, cache=FALSE}
 plot_quantile_ess(fit = fit_nom, par = which_min_ess, nalpha = 40)
 ```
 
@@ -1487,7 +1487,7 @@ useful to also look at the rank normalized version as a generic transformation
 to achieve finite mean and variance. The smallest bulk-ESS is around $0.25$,
 which is not that bad. The smallest median-ESS is larger than $0.5$, that is we
 are able to estimate the median efficiently. However, many tail-ESS's are small
-indicating problemes for estimating the scale of the posterior.
+indicating problems for estimating the scale of the posterior.
 
 **Result:** The rank normalized effective sample size is more stable than
 classic effective sample size, which is not well defined for the Cauchy 
@@ -1580,7 +1580,7 @@ most classic ESS's even smaller.
 The smallest bulk-ESS are around $0.25$, which is not that
 bad. The smallest median-ESS's are larger than $0.75$, that
 is we are able to estimate the median efficiently. However, many
-tail-ESS's are small indicating problmes for estimating the
+tail-ESS's are small indicating problems for estimating the
 scale of the posterior.
 
 **Result:** The rank normalized effective sample size is more stable than
@@ -1663,14 +1663,14 @@ which_min_ess <- which(res$zsseff == min(res$zsseff))
 plot_rhat(res)
 ```
 
-All Rhats are below $1.01$. Classic split-Rhat's also look good even though 
+All Rhats are below $1.01$. Classic split-Rhats also look good even though 
 they are not well defined for the Cauchy distribution.
 
 ```{r, warning=FALSE}
 plot_ess(res) 
 ```
 
-**Result:** Rank normalized S_eff's have less variation than classic 
+**Result:** Rank normalized ESS's have less variation than classic 
 one which is not well defined for Cauchy.
 
 We check `lp__`:
@@ -1701,7 +1701,7 @@ plot_quantile_ess(fit = fit_alt1, par = 100 + which_min_ess, nalpha = 40)
 We compare the mean relative efficiencies of the underlying parameters in the 
 new parameterization and the actual $x$ we are interested in.
 
-```{r, cahce=FALSE}
+```{r, cache=FALSE}
 res <- monitor_extra(samp[, , 101:150])
 res1 <- monitor_extra(samp[, , 1:50])
 res2 <- monitor_extra(samp[, , 51:100])
@@ -1727,7 +1727,7 @@ xmin <- paste0("x[", which_min_ess, "]")
 mcmc_hist_r_scale(samp[, , xmin])
 ```
 
-Similarily, the rank plot visualisation of `lp__`, which has a relative
+Similarly, the rank plot visualisation of `lp__`, which has a relative
 efficiency of `r round(monitor_extra(samp[,, "lp__"]), 2)` looks better than for
 the nominal parameterization.
 
@@ -1956,9 +1956,9 @@ plot_ess(res)
 
 **Result:** The Rank normalized relative efficiencies have less variation
 than classic ones which is not well defined for the Cauchy distribution.  Based on
-bulk-ESS and median-ESS, the efficency for central
+bulk-ESS and median-ESS, the efficiency for central
 quantities is much lower, but based on tail-ESS and
-MAD-ESS, the efficency in the tails is slightly better than for
+MAD-ESS, the efficiency in the tails is slightly better than for
 the half-Cauchy distribution with nominal parameterization. We
 also see that a parameterization which is good for the full Cauchy distribution 
 is not necessarily good for the half-Cauchy distribution as the `<lower=0>`
@@ -2102,7 +2102,7 @@ quantity.
 
 As we observed divergences, we shouldn't trust any Monte Carlo
 standard error (MCSE) estimates as they are likely biased, as well.
-However, for illustrationary purposes, we compute the MCSE, tail
+However, for illustration purposes, we compute the MCSE, tail
 quantiles and corresponding effective sample sizes for the median of `mu` and
 `tau`. Comparing to the shorter MCMC run, using 10 times more draws has not
 reduced the MCSE to one third as would be expected without problems in
@@ -2154,7 +2154,7 @@ is still easy to see.
 ### Non-centered Eight Schools model
 
 In the following, we want to expand our understanding of the non-centered
-parameterization of the hierachical model fit to the eight schools data.
+parameterization of the hierarchical model fit to the eight schools data.
 
 ```{r, comment=NA}
 writeLines(readLines("eight_schools_ncp.stan"))
@@ -2164,7 +2164,7 @@ writeLines(readLines("eight_schools_ncp.stan"))
 
 In the main text, we have already seen that the non-centered parameterization
 works better than the centered parameterization, at least when we use an
-increased `adapt_delta` vaue. Let's see what happens when using the default 
+increased `adapt_delta` value. Let's see what happens when using the default 
 MCMC option of Stan.
 
 ```{r fit_ncp, cache=TRUE, comment=NA, results='hide'}
@@ -2195,7 +2195,7 @@ plot_quantile_ess(fit = fit_ncp, par = "tau", nalpha = 40)
 Overall, the non-centered parameterization looks good even for the default
 settings of `adapt_delta`, and increasing it to 0.95 gets rid of the last
 remaining problems. This stands in sharp contrast to what we observed for the
-centered parameterzation, where increasing `adapt_delta` didn't help at all.
+centered parameterization, where increasing `adapt_delta` didn't help at all.
 Actually, this is something we observe quite often: A suboptimal
 parameterization can cause problems that are not simply solved by tuning the
 sampler. Instead, we have to adjust our model to achieve trustworthy inference.
