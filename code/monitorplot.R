@@ -104,14 +104,14 @@ plot_ess <- function(res) {
   
   p2 <- ggplot(res, aes(x = par, y = zsseff)) + 
     geom_point() + 
-    ggtitle('New Bulk-ESS') + 
+    ggtitle('Bulk-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   p3 <- ggplot(res, aes(x = par, y = zfsseff)) + 
     geom_point() + 
-    ggtitle('New Tail-ESS') + 
+    ggtitle('Tail-ESS') + 
     geom_hline(yintercept = c(0,1)) + 
     geom_hline(yintercept = 0.1, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 

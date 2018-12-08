@@ -947,7 +947,8 @@ The following abbreviations are used throughout the appendices:
  - madsseff = mad split effective sample size
     + estimates the efficiency of the median absolute deviation
  - madsreff = madsseff / N
- 
+
+
 ## Appendix B: Examples of rank normalization {#AppendixB .unnumbered}
 
 We will illustrate the rank normalization with a few examples. First, we plot
@@ -989,7 +990,7 @@ plot_ranknorm(theta, n, m)
 ```
 
 The variation in ECDF due to the variation ranks is now visible also in scaled 
-ranks and rank normalized $z$-values from different batches.
+ranks and rank normalized $z$-values from different batches (chains).
 
 The benefit of rank normalization is more obvious for non-normal distribution 
 such as Cauchy:
@@ -1110,7 +1111,7 @@ ggplot(data = res, aes(y = zsRhat, x = trend)) +
 **Result:** Split-Rhat is useful for detecting non-stationarity (i.e., trends)
 in the chains. If we use a threshold of $1.01$, we can detect trends which
 account for 2% or more of the total marginal variance. If we use a threshold of
-$1.1$, we can detect trends which account for 30% or more of the total marginal
+$1.1$, we detect trends which account for 30% or more of the total marginal
 variance.
 
 The effective sample size is based on split Rhat and within-chain
@@ -1170,7 +1171,7 @@ ggplot(data = res, aes(y = zsRhat, x = shift)) +
 
 **Result:** If we use a threshold of $1.01$, we can detect shifts with
 a magnitude of one third or more of the marginal standard deviation. If we use
-a threshold of $1.1$, we can detect a shift with a magnitude equal to or larger 
+a threshold of $1.1$, we detect shifts with a magnitude equal to or larger 
 than the marginal standard deviation.
 
 ```{r}
@@ -1185,7 +1186,7 @@ ggplot(data = res, aes(y = zsseff, x = shift)) +
 
 **Result:** The effective sample size is not as sensitive, but a shift
 with a magnitude of half the marginal standard deviation or more will lead to
-very low effective sample size when sample size increases.
+very low relative efficiency when the total number of draws increases.
 
 Rank plots can be used to visualize differences between chains. Here, we show 
 rank plots for the case of 4 chains, 250 draws per chain, and a shift of 0.5.
@@ -1258,12 +1259,12 @@ ggplot(data = res, aes(y = zfsRhat, x = scale)) +
   ggtitle('Folded-split-Rhat')
 ```
 
-**Result:** Folded-Split-Rhat focuses explicitly on scales and can thus detect
+**Result:** Folded-Split-Rhat focuses on scales and detects
 scale differences.
 
 **Result:** If we use a threshold of $1.01$, we can detect a chain with scale
 less than $3/4$ of the standard deviation of the others. If we use threshold 
-of $1.1$, we can detect a chain with standard deviation less than $1/4$ of 
+of $1.1$, we detect a chain with standard deviation less than $1/4$ of 
 the standard deviation of the others.
 
 Next, we look at the effective sample size estimates:
@@ -1278,8 +1279,8 @@ ggplot(data = res, aes(y = zsseff, x = scale)) +
   ggtitle('Bulk-ESS (zsseff)')
 ```
 
-**Result:** The effective sample size of the mean does not see a problem as it
-focuses on location differences between chains.
+**Result:** The bulk effective sample size of the mean does not see a
+problem as it focuses on location differences between chains.
 
 ```{r}
 ggplot(data = res, aes(y = zfsseff, x = scale)) + 
@@ -1288,12 +1289,12 @@ ggplot(data = res, aes(y = zfsseff, x = scale)) +
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
   geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-  ggtitle('Folded ESS (zfsseff)') + 
+  ggtitle('Tail-ESS (zfsseff)') + 
   scale_y_continuous(breaks = seq(0, 1, by = 0.25))
 ```
 
-**Result:** The effective sample size of the standard deviation 
-does see the problem as it focuses explicitly on the scale of the chains.
+**Result:** The tail effective sample size detects the difference in
+scales as it focuses on the scale of the chains.
 
 Rank plots can be used to visualize differences between chains. Here, we show
 rank plots for the case of 4 chains, 250 draws per chain, and with one chain
@@ -1312,7 +1313,6 @@ mcmc_hist_r_scale(r)
 
 Although folded Rhat is $1.06$, the rank plots clearly show that the first
 chains behaves differently.
-
 
 ## Appendix E: Cauchy: A distribution with infinite mean and variance {#AppendixE .unnumbered}
 
@@ -1379,8 +1379,8 @@ the Cauchy distribution are not finite.
 plot_ess(res) 
 ```
 
-Both classic and new effective sample size estimates have
-several near zero values, and so the overall sample shouldn't be trusted.
+Both classic and new effective sample size estimates have several very
+small values, and so the overall sample shouldn't be trusted.
 
 **Result:** Effective sample size is more sensitive than (rank-normalized) 
 split-Rhat to detect problems of slow mixing.
@@ -1479,14 +1479,14 @@ more variation in the scale than in the location between different chains.
 plot_ess(res) 
 ```
 
-Some classic effective sample sizes are close to zero. If we wouldn't realize
+Some classic effective sample sizes are very small. If we wouldn't realize
 that the variance is infinite, we might try to run longer chains, but in case of
-an infinite variance, zero efficiency is the truth and longer chains won't help
+an infinite variance, zero relative efficiency  (ESS/S) is the truth and longer chains won't help
 with that. However other quantities can be well defined, and that's why it is
 useful to also look at the rank normalized version as a generic transformation
-to achieve finite mean and variance. The smallest bulk-ESS is around $0.25$,
-which is not that bad. The smallest median-ESS is larger than $0.5$, that is we
-are able to estimate the median efficiently. However, many tail-ESS's are small
+to achieve finite mean and variance. The smallest bulk-ESS is less than 1000,
+which is not that bad. The smallest median-ESS is larger than 2500, that is we
+are able to estimate the median efficiently. However, many tail-ESS's are less than 400
 indicating problems for estimating the scale of the posterior.
 
 **Result:** The rank normalized effective sample size is more stable than
@@ -1568,7 +1568,7 @@ plot_rhat(res)
 ```
 
 All Rhats are below $1.01$. The classic split-Rhat has more variation than the
-rank normalized Rhat (note that the former is not well defined).
+rank normalized Rhat (note that the former is not well defined in this case).
 
 ```{r, warning=FALSE}
 plot_ess(res) 
@@ -1577,10 +1577,10 @@ plot_ess(res)
 Most classic ESS's are close to zero. Running longer chains just made 
 most classic ESS's even smaller.
 
-The smallest bulk-ESS are around $0.25$, which is not that
-bad. The smallest median-ESS's are larger than $0.75$, that
-is we are able to estimate the median efficiently. However, many
-tail-ESS's are small indicating problems for estimating the
+The smallest bulk-ESS are around 5000, which is not that
+bad. The smallest median-ESS's are larger than 25000, that
+is we are able to estimate the median efficiently. However, the smallest
+tail-ESS is `r round(min(res$zsseff), 2)` indicating problems for estimating the
 scale of the posterior.
 
 **Result:** The rank normalized effective sample size is more stable than
@@ -1589,7 +1589,7 @@ classic effective sample size even for very long chains.
 **Result:** It is useful to look at both bulk- and tail-ESS.
 
 We also check `lp__`. Although increasing the number of iterations improved
-bulk-ESS of the $x$, the efficiency for `lp__` didn't change.
+bulk-ESS of the $x$, the relative efficiency for `lp__` didn't change.
 
 ```{r}
 res <- monitor_extra(samp[, , 51:52])
@@ -1613,7 +1613,7 @@ a finer resolution for the local efficiency estimates.
 plot_local_ess(fit = fit_nom_td20l, par = which_min_ess, nalpha = 100)
 ```
 
-The efficiency far in the tails is worryingly low. This was more
+The sampling efficiency far in the tails is worryingly low. This was more
 difficult to see previously with less draws from the tails. We see
 similar problems in the plot of effective sample size for quantiles.
 
@@ -1980,7 +1980,7 @@ probability estimates.
 plot_local_ess(fit_half_reparam, par = 100 + which_min_ess, nalpha = 20)
 ```
 
-We also examine the effective sample size of different quantile estimates.
+We also examine the effective sample size for different quantile estimates.
 
 ```{r}
 plot_quantile_ess(fit_half_reparam, par = 100 + which_min_ess, nalpha = 40)
@@ -2008,7 +2008,8 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 ## Appendix F: Hierarchical model: Eight Schools {#AppendixF .unnumbered}
 
 We continue with our discussion about hierarchical models on the Eight Schools
-data, which we started in [Section Eight Schools](#eightschools). We also analyse the performance of of different variants of the diagnostics.
+data, which we started in [Section Eight Schools](#eightschools). We also analyse
+the performance of different variants of the diagnostics.
 
 ### A Centered Eight Schools model
 
@@ -2054,8 +2055,8 @@ computing the effective sample size for small intervals for `tau`.
 plot_local_ess(fit = fit_cp2, par = "tau", nalpha = 50)
 ```
 
-We see that the MCMC sampling has difficulties in exploring small `tau` values.
-As the efficiency for estimating small `tau` values is practically zero, we may
+We see that the sampling has difficulties in exploring small `tau` values.
+As the efficiency for estimating small `tau` values is very close to 0, we may
 assume that we may miss substantial amount of posterior mass and get biased
 estimates.
 
@@ -2073,7 +2074,7 @@ plot_change_ess(fit = fit_cp2, par = "tau")
 ```
 
 Most of the quantile estimates have worryingly low effective sample size. That
-many of the are practically zero indicates clear failure in mixing. The rank
+many of the are very close to 0 indicates clear failure in mixing. The rank
 plot visualisation of `tau` reveals substantially differences across chains.
 
 ```{r}
@@ -2182,7 +2183,7 @@ res <- monitor_extra(fit_ncp)
 print(res)
 ```
 
-All Rhats are close to 1, and relative efficiencies are good despite a few
+All Rhats are close to 1, and ESSs are good despite a few
 divergent transitions. Small interval and quantile plots of `tau` reveal some
 sampling problems for small `tau` values, but not nearly as strong as for the
 centered parameterization.
@@ -2305,8 +2306,9 @@ qplot(
   labs(x = 'lp__', y = 'x[1]')
 ```
 
-Low `lp__` values corresponds to high energy and more variation in `x[1]`, and
-high `lp__` corresponds to low energy and small variation in `x[1]`. Finally $\sum_{j=1}^J x_j^2$ is perfectly correlated with `lp__`.
+Low `lp__` values corresponds to high energy and more variation in
+`x[1]`, and high `lp__` corresponds to low energy and small variation
+in `x[1]`. Finally $\sum_{j=1}^J x_j^2$ is perfectly correlated with `lp__`.
 
 ```{r}
 qplot(
