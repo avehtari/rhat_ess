@@ -357,33 +357,33 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     mean <- mean(sims_i)
     sd <- sd(sims_i)
     quan <- unname(quantile(sims_i, probs = probs))
-    ess <- ess_rfun(sims_i)
+    ess <- round(ess_rfun(sims_i))
     ress <- ess / nsamples
     sem <- sd / sqrt(ess)
     rhat <- rhat_rfun(sims_i)
     
-    split_ess <- ess_rfun(split_chains(sims_i))
+    split_ess <- round(ess_rfun(split_chains(sims_i)))
     split_rhat <- rhat_rfun(split_chains(sims_i))
-    zess <- ess_rfun(z_scale(sims_i))
+    zess <- round(ess_rfun(z_scale(sims_i)))
     zrhat <- rhat_rfun(z_scale(sims_i))
     
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
-    zsplit_ess <- ess_rfun(zsims_split)
+    zsplit_ess <- round(ess_rfun(zsims_split))
     zsplit_ress <- zsplit_ess / nsamples
     
     sims_centered <- sims_i - median(sims_i)
     sims_folded <- abs(sims_centered)
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
-    zfsplit_ess <- ess_rfun(zsims_folded_split)
+    zfsplit_ess <- round(ess_rfun(zsims_folded_split))
     zfsplit_ress <- zfsplit_ess / nsamples
     
     sims_med <- (sims_centered <= 0) * 1
     sims_mad <- ((sims_folded - median(sims_folded)) <= 0) * 1
-    medsplit_ess <- ess_rfun(z_scale(split_chains(sims_med)))
+    medsplit_ess <- round(ess_rfun(z_scale(split_chains(sims_med))))
     medsplit_ress <- medsplit_ess / nsamples 
-    madsplit_ess <- ess_rfun(z_scale(split_chains(sims_mad)))
+    madsplit_ess <- round(ess_rfun(z_scale(split_chains(sims_mad))))
     madsplit_ress <- madsplit_ess / nsamples 
     
     summary[[i]] <- c(

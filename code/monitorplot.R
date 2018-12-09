@@ -98,36 +98,36 @@ plot_ess <- function(res) {
   p1 <- ggplot(res, aes(x = par, y = seff)) + 
     geom_point() + 
     ggtitle('Classic ESS') + 
-    geom_hline(yintercept = c(0,1)) +
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 0) +
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   p2 <- ggplot(res, aes(x = par, y = zsseff)) + 
     geom_point() + 
     ggtitle('Bulk-ESS') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   p3 <- ggplot(res, aes(x = par, y = zfsseff)) + 
     geom_point() + 
     ggtitle('Tail-ESS') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   p4 <- ggplot(res, aes(x = par, y = medsseff)) + 
     geom_point() + 
     ggtitle('Median-ESS') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   p5 <- ggplot(res, aes(x = par, y = madsseff)) + 
     geom_point() + 
     ggtitle('MAD-ESS') + 
-    geom_hline(yintercept = c(0,1)) + 
-    geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+    geom_hline(yintercept = 0) + 
+    geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
   blank <- grid::grid.rect(gp = grid::gpar(col = "white"), draw = FALSE)
@@ -333,7 +333,7 @@ plot_change_ess <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   if (yaxis == "absolute") {
     out <- ggplot(df, aes(ndraws, eff, color = type)) +
       ylab("ESS") +
-      geom_hline(yintercept = 0, linetype = 2) +
+      geom_hline(yintercept = 0, linetype = 1) +
       geom_hline(yintercept = 400, linetype = 2)
   } else if (yaxis == "relative") {
     out <- ggplot(df, aes(ndraws, reff, color = type)) +

@@ -1115,16 +1115,18 @@ $1.1$, we detect trends which account for 30% or more of the total marginal
 variance.
 
 The effective sample size is based on split Rhat and within-chain
-autocorrelation.
+autocorrelation. We plot relative efficiency $R_{\rm eff}=S_{\rm
+eff}/S$ for easier comparison between different values of $S$.
 
 ```{r}
-ggplot(data = res, aes(y = zsseff, x = trend)) + 
+ggplot(data = res, aes(y = zsreff, x = trend)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
   geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-  ggtitle('Bulk-ESS (zsseff)')
+  ggtitle('Relative Bulk-ESS (zsreff)') + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
 ```
 
 **Result:** Split-Rhat is more sensitive to trends for small sample
@@ -1175,13 +1177,14 @@ a threshold of $1.1$, we detect shifts with a magnitude equal to or larger
 than the marginal standard deviation.
 
 ```{r}
-ggplot(data = res, aes(y = zsseff, x = shift)) + 
+ggplot(data = res, aes(y = zsreff, x = shift)) + 
   geom_point() +
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
   geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-  ggtitle('Bulk-ESS (zsseff)')
+  ggtitle('Relative Bulk-ESS (zsreff)') + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
 ```
 
 **Result:** The effective sample size is not as sensitive, but a shift
@@ -1270,26 +1273,27 @@ the standard deviation of the others.
 Next, we look at the effective sample size estimates:
 
 ```{r}
-ggplot(data = res, aes(y = zsseff, x = scale)) + 
+ggplot(data = res, aes(y = zsreff, x = scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
   geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-  ggtitle('Bulk-ESS (zsseff)')
+  ggtitle('Relative Bulk-ESS (zsreff)') + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
 ```
 
 **Result:** The bulk effective sample size of the mean does not see a
 problem as it focuses on location differences between chains.
 
 ```{r}
-ggplot(data = res, aes(y = zfsseff, x = scale)) + 
+ggplot(data = res, aes(y = zfsreff, x = scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
-  geom_hline(yintercept = c(0,1)) + 
+  geom_hline(yintercept = 0) + 
   geom_hline(yintercept = 0.1, linetype = 'dashed') + 
-  ggtitle('Tail-ESS (zfsseff)') + 
+  ggtitle('Relative tail-ESS (zfsreff)') + 
   scale_y_continuous(breaks = seq(0, 1, by = 0.25))
 ```
 
@@ -2044,9 +2048,12 @@ We still get a whole bunch of divergent transitions so it's clear that the resul
 can't be trusted even if all other diagnostics were good. Still, it may be worth
 looking at additional diagnostics to better understand what's happening. 
 
-Some rank-normalized split-Rhats are still larger than $1.01$. Bulk-$R_{\rm
-eff}$ for `tau` and `lp__` are around $1\%$. A drop in the effective sample size
-when increasing the number of iterations indicates serious problems in mixing.
+Some rank-normalized split-Rhats are still larger than
+$1.01$. Bulk-ESS for `tau` and `lp__` are around 800 which corresponds
+to low relative efficiency of $1\%$, but is above our recommendation
+of ESS>400. In this kind of cases, it is useful to look at the
+local efficiency estimates, too (and the larger number of divergences
+is clear indication of problems, too).
 
 We examine the sampling efficiency in different parts of the posterior by
 computing the effective sample size for small intervals for `tau`.
@@ -2056,8 +2063,8 @@ plot_local_ess(fit = fit_cp2, par = "tau", nalpha = 50)
 ```
 
 We see that the sampling has difficulties in exploring small `tau` values.
-As the efficiency for estimating small `tau` values is very close to 0, we may
-assume that we may miss substantial amount of posterior mass and get biased
+As ESS<400 for small probability intervals in case of small `tau` values, we may
+suspect that we may miss substantial amount of posterior mass and get biased
 estimates.
 
 We also examine the effective sample size of different quantile estimates.
@@ -2066,16 +2073,22 @@ We also examine the effective sample size of different quantile estimates.
 plot_quantile_ess(fit = fit_cp2, par = "tau", nalpha = 100)
 ```
 
-Let's see how the estimated effective sample size changes when we use more and
-more draws.
+Several quantile estimates have ESS<400, which raises a doubt that
+there are convergence problems and we may have significant bias.
+
+Let's see how the Bulk-ESS and Tail-ESS changes when we use
+more and more draws.
+
+
 
 ```{r, cache=FALSE}
 plot_change_ess(fit = fit_cp2, par = "tau")
 ```
 
-Most of the quantile estimates have worryingly low effective sample size. That
-many of the are very close to 0 indicates clear failure in mixing. The rank
-plot visualisation of `tau` reveals substantially differences across chains.
+We see that given recommendation that Bulk-ESS>400 and Tail-ESS>400, they are not sufficient to detect convergence problems in this case, even the tail quantile estimates are able to detect these problems.
+
+The rank plot visualisation of `tau` also shows clear sticking and
+mixing problems.
 
 ```{r}
 samp_cp2 <- as.array(fit_cp2)
@@ -2133,24 +2146,34 @@ res <- monitor_extra(fit_cp3)
 print(res)
 ```
 
-Small interval and quantile plots of `tau` still look bad even with 
-so many posterior samples.
+Rhat, Bulk-ESS and Tail-ESS are not able to detect problems, although
+relative Bulk-ESS for `tau` is very small 0.5%.
 
 ```{r}
 plot_local_ess(fit = fit_cp3, par = "tau", nalpha = 100)
 plot_quantile_ess(fit = fit_cp3, par = "tau", nalpha = 100)
 ```
 
-Same for the rank plots of `tau`.
+And the rank plots of `tau` also show sticking and mixing problems for small values of `tau`.
 
 ```{r}
 samp_cp3 <- as.array(fit_cp3)
 mcmc_hist_r_scale(samp_cp3[, , "tau"])
 ```
 
-What we do see is an advantage of rank plots over trace plots as even with
-100000 draws per chain, rank plots don't get crowded and slow mixing of chains
-is still easy to see.
+What we do see is an advantage of rank plots over trace plots as even
+with 100000 draws per chain, rank plots don't get crowded and the
+mixing problems of chains is still easy to see.
+
+With centered parameterization the mean estimate tends to get smaller
+with more draws.  With 400000 draws using the centered
+parameterization the mean estimate is 3.77 (se 0.03). With 40000 draws
+using the non-centered parameterization the mean estimate is 3.6 (se
+0.02). The difference is more than 8 sigmas. We are able to see the
+convergence problems in the centered parameterization case, if we do
+look carefully (or use divergence diagnostic ), but we do see that
+Rhat, Bulk-ESS, Tail-ESS and Monte Carlo error estimates for the mean
+can't be trusted if other diagnostics indicate convergence problems!
 
 ### Non-centered Eight Schools model
 
