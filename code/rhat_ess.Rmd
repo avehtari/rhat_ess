@@ -1124,9 +1124,9 @@ ggplot(data = res, aes(y = zsreff, x = trend)) +
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
-  geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+  geom_hline(aes(yintercept = 400 / iters), linetype = 'dashed') + 
   ggtitle('Relative Bulk-ESS (zsreff)') + 
-  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+  scale_y_continuous(breaks = seq(0, 1.5, by = 0.25))
 ```
 
 **Result:** Split-Rhat is more sensitive to trends for small sample
@@ -1182,9 +1182,9 @@ ggplot(data = res, aes(y = zsreff, x = shift)) +
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
-  geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+  geom_hline(aes(yintercept = 400 / iters), linetype = 'dashed') + 
   ggtitle('Relative Bulk-ESS (zsreff)') + 
-  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+  scale_y_continuous(breaks = seq(0, 1.5, by = 0.25))
 ```
 
 **Result:** The effective sample size is not as sensitive, but a shift
@@ -1278,9 +1278,9 @@ ggplot(data = res, aes(y = zsreff, x = scale)) +
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = c(0,1)) + 
-  geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+  geom_hline(aes(yintercept = 400 / iters), linetype = 'dashed') + 
   ggtitle('Relative Bulk-ESS (zsreff)') + 
-  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+  scale_y_continuous(breaks = seq(0, 1.5, by = 0.25))
 ```
 
 **Result:** The bulk effective sample size of the mean does not see a
@@ -1292,9 +1292,9 @@ ggplot(data = res, aes(y = zfsreff, x = scale)) +
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = 0) + 
-  geom_hline(yintercept = 0.1, linetype = 'dashed') + 
+  geom_hline(aes(yintercept = 400 / iters), linetype = 'dashed') + 
   ggtitle('Relative tail-ESS (zfsreff)') + 
-  scale_y_continuous(breaks = seq(0, 1, by = 0.25))
+  scale_y_continuous(breaks = seq(0, 1.5, by = 0.25))
 ```
 
 **Result:** The tail effective sample size detects the difference in
