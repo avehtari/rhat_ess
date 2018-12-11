@@ -13,6 +13,8 @@ output:
       smooth_scroll: FALSE
 bibliography: rhat_ess.bib
 csl: harvard-cite-them-right.csl
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -347,14 +349,6 @@ term we use term *bulk effective sample size* (*bulk-ESS*). Bulk-ESS is
 also useful for diagnosing problems due to trends or different means
 of the chains (see [Appendix D](#AppendixD)).
 
-We propose to compute the effective sample size also using *folded*
-split chains by rank normalizing absolute deviations from median (see
-above), which is a useful measure for the efficiency of
-estimating the distributions' tail. As a shorthand, we use the term
-*tail effective sample size* (*tail-ESS*). Tail-ESS is also useful for
-diagnosing problems due to different scales of the chains (see
-[Appendix D](#AppendixD)).
-
 ## Efficiency estimates for the cumulative distribution function
 
 The bulk- and tail-ESS introduced above are useful as overall
@@ -402,6 +396,12 @@ efficiency of $\bar{I}_\alpha$. Thus, we can use the effective sample size for
 the ECDF (we computed using the indicator function 
 $I(\theta^{(s)} \leq \theta_\alpha)$) also for the corresponding quantile 
 estimates.
+
+In order to estimate the efficiency in the distributions' tails, we propose to
+compute the minimum of the effectve sample sizes of the 5% and 95% quantiles. As
+a shorthand, we use the term *tail effective sample size* (*tail-ESS*). Tail-ESS
+is also useful for diagnosing problems due to different scales of the chains
+(see [Appendix D](#AppendixD)).
 
 ## Efficiency estimates for median and MAD
 
@@ -941,6 +941,9 @@ The following abbreviations are used throughout the appendices:
  - zfsseff = rank-normalized folded split effective sample size
     + estimates the efficiency of rank normalized *mean* absolute deviation
  - zfsreff = zfsseff / N
+ - tailseff = minimum of rank-normalized split effective sample sizes of 
+ the 5% and 95% quantiles
+ - tailreff = tailseff / N
  - medsseff = median split effective sample size
     + estimates the efficiency of the median
  - medsreff = medsseff / N
@@ -1287,13 +1290,13 @@ ggplot(data = res, aes(y = zsreff, x = scale)) +
 problem as it focuses on location differences between chains.
 
 ```{r}
-ggplot(data = res, aes(y = zfsreff, x = scale)) + 
+ggplot(data = res, aes(y = tailseff, x = scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
   geom_hline(yintercept = 0) + 
   geom_hline(aes(yintercept = 400 / iters), linetype = 'dashed') + 
-  ggtitle('Relative tail-ESS (zfsreff)') + 
+  ggtitle('Relative tail-ESS (tailreff)') + 
   scale_y_continuous(breaks = seq(0, 1.5, by = 0.25))
 ```
 
@@ -1395,7 +1398,7 @@ sample size is worryingly low.
 ```{r}
 res <- monitor_extra(samp[, , 51:52]) 
 cat('lp__: Bulk-ESS = ', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS = ', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS = ', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 We can further analyze potential problems using local effective sample size 
@@ -1505,7 +1508,7 @@ bulk-ESS of `x`, the efficiency for `lp__` didn't change.
 ```{r}
 res <- monitor_extra(samp[, , 51:52])
 cat('lp__: Bulk-ESS =', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS =', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS =', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 We examine the sampling efficiency in different parts of the
@@ -1584,7 +1587,7 @@ most classic ESS's even smaller.
 The smallest bulk-ESS are around 5000, which is not that
 bad. The smallest median-ESS's are larger than 25000, that
 is we are able to estimate the median efficiently. However, the smallest
-tail-ESS is `r round(min(res$zsseff), 2)` indicating problems for estimating the
+tail-ESS is `r round(min(res$tailseff), 2)` indicating problems for estimating the
 scale of the posterior.
 
 **Result:** The rank normalized effective sample size is more stable than
@@ -1598,7 +1601,7 @@ bulk-ESS of the $x$, the relative efficiency for `lp__` didn't change.
 ```{r}
 res <- monitor_extra(samp[, , 51:52])
 cat('lp__: Bulk-ESS =', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS =', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS =', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 We examine the sampling efficiency in different parts of the
@@ -1681,7 +1684,7 @@ We check `lp__`:
 ```{r}
 res <- monitor_extra(samp[, , 151:152])
 cat('lp__: Bulk-ESS =', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS =', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS =', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 The relative efficiencies for `lp__` are also much better than with the
@@ -1713,7 +1716,7 @@ res2 <- monitor_extra(samp[, , 51:100])
 
 ```{r}
 cat('Mean Bulk-ESS for x =' , round(mean(res[, 'zsseff']), 2), '\n')
-cat('Mean Tail-ESS for x =' , round(mean(res[, 'zfsseff']), 2), '\n')
+cat('Mean Tail-ESS for x =' , round(mean(res[, 'tailseff']), 2), '\n')
 cat('Mean Bulk-ESS for x_a =' , round(mean(res1[, 'zsseff']), 2), '\n')
 cat('Mean Bulk-ESS for x_b =' , round(mean(res2[, 'zsseff']), 2), '\n')
 ```
@@ -1785,7 +1788,7 @@ We also take a closer look at the `lp__` value:
 ```{r}
 res <- monitor_extra(samp[, , 101:102])
 cat('lp__: Bulk-ESS =', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS =', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS =', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 The effective sample size for these are also much better than with
@@ -1973,7 +1976,7 @@ We also check the `lp__` values:
 ```{r}
 res <- monitor_extra(samp[, , 151:152])
 cat('lp__: Bulk-ESS =', round(res['lp__', 'zsseff'], 2), '\n')
-cat('lp__: Tail-ESS =', round(res['lp__', 'zfsseff'], 2), '\n')
+cat('lp__: Tail-ESS =', round(res['lp__', 'tailseff'], 2), '\n')
 ```
 
 We examine the sampling efficiency in different parts of the
@@ -2040,6 +2043,7 @@ fit_cp2 <- stan(
 ```
 
 ```{r}
+monitor(fit_cp2)
 res <- monitor_extra(fit_cp2)
 print(res)
 ```
@@ -2078,8 +2082,6 @@ there are convergence problems and we may have significant bias.
 
 Let's see how the Bulk-ESS and Tail-ESS changes when we use
 more and more draws.
-
-
 
 ```{r, cache=FALSE}
 plot_change_ess(fit = fit_cp2, par = "tau")
@@ -2142,6 +2144,7 @@ fit_cp3 <- stan(
 ```
 
 ```{r}
+monitor(fit_cp3)
 res <- monitor_extra(fit_cp3)
 print(res)
 ```
@@ -2175,6 +2178,40 @@ look carefully (or use divergence diagnostic ), but we do see that
 Rhat, Bulk-ESS, Tail-ESS and Monte Carlo error estimates for the mean
 can't be trusted if other diagnostics indicate convergence problems!
 
+#### Centered parameterization with very long chains and thinning
+
+Let's check what happens if we run even longer chains and then thin the draws to
+reduce autocorrelation. With 400000 iterations per chain, thinning of 200 and 4
+chains, we again end up with 4000 iterations as with the default settings.
+
+```{r fit_cp4, cache=TRUE, comment=NA, results='hide'}
+fit_cp4 <- stan(
+  file = 'eight_schools_cp.stan', data = eight_schools,
+  iter = 400000, thin = 200, chains = 4, seed = 483892929, refresh = 0,
+  control = list(adapt_delta = 0.95)
+)
+```
+
+We still observe some divergent transitions which potentially bias the results.
+Apart from that, the convergence diagnostics look ok. 
+
+```{r}
+monitor(fit_cp4)
+res <- monitor_extra(fit_cp4)
+print(res)
+```
+
+Various diagnostic plots of $\tau$ look reasonable as well.
+```{r}
+plot_local_ess(fit = fit_cp4, par = "tau", nalpha = 100)
+plot_quantile_ess(fit = fit_cp4, par = "tau", nalpha = 100)
+plot_change_ess(fit = fit_cp4, par = "tau")
+```
+
+Apparently, after substantial efforts, we got the centered parameterization to
+yield better results. However, the estimate of $\tau$ is still around 3 sigmas
+away from the corresponding estimate of the non-centered parameterization.
+
 ### Non-centered Eight Schools model
 
 In the following, we want to expand our understanding of the non-centered
@@ -2202,6 +2239,7 @@ We observe a few divergent transitions with the default of `adapt_delta=0.8`.
 Let's analyze the sample.
 
 ```{r}
+monitor(fit_ncp)
 res <- monitor_extra(fit_ncp)
 print(res)
 ```
@@ -2246,13 +2284,14 @@ fit_n <- stan(
 
 ```{r}
 samp <- as.array(fit_n)
+monitor(samp)
 res <- monitor_extra(samp)
 print(res)
 ```
 
 The Bulk-ESS for all $x$ is larger than 
 `r round(min(res[1:16, "zsseff"]), 2)`.  However tail-ESS for all
-$x$ is less than `r round(max(res[1:16, "zfsseff"]), 2)`. Further, 
+$x$ is less than `r round(max(res[1:16, "tailseff"]), 2)`. Further, 
 bulk-ESS for `lp__` is only `r round(res["lp__", "zsseff"], 2)`.  
 If we take a look at all the Stan examples in this notebook, we see that the 
 bulk-ESS for `lp__` is always below 0.5. This is because `lp__` 
@@ -2291,6 +2330,7 @@ in the variance of $x$. Let's check the second moment of $x$.
 
 ```{r}
 samp_x2 <- as.array(fit_n, pars = "x")^2
+monitor(samp_x2)
 res <- monitor_extra(samp_x2)
 print(res)
 ```

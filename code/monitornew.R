@@ -200,6 +200,10 @@ split_chains <- function(sims) {
   cbind(sims[1:floor(half), ], sims[ceiling(half + 1):niter, ])
 }
 
+is_constant <- function(x, tol = .Machine$double.eps) {
+  abs(max(x) - min(x)) < tol
+}
+
 monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95), 
                     estimates = NULL) { 
   # print a summary for general simulation results 
@@ -257,15 +261,18 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
     
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
-    zsplit_ess <- round(ess_rfun(zsims_split))
-    # zsplit_ress <- zsplit_ess / prod(dim(sims_i))
+    bulk_ess <- round(ess_rfun(zsims_split))
     
     sims_folded <- abs(sims_i - median(sims_i))
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
-    zfsplit_ess <- round(ess_rfun(zsims_folded_split))
-    # zfsplit_ress <- zfsplit_ess / prod(dim(sims_i))
     rhat <- max(zsplit_rhat, zfsplit_rhat)
+    
+    I05 <- sims_i <= quantile(sims_i, 0.05)
+    q05_ess <- ess_rfun(z_scale(split_chains(I05)))
+    I95 <- sims_i <= quantile(sims_i, 0.95)
+    q95_ess <- ess_rfun(z_scale(split_chains(I95)))
+    tail_ess <- round(min(q05_ess, q95_ess))
     
     more_values <- numeric(0)
     if (!is.null(estimates)) {
@@ -291,7 +298,7 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
         # TODO: add SE_mad
       }
     }
-    summary[[i]] <- c(quan, mcse, rhat, zsplit_ess, zfsplit_ess, more_values)
+    summary[[i]] <- c(quan, mcse, rhat, bulk_ess, tail_ess, more_values)
   }
   
   summary <- as.data.frame(do.call(rbind, summary))
@@ -301,6 +308,7 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
     probs_str, mcse_str, "Rhat", "Bulk_ESS", "Tail_ESS", more_names
   )
   rownames(summary) <- parnames
+  
   structure(
     summary,
     chains = chains,
@@ -386,10 +394,18 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     madsplit_ess <- round(ess_rfun(z_scale(split_chains(sims_mad))))
     madsplit_ress <- madsplit_ess / nsamples 
     
+    I05 <- sims_i <= quantile(sims_i, 0.05)
+    q05_ess <- ess_rfun(z_scale(split_chains(I05)))
+    I95 <- sims_i <= quantile(sims_i, 0.95)
+    q95_ess <- ess_rfun(z_scale(split_chains(I95)))
+    tail_ess <- min(q05_ess, q95_ess)
+    tail_ress <- tail_ess / nsamples 
+    
     summary[[i]] <- c(
       mean, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, 
       rhat, split_rhat, zrhat, zsplit_rhat, zfsplit_rhat, zfsplit_ess, 
-      zfsplit_ress, medsplit_ess, medsplit_ress, madsplit_ess, madsplit_ress
+      zfsplit_ress, tail_ess, tail_ress, medsplit_ess, medsplit_ress, 
+      madsplit_ess, madsplit_ress
     )
   }
   
@@ -398,7 +414,8 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   colnames(summary) <- c(
     "mean", "se_mean", "sd", probs_str, "seff", "reff", "sseff", "zseff", 
     "zsseff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", 
-    "zfsseff", "zfsreff", "medsseff", "medsreff", "madsseff", "madsreff"
+    "zfsseff", "zfsreff", "tailseff", "tailreff", "medsseff", "medsreff", 
+    "madsseff", "madsreff"
   )
   rownames(summary) <- parnames
   structure(
@@ -411,15 +428,21 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   )
 }
 
-print.simsummary <- function(x, digits = 2, ...) {
+print.simsummary <- function(x, digits = 2, se = FALSE, ...) {
   atts <- attributes(x)
   rm_atts <- c("chains", "iter", "warmup", "extra")
   attributes(x)[rm_atts] <- NULL
   px <- x
   if (isTRUE(atts$extra)) {
+    # output of monitor_extra()
     seff_vars <- names(px)[grepl("seff", names(px))]
     for (v in seff_vars) {
       px[, v] <- round(px[, v], 0)
+    }
+  } else {
+    # output of monitor()
+    if (!se) {
+      px <- px[, !grepl("^SE_", colnames(px))]
     }
   }
   cat(
