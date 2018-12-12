@@ -1474,7 +1474,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Rank-normalized split-Rhat and effective sample size</h1>
 <h4 class="author"><em>Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul Bürkner</em></h4>
-<h4 class="date"><em>First version 2017-05-23. Last modified 2018-12-11.</em></h4>
+<h4 class="date"><em>First version 2017-05-23. Last modified 2018-12-12.</em></h4>
 
 </div>
 
@@ -1680,6 +1680,7 @@ the justification.
 </ul>
 <p>In case of running 4 chains, an effective sample size of 400, corresponds to having an effective sample size of 50 for each 8 split chains, which we consider to be minimum for reliable mean, variance and autocorrelation estimates needed for the convergence diagnostic. We recommend running at least 4 chains to get reliable between chain variances for the convergence diagnostics.</p>
 <p>Plots shown in the upcoming sections have dashed lines based on these thresholds (in continuous plots, a dashed line at 1.005 is plotted instead of 1.01, as values larger than that are usually rounded in our summaries to 1.01).</p>
+<p>TODO: Add more differentiated recommendations about bulk and tail ESS? Or just recommend both being above 400?</p>
 </div>
 </div>
 <div id="examples" class="section level1">
@@ -1777,7 +1778,7 @@ x[47]  -8.51   0.03  24.26 1.07      231       56
 x[48]  -6.73   0.00   5.33 1.01     1907      469
 x[49]  -6.27   0.04   6.92 1.00     1490      390
 x[50]  -5.21   0.00   4.65 1.00     3109      680
-I       0.00   0.50   1.00  NaN      390      NaN
+I       0.00   0.50   1.00 1.00      390     4000
 lp__  -92.71 -69.21 -49.03 1.05      117      323
 
 For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
@@ -1984,7 +1985,7 @@ x[47]    -5.49   0.03   5.43 1.00     3893     2659
 x[48]    -5.96   0.00   4.85 1.00     3674     2274
 x[49]    -6.55   0.00   5.25 1.00     3576     2243
 x[50]    -6.74  -0.01   6.90 1.00     3437     2486
-I         0.00   0.00   1.00 1.00     2648      NaN
+I         0.00   0.00   1.00 1.00     2648     4000
 lp__    -95.19 -80.99 -68.66 1.00     1310     1928
 
 For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
@@ -2080,7 +2081,7 @@ x[47]   0.08   1.01  14.50    1     9562     2265
 x[48]   0.08   1.01  13.05    1     8402     2690
 x[49]   0.08   1.00  12.93    1     7993     1804
 x[50]   0.08   1.00  13.22    1     7523     2243
-I       0.00   0.00   1.00    1     7357      NaN
+I       0.00   0.00   1.00    1     7357     4000
 lp__  -80.63 -69.06 -59.31    1     1218     2001
 
 For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
@@ -3571,7 +3572,7 @@ CXX11FLAGS=-O3 -Wno-unused-variable -Wno-unused-function</code></pre>
  collate  German_Germany.1252         
  ctype    German_Germany.1252         
  tz       Europe/Berlin               
- date     2018-12-11                  
+ date     2018-12-12                  
 
 - Packages ---------------------------------------------------------------------------------------
  package      * version   date       lib source                          

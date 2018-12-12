@@ -252,10 +252,11 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
   }
   
   mcse_fun <- function(p, sims) quantile_mcse(sims, p)$mcse
-  summary <- vector("list", length(parnames))
-  summary <- setNames(summary, parnames)
-  for (i in seq_along(summary)) {
+  out <- vector("list", length(parnames))
+  out <- setNames(out, parnames)
+  for (i in seq_along(out)) {
     sims_i <- sims[, , i]
+    valid <- all(is.finite(sims_i))
     quan <- unname(quantile(sims_i, probs = probs))
     mcse <- sapply(probs, mcse_fun, sims_i)
     
@@ -298,19 +299,31 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
         # TODO: add SE_mad
       }
     }
-    summary[[i]] <- c(quan, mcse, rhat, bulk_ess, tail_ess, more_values)
+    out[[i]] <- c(valid, quan, mcse, rhat, bulk_ess, tail_ess, more_values)
   }
   
-  summary <- as.data.frame(do.call(rbind, summary))
+  out <- as.data.frame(do.call(rbind, out))
   probs_str <- paste0("Q", probs * 100)
   mcse_str <- paste0("SE_", probs_str)
-  colnames(summary) <- c(
-    probs_str, mcse_str, "Rhat", "Bulk_ESS", "Tail_ESS", more_names
+  colnames(out) <- c(
+    "valid", probs_str, mcse_str, 
+    "Rhat", "Bulk_ESS", "Tail_ESS", more_names
   )
-  rownames(summary) <- parnames
+  rownames(out) <- parnames
+  
+  # replace NAs with appropriate values if draws are valid
+  S <- prod(dim(sims)[1:2]) 
+  out$Rhat[out$valid & !is.finite(out$Rhat)] <- 1
+  out$Bulk_ESS[out$valid & !is.finite(out$Bulk_ESS)] <- S
+  out$Tail_ESS[out$valid & !is.finite(out$Tail_ESS)] <- S
+  SE_vars <- colnames(out)[grepl("^SE_", colnames(out))]
+  for (v in SE_vars) {
+    out[[v]][out$valid & !is.finite(out[[v]])] <- 0
+  }
+  out$valid <- NULL
   
   structure(
-    summary,
+    out,
     chains = chains,
     iter = iter,
     warmup = warmup,
@@ -357,9 +370,9 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   }
   
   mcse_fun <- function(p, sims) quantile_mcse(sims, p)$mcse
-  summary <- vector("list", length(parnames))
-  summary <- setNames(summary, parnames)
-  for (i in seq_along(summary)) {
+  out <- vector("list", length(parnames))
+  out <- setNames(out, parnames)
+  for (i in seq_along(out)) {
     sims_i <- sims[, , i]
     nsamples <- prod(dim(sims_i))
     mean <- mean(sims_i)
@@ -401,7 +414,7 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     tail_ess <- min(q05_ess, q95_ess)
     tail_ress <- tail_ess / nsamples 
     
-    summary[[i]] <- c(
+    out[[i]] <- c(
       mean, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, 
       rhat, split_rhat, zrhat, zsplit_rhat, zfsplit_rhat, zfsplit_ess, 
       zfsplit_ress, tail_ess, tail_ress, medsplit_ess, medsplit_ress, 
@@ -409,17 +422,17 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     )
   }
   
-  summary <- as.data.frame(do.call(rbind, summary))
+  out <- as.data.frame(do.call(rbind, out))
   probs_str <- paste0("Q", probs * 100)
-  colnames(summary) <- c(
+  colnames(out) <- c(
     "mean", "se_mean", "sd", probs_str, "seff", "reff", "sseff", "zseff", 
     "zsseff", "zsreff", "Rhat", "sRhat", "zRhat", "zsRhat", "zfsRhat", 
     "zfsseff", "zfsreff", "tailseff", "tailreff", "medsseff", "medsreff", 
     "madsseff", "madsreff"
   )
-  rownames(summary) <- parnames
+  rownames(out) <- parnames
   structure(
-    summary,
+    out,
     chains = chains,
     iter = iter,
     warmup = warmup,

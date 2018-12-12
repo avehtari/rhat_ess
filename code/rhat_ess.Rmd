@@ -533,10 +533,12 @@ and autocorrelation estimates needed for the convergence
 diagnostic. We recommend running at least 4 chains to get reliable
 between chain variances for the convergence diagnostics.
 
-
 Plots shown in the upcoming sections have dashed lines based on these thresholds
 (in continuous plots, a dashed line at 1.005 is plotted instead of 1.01, as
 values larger than that are usually rounded in our summaries to 1.01).
+
+TODO: Add more differentiated recommendations about bulk and tail ESS?
+Or just recommend both being above 400?
 
 # Examples
 
@@ -608,7 +610,7 @@ more results with longer chains as well.
 
 We can further analyze potential problems using local efficiency and
 rank plots. We specifically investigate x[`r which_min_ess`], which has the
-smallest bulk-ESS `r round(min(mon[,'Bulk_ESS']), 2)`. 
+smallest bulk-ESS of `r round(min(mon[,'Bulk_ESS']), 2)`. 
 
 We examine the sampling efficiency in different parts of the posterior by
 computing the efficiency of small interval probability estimates (see
@@ -1403,7 +1405,7 @@ cat('lp__: Tail-ESS = ', round(res['lp__', 'tailseff'], 2), '\n')
 
 We can further analyze potential problems using local effective sample size 
 and rank plots. We examine x[`r which_min_ess`], which has
-the smallest bulk-ESS `r round(min(res$zsseff), 2)`.
+the smallest bulk-ESS of `r round(min(res$zsseff), 2)`.
 
 We examine the sampling efficiency in different parts of the
 posterior by computing the effective sample size for small interval
