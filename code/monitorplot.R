@@ -109,7 +109,7 @@ plot_ess <- function(res) {
     geom_hline(yintercept = 400, linetype = 'dashed') + 
     scale_y_continuous(limits = ylimits) 
   
-  p3 <- ggplot(res, aes(x = par, y = zfsseff)) + 
+  p3 <- ggplot(res, aes(x = par, y = tailseff)) + 
     geom_point() + 
     ggtitle('Tail-ESS') + 
     geom_hline(yintercept = 0) + 
@@ -287,7 +287,7 @@ plot_quantile_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
 }
 
 plot_change_ess <- function(fit, par, breaks = seq(0.1, 1, 0.05), 
-                            yaxis = c("absolute", "relative"), rank = TRUE) {
+                            yaxis = c("absolute", "relative")) {
   if (length(par) != 1L) {
     stop("'par' should be of length 1.")
   }
@@ -306,32 +306,27 @@ plot_change_ess <- function(fit, par, breaks = seq(0.1, 1, 0.05),
   
   iter_breaks <- round(breaks * NROW(sims))
   nbreaks <- length(iter_breaks)
-  eff <- feff <- reff <- freff <- rep(NA, length(nbreaks))
+  bulk_seff <- tail_seff <- bulk_reff <- 
+    tail_reff <- rep(NA, length(nbreaks))
   for (i in seq_along(iter_breaks)) {
-    tmp <- sims[seq_len(iter_breaks[i]), ]
-    ftmp <- abs(tmp - median(tmp))
-    tmp <- split_chains(tmp)
-    ftmp <- split_chains(ftmp)
-    if (rank) {
-      tmp <- z_scale(tmp)
-      ftmp <- z_scale(ftmp)
-    }
-    eff[i] <- ess_rfun(tmp)
-    feff[i] <- ess_rfun(ftmp)
-    reff[i] <- eff[i] / prod(dim(tmp))
-    freff[i] <- feff[i] / prod(dim(ftmp))
+    sims_i <- sims[seq_len(iter_breaks[i]), ]
+    nsamples <- prod(dim(sims_i))
+    bulk_seff[i] <- ess_rfun(z_scale(split_chains(sims_i)))
+    tail_seff[i] <- tail_ess(sims_i)
+    bulk_reff[i] <- bulk_seff[i] / nsamples
+    tail_reff[i] <- tail_seff[i] / nsamples
   }
   df <- data.frame(
     breaks = breaks,
     ndraws = iter_breaks * NCOL(sims),
-    eff = c(eff, feff),
-    reff = c(reff, freff), 
+    seff = c(bulk_seff, tail_seff),
+    reff = c(bulk_reff, tail_reff), 
     type = rep(c("bulk", "tail"), each = nbreaks)
   )
   blues <- bayesplot::color_scheme_get(scheme = "blue", i = c(4, 2))
   blues <- unname(unlist(blues))
   if (yaxis == "absolute") {
-    out <- ggplot(df, aes(ndraws, eff, color = type)) +
+    out <- ggplot(df, aes(ndraws, seff, color = type)) +
       ylab("ESS") +
       geom_hline(yintercept = 0, linetype = 1) +
       geom_hline(yintercept = 400, linetype = 2)

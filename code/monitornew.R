@@ -145,6 +145,14 @@ ess_rfun <- function(sims) {
   ess 
 } 
 
+tail_ess <- function(sims) {
+  I05 <- sims <= quantile(sims, 0.05)
+  q05_ess <- ess_rfun(z_scale(split_chains(I05)))
+  I95 <- sims <= quantile(sims, 0.95)
+  q95_ess <- ess_rfun(z_scale(split_chains(I95)))
+  min(q05_ess, q95_ess)
+}
+
 rhat_rfun <- function(sims) {
   # Compute the rhat convergence diagnostic for a single parameter
   # For split-rhat, just call this with splitted chains
@@ -263,17 +271,12 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95),
     zsims_split <- z_scale(split_chains(sims_i))
     zsplit_rhat <- rhat_rfun(zsims_split)
     bulk_ess <- round(ess_rfun(zsims_split))
+    tail_ess <- round(tail_ess(sims_i))
     
     sims_folded <- abs(sims_i - median(sims_i))
     zsims_folded_split <- z_scale(split_chains(sims_folded))
     zfsplit_rhat <- rhat_rfun(zsims_folded_split)
     rhat <- max(zsplit_rhat, zfsplit_rhat)
-    
-    I05 <- sims_i <= quantile(sims_i, 0.05)
-    q05_ess <- ess_rfun(z_scale(split_chains(I05)))
-    I95 <- sims_i <= quantile(sims_i, 0.95)
-    q95_ess <- ess_rfun(z_scale(split_chains(I95)))
-    tail_ess <- round(min(q05_ess, q95_ess))
     
     more_values <- numeric(0)
     if (!is.null(estimates)) {
@@ -400,19 +403,15 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     zfsplit_ess <- round(ess_rfun(zsims_folded_split))
     zfsplit_ress <- zfsplit_ess / nsamples
     
+    tail_ess <- tail_ess(sims_i)
+    tail_ress <- tail_ess / nsamples 
+    
     sims_med <- (sims_centered <= 0) * 1
     sims_mad <- ((sims_folded - median(sims_folded)) <= 0) * 1
     medsplit_ess <- round(ess_rfun(z_scale(split_chains(sims_med))))
     medsplit_ress <- medsplit_ess / nsamples 
     madsplit_ess <- round(ess_rfun(z_scale(split_chains(sims_mad))))
     madsplit_ress <- madsplit_ess / nsamples 
-    
-    I05 <- sims_i <= quantile(sims_i, 0.05)
-    q05_ess <- ess_rfun(z_scale(split_chains(I05)))
-    I95 <- sims_i <= quantile(sims_i, 0.95)
-    q95_ess <- ess_rfun(z_scale(split_chains(I95)))
-    tail_ess <- min(q05_ess, q95_ess)
-    tail_ress <- tail_ess / nsamples 
     
     out[[i]] <- c(
       mean, sem, sd, quan, ess, ress, split_ess, zess, zsplit_ess, zsplit_ress, 
