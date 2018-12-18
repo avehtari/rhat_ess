@@ -282,6 +282,7 @@ values $\theta^{(nm)}$ with their corresponding rank normalized values
 $z^{(nm)}$.
 
 Rank normalization:
+
 1. Rank: Replace each value $\theta^{(nm)}$ by its rank $r^{(nm)}$. Average
 rank for ties are used to conserve the number of unique values of discrete
 quantities. Ranks are computed jointly for all draws from all chains.
@@ -295,8 +296,9 @@ For continuous variables and $S \rightarrow \infty$, the rank
 normalized values are normally distributed and rank normalization
 performs non-parametric transformation to normal distribution. Using
 normalized ranks instead of ranks directly, has the benefit that the
-behavior of $\widehat{R}$ and $S_{\rm eff}$ do not change for normally
-distributed $\theta$.
+behavior of $\widehat{R}$ and $S_{\rm eff}$ do not change from the
+ones presented in [Section *Split*-$\widehat{R}$](#SplitRhat) for
+normally distributed $\theta$.
 
 <!--
 Paul: What exactly is implied by "rank normalization
@@ -384,7 +386,7 @@ now be obtained by applying rank-normalizing and subsequent computations
 directly on the indicator function's results. See [Appendix
 C](#AppendixC) for an illustration of variance of ECDF.
 
-## Efficiency estimates for quantiles {#quantile_S_eff}
+## Efficiency estimates for quantiles and tail-ESS {#quantile_S_eff}
 
 Assuming that we know the CDF to be a certain continuous function $F$ which is
 smooth near an $\alpha$-quantile of interest, we could use the delta method to
@@ -397,7 +399,7 @@ the ECDF (we computed using the indicator function
 $I(\theta^{(s)} \leq \theta_\alpha)$) also for the corresponding quantile 
 estimates.
 
-In order to estimate the efficiency in the distributions' tails, we propose to
+In order to summarize the efficiency in the distributions' tails, we propose to
 compute the minimum of the effectve sample sizes of the 5% and 95% quantiles. As
 a shorthand, we use the term *tail effective sample size* (*tail-ESS*). Tail-ESS
 is also useful for diagnosing problems due to different scales of the chains
@@ -526,7 +528,7 @@ although additional experiments would be useful:
  - Rhat > 1.01
  - ESS < 400
 
-In case of running 4 chains, an effective sample size of 400,
+In case of running 4 chains, an effective sample size of 400
 corresponds to having an effective sample size of 50 for each 8 split
 chains, which we consider to be minimum for reliable mean, variance
 and autocorrelation estimates needed for the convergence
@@ -537,8 +539,8 @@ Plots shown in the upcoming sections have dashed lines based on these thresholds
 (in continuous plots, a dashed line at 1.005 is plotted instead of 1.01, as
 values larger than that are usually rounded in our summaries to 1.01).
 
-TODO: Add more differentiated recommendations about bulk and tail ESS?
-Or just recommend both being above 400?
+<!-- TODO: Add more differentiated recommendations about bulk and tail ESS?
+Or just recommend both being above 400?-->
 
 # Examples
 
@@ -590,7 +592,7 @@ Run the nominal model:
 fit_nom <- stan(file = 'cauchy_nom.stan', seed = 7878, refresh = 0)
 ```
 
-Treedepth exceedence and Bayesian Fraction of Missing Information are
+Treedepth exceedence and Bayesian fraction of missing information are
 dynamic HMC specific diagnostics [@betancourt2017conceptual]. We get
 warnings about a very large number of transitions after
 warmup that exceeded the maximum treedepth, which is likely due to
@@ -601,16 +603,16 @@ slow mixing.
 ```{r}
 mon <- monitor(fit_nom)
 print(mon)
-which_min_ess <- which.min(mon[1:50, 'Bulk_ESS'])
+which_min_ess <- which.min(mon[1:50, 'Tail_ESS'])
 ```
 
-Several Rhat > 1.01 and some ESS < 400 indicate that the results should not be 
-trusted. The [Appendix E](#AppendixE) has 
-more results with longer chains as well.
+Several Rhat > 1.01 and some ESS < 400 indicate also that the results
+should not be trusted. The [Appendix E](#AppendixE) has more results
+with longer chains as well.
 
 We can further analyze potential problems using local efficiency and
 rank plots. We specifically investigate x[`r which_min_ess`], which has the
-smallest bulk-ESS of `r round(min(mon[,'Bulk_ESS']), 2)`. 
+smallest taill-ESS of `r round(min(mon[,'Tail_ESS']), 2)`. 
 
 We examine the sampling efficiency in different parts of the posterior by
 computing the efficiency of small interval probability estimates (see
@@ -644,12 +646,13 @@ Similar as above, we see that the efficiency of our posterior draws is worryingl
 low in the tails. Again, orange ticks show iterations that exceeded the maximum
 treedepth.
 
-We may also investigate how the estimated effective sample sizes change when we
-use more and more draws. If the effective sample size is highly unstable, does
-not increase proportionally with more draws, or even decreases, this indicates
-that simply running longer chains will likely not solve the convergence issues.
-In the plot below, we see how unstable both bulk-ESS and tail-ESS are for
-this example.
+We may also investigate how the estimated effective sample sizes
+change when we use more and more draws (@Brooks+Gelman:1998 proposed
+to use similar graph for $\widehat{R}$). If the effective sample size
+is highly unstable, does not increase proportionally with more draws,
+or even decreases, this indicates that simply running longer chains
+will likely not solve the convergence issues.  In the plot below, we
+see how unstable both bulk-ESS and tail-ESS are for this example.
 
 ```{r, cache=FALSE}
 plot_change_ess(fit = fit_nom, par = which_min_ess)
@@ -688,16 +691,20 @@ There are no warnings, and the sampling is much faster.
 ```{r, cache=FALSE}
 mon <- monitor(fit_alt1)
 print(mon)
-which_min_ess <- which.min(mon[101:150, 'Bulk_ESS'])
+which_min_ess <- which.min(mon[101:150, 'Tail_ESS'])
 ```
 
-All Rhat < 1.01 and ESS > 400 indicate the sampling worked much
-better with the alternative parameterization. [Appendix E](#AppendixE)
-has more results using other alternative parameterizations.
+All Rhat < 1.01 and ESS > 400 indicate the sampling worked much better
+with the alternative parameterization. [Appendix E](#AppendixE) has
+more results using other alternative parameterizations. The `x_a` and
+`x_b` used to form the Cauchy distributed `x` have stable quantile,
+mean and sd values. As `x` is Cauchy distributed it has only stable
+quantiles, but wildly varying mean and sd estimates as the true values
+are not finite.
 
 We can further analyze potential problems using local efficiency estimates and
 rank plots. We take a detailed look at x[`r which_min_ess`], which has the 
-smallest bulk-ESS of `r round(mon[which_min_ess, 'Bulk_ESS'], 2)`.
+smallest bulk-ESS of `r round(mon[which_min_ess, 'Tail_ESS'], 2)`.
 
 We examine the sampling efficiency in different parts of the
 posterior by computing the efficiency estimates for small interval
@@ -804,13 +811,14 @@ print(mon)
 
 See [Appendix F](#AppendixF) for results of longer chains.
 
-Bulk-ESS for the between school standard deviation `tau` is
-0.05<0.01, indicating we should investigate that parameter more
-carefully.  We thus examine the sampling efficiency in different parts
-of the posterior by computing the efficiency estimate for small
-interval estimates for `tau`. These plots may either show quantiles or
-parameter values at the vertical axis. Red ticks show divergent
-transitions.
+Bulk-ESS and Tail-ESS for the between school standard deviation `tau`
+are `r mon['tau', 'Bulk_ESS']` and `r mon['tau', 'Tail_ESS']`
+respectively. Both are less than 400, indicating we should investigate that
+parameter more carefully.  We thus examine the sampling efficiency in
+different parts of the posterior by computing the efficiency estimate
+for small interval estimates for `tau`. These plots may either show
+quantiles or parameter values at the vertical axis. Red ticks show
+divergent transitions.
 
 ```{r}
 plot_local_ess(fit = fit_cp, par = "tau", nalpha = 20)
@@ -840,8 +848,10 @@ plot_quantile_ess(fit = fit_cp, par = "tau", nalpha = 40, rank = FALSE)
 
 Most of the quantile estimates have worryingly low effective sample size.
 
-Let's see how the estimated effective sample size changes when we use more and
-more draws. Here we don't see sudden changes, but bulk-ESS is too low for reliable convergence diagnostic. See [Appendix F](#AppendixF) for results of longer chains.
+Let's see how the estimated effective sample size changes when we use
+more and more draws. Here we don't see sudden changes, but both
+bulk-ESS and tail-ESS are too low. See [Appendix F](#AppendixF) for
+results of longer chains.
 
 ```{r, cache=FALSE}
 plot_change_ess(fit = fit_cp, par = "tau")
@@ -1297,7 +1307,7 @@ ggplot(data = res, aes(y = zsreff, x = scale)) +
 problem as it focuses on location differences between chains.
 
 ```{r}
-ggplot(data = res, aes(y = tailseff, x = scale)) + 
+ggplot(data = res, aes(y = tailreff, x = scale)) + 
   geom_point() + 
   geom_jitter() + 
   facet_grid(. ~ iters) + 
@@ -1379,7 +1389,7 @@ Let's check Rhat and ESS diagnostics.
 
 ```{r}
 res <- monitor_extra(samp[, , 1:50])
-which_min_ess <- which.min(res$zsseff)
+which_min_ess <- which.min(res$tailseff)
 plot_rhat(res)
 ```
 
@@ -1410,7 +1420,7 @@ cat('lp__: Tail-ESS = ', round(res['lp__', 'tailseff'], 2), '\n')
 
 We can further analyze potential problems using local effective sample size 
 and rank plots. We examine x[`r which_min_ess`], which has
-the smallest bulk-ESS of `r round(min(res$zsseff), 2)`.
+the smallest tail-ESS of `r round(min(res$zsseff), 2)`.
 
 We examine the sampling efficiency in different parts of the
 posterior by computing the effective sample size for small interval
@@ -1475,7 +1485,7 @@ mcmc_trace(samp[, , 1])
 
 ```{r}
 res <- monitor_extra(samp[, , 1:50])
-which_min_ess <- which.min(res$zsseff)
+which_min_ess <- which.min(res$tailseff)
 ```
 
 We check the diagnostics for all $x$.
@@ -1535,7 +1545,7 @@ plot_quantile_ess(fit = fit_nom_td20, par = which_min_ess, nalpha = 40)
 ```
 
 The rank plot visualisation of x[`r which_min_ess`], which has the smallest
-effective sample size of `r round(min(res$zsseff))` among the $x$, indicates 
+tail-ESS of `r round(min(res$tailseff))` among the $x$, indicates 
 clear convergence problems.
 
 ```{r}
@@ -1572,7 +1582,7 @@ mcmc_trace(samp[, , 1])
 
 ```{r}
 res <- monitor_extra(samp[, , 1:50])
-which_min_ess <- which.min(res$zsseff)
+which_min_ess <- which.min(res$tailseff)
 ```
 
 Let's check the diagnostics for all $x$.
@@ -1636,7 +1646,7 @@ plot_quantile_ess(fit = fit_nom_td20l, par = which_min_ess, nalpha = 100)
 ```
 
 Let's look at the rank plot visualisation of x[`r which_min_ess`], which has 
-the smallest effective sample size `r round(min(res$zsseff), 2)` among the $x$.
+the smallest tail-ESS `r round(min(res$tailseff), 2)` among the $x$.
 
 ```{r}
 xmin <- paste0("x[", which_min_ess, "]")
@@ -1670,7 +1680,7 @@ There are no warnings and the sampling is much faster.
 ```{r}
 samp <- as.array(fit_alt1)
 res <- monitor_extra(samp[, , 101:150])
-which_min_ess <- which(res$zsseff == min(res$zsseff))
+which_min_ess <- which.min(res$tailseff)
 ```
 
 ```{r}
@@ -1733,7 +1743,7 @@ can be different from the effective sample size of the parameters $x_a$
 and $x_b$ that we used to compute it.
 
 The rank plot visualisation of x[`r which_min_ess`], which has the smallest
-effective sample size of `r round(min(res$zsseff), 2)` among the $x$ looks better
+tail-ESS of `r round(min(res$tailseff), 2)` among the $x$ looks better
 than for the nominal parameterization.
 
 ```{r}
@@ -1771,7 +1781,7 @@ nominal model.
 ```{r}
 samp <- as.array(fit_alt3)
 res <- monitor_extra(samp[, , 51:100])
-which_min_ess <- which(res$zsseff == min(res$zsseff))
+which_min_ess <- which.min(res$tailseff)
 ```
 
 ```{r}
@@ -1832,7 +1842,7 @@ cat('Mean tail-seff for x_tilde =' , round(mean(res1[, 'zfsseff']), 2), '\n')
 ```
 
 The Rank plot visualisation of x[`r which_min_ess`], which has the smallest
-effective sample size of `r round( min(res$zsseff), 2)` among the $x$ reveals
+tail-ESS of `r round( min(res$tailseff), 2)` among the $x$ reveals
 shows good efficiency, similar to the results for `lp__`.
 
 ```{r}
@@ -1869,7 +1879,7 @@ Cauchy distribution with nominal parameterization.
 ```{r}
 samp <- as.array(fit_half_nom)
 res <- monitor_extra(samp[, , 1:50])
-which_min_ess <- which.min(res$zsseff)
+which_min_ess <- which.min(res$tailseff)
 ```
 
 ```{r}
@@ -1922,7 +1932,7 @@ plot_quantile_ess(fit = fit_half_nom, par = which_min_ess, nalpha = 40)
 ```
 
 The rank plot visualisation of x[`r which_min_ess`], which has the smallest 
-effective sample size of `r round( min(res$zsseff), 2)` among $x$, looks good.
+tail-ESS of `r round( min(res$tailseff), 2)` among $x$, looks good.
 
 ```{r}
 xmin <- paste0("x[", which_min_ess, "]")
@@ -1957,7 +1967,7 @@ nominal model.
 ```{r}
 samp <- as.array(fit_half_reparam)
 res <- monitor_extra(samp[, , 101:150])
-which_min_ess <- which.min(res$zsseff)
+which_min_ess <- which.min(res$tailseff)
 ```
 
 ```{r}
@@ -2003,9 +2013,10 @@ plot_quantile_ess(fit_half_reparam, par = 100 + which_min_ess, nalpha = 40)
 The effective sample size near zero is much worse than for the
 half-Cauchy distribution with nominal parameterization.
 
-The Rank plot visualisation of x[`r which_min_ess`], which has the smallest relative
-efficiency of `r round( min(res$zsseff), 2)` among  the $x$, reveals deviations
-from uniformity, which is expected with lower effective sample size.
+The Rank plot visualisation of x[`r which_min_ess`], which has the
+smallest tail-ESS of `r round( min(res$tailseff), 2)` among the $x$,
+reveals deviations from uniformity, which is expected with lower
+effective sample size.
 
 ```{r}
 xmin <- paste0("x[", which_min_ess, "]")
@@ -2157,7 +2168,7 @@ print(res)
 ```
 
 Rhat, Bulk-ESS and Tail-ESS are not able to detect problems, although
-relative Bulk-ESS for `tau` is very small 0.5%.
+Tail-ESS for `tau` is suspiciously low compared to total number of draws.
 
 ```{r}
 plot_local_ess(fit = fit_cp3, par = "tau", nalpha = 100)
@@ -2187,9 +2198,11 @@ can't be trusted if other diagnostics indicate convergence problems!
 
 #### Centered parameterization with very long chains and thinning
 
-Let's check what happens if we run even longer chains and then thin the draws to
-reduce autocorrelation. With 400000 iterations per chain, thinning of 200 and 4
-chains, we again end up with 4000 iterations as with the default settings.
+When autocorrelation time is high, it has been common to thin the
+chains by saving only a small portion of the draws. This will throw
+away useful information also for convergence diagnostics. With 400000
+iterations per chain, thinning of 200 and 4 chains, we again end up
+with 4000 iterations as with the default settings.
 
 ```{r fit_cp4, cache=TRUE, comment=NA, results='hide'}
 fit_cp4 <- stan(
@@ -2199,8 +2212,13 @@ fit_cp4 <- stan(
 )
 ```
 
-We still observe some divergent transitions which potentially bias the results.
-Apart from that, the convergence diagnostics look ok. 
+We observe several divergent transitions and the estimated Bayesian
+fraction of missing information is also low, which indicate
+convergence problems and potentially biased estimates.
+
+Unfortunately the thinning makes Rhat and ESS estimates to miss the
+problems. The posterior mean is still biased, being more than 3 sigmas
+away from the estimate obtained using non-centered parameterization.
 
 ```{r}
 monitor(fit_cp4)
@@ -2208,16 +2226,19 @@ res <- monitor_extra(fit_cp4)
 print(res)
 ```
 
-Various diagnostic plots of $\tau$ look reasonable as well.
+Various diagnostic plots of `tau` look reasonable as well.
 ```{r}
 plot_local_ess(fit = fit_cp4, par = "tau", nalpha = 100)
 plot_quantile_ess(fit = fit_cp4, par = "tau", nalpha = 100)
 plot_change_ess(fit = fit_cp4, par = "tau")
 ```
 
-Apparently, after substantial efforts, we got the centered parameterization to
-yield better results. However, the estimate of $\tau$ is still around 3 sigmas
-away from the corresponding estimate of the non-centered parameterization.
+However, the rank plots seem still to show the problem.
+
+```{r}
+samp_cp4 <- as.array(fit_cp4)
+mcmc_hist_r_scale(samp_cp4[, , "tau"])
+```
 
 ### Non-centered Eight Schools model
 
