@@ -560,6 +560,8 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 library(bayesplot)
 theme_set(bayesplot::theme_default(base_family = "sans"))
+library(rjags)
+library(abind)
 source('monitornew.R')
 source('monitorplot.R')
 ```
@@ -2030,6 +2032,84 @@ mcmc_hist_r_scale(samp[, , "lp__"])
 ```
 
 
+### The Cauchy distribution with Jags
+
+So far, we have run all models in Stan, but we want to also investigate whether
+similar problems arise with probabilistic programming languages that use other
+samplers than variants of Hamiltonian Monte-Carlo. Thus, we will fit the eight
+schools models also with Jags, which uses a dialect of the BUGS language to
+specify models. Jags uses a clever mix of Gibbs and Metropolis-Hastings
+sampling. This kind of sampling does not scale well to high dimensional
+posteriors of strongly interdependent parameters, but for the relatively
+simple models discussed in this case study it should work just fine.
+
+The Jags code for the nominal parameteriztion of the cauchy distribution 
+looks as follows:
+
+```{r, comment=NA}
+writeLines(readLines("cauchy_nom.bugs"))
+```
+
+First, we initialize the Jags model for reusage later.
+
+```{r}
+jags_nom <- jags.model(
+  "cauchy_nom.bugs",
+  n.chains = 4, n.adapt = 10000
+)
+```
+
+Next, we sample 1000 iterations for each of the 4 chains for easy
+comparison with the corresponding Stan results.
+
+```{r}
+samp_jags_nom <- coda.samples(
+  jags_nom, variable.names = "x",
+  n.iter = 1000
+)
+samp_jags_nom <- aperm(abind(samp_jags_nom, along = 3), c(1, 3, 2))
+dimnames(samp_jags_nom)[[2]] <- paste0("chain:", 1:4)
+```
+
+We summarize the model as follows:
+
+```{r}
+mon <- monitor(samp_jags_nom)
+print(mon)
+which_min_ess <- which.min(mon[1:50, 'Bulk_ESS'])
+```
+
+The overall results look very promising with Rhats = 1 and ESS values close to
+the total number of draws of 4000. We take a detailed look at 
+x[`r which_min_ess`], which has the smallest bulk-ESS of 
+`r round(mon[which_min_ess,'Bulk_ESS'], 2)`.
+
+We examine the sampling efficiency in different parts of the
+posterior by computing the efficiency estimates for small interval
+probability estimates.
+
+```{r}
+plot_local_ess(fit = samp_jags_nom, par = which_min_ess, nalpha = 20)
+```
+
+The efficiency estimate is good in all parts of the posterior. Further, we 
+examine the sampling efficiency of different quantile estimates.
+
+```{r}
+plot_quantile_ess(fit = samp_jags_nom, par = which_min_ess, nalpha = 40)
+```
+
+Rank plots also look rather similar across chains.
+
+```{r}
+xmin <- paste0("x[", which_min_ess, "]")
+mcmc_hist_r_scale(samp_jags_nom[, , xmin])
+```
+
+**Result:** Jags seems to be able to sample from the nominal parameterization of
+the Cauchy distribution just fine.
+
+
 ## Appendix F: Hierarchical model: Eight Schools {#AppendixF .unnumbered}
 
 We continue with our discussion about hierarchical models on the Eight Schools
@@ -2289,6 +2369,147 @@ centered parameterization, where increasing `adapt_delta` didn't help at all.
 Actually, this is something we observe quite often: A suboptimal
 parameterization can cause problems that are not simply solved by tuning the
 sampler. Instead, we have to adjust our model to achieve trustworthy inference.
+
+
+### Eight Schools with Jags
+
+We will also run the centered and non-centered parameterizations of
+the eight schools model with Jags.
+
+#### Centered Eight Schools Model
+
+The Jags code for the centered eight schools model looks as follows:
+
+```{r, comment=NA}
+writeLines(readLines("eight_schools_cp.bugs"))
+```
+
+First, we initialize the Jags model for reusage later.
+
+```{r}
+jags_cp <- jags.model(
+  "eight_schools_cp.bugs",
+  data = eight_schools,
+  n.chains = 4, n.adapt = 10000
+)
+```
+
+Next, we sample 1000 iterations for each of the 4 chains for easy
+comparison with the corresponding Stan results.
+
+```{r}
+samp_jags_cp <- coda.samples(
+  jags_cp, c("theta", "mu", "tau"),
+  n.iter = 1000
+)
+samp_jags_cp <- aperm(abind(samp_jags_cp, along = 3), c(1, 3, 2))
+```
+
+Convergence diagnostics indicate problems in the sampling
+of `mu` and `tau`, but also to a lesser degree in all other paramters.
+
+```{r}
+mon <- monitor(samp_jags_cp)
+print(mon)
+```
+
+We also see problems in the sampling of `tau` using various diagnostic plots.
+
+```{r}
+plot_local_ess(samp_jags_cp, par = "tau", nalpha = 20)
+plot_quantile_ess(samp_jags_cp, par = "tau", nalpha = 20)
+plot_change_ess(samp_jags_cp, par = "tau")
+```
+
+Let's see what happens if we run 10 times longer chains.
+
+```{r}
+samp_jags_cp <- coda.samples(
+  jags_cp, c("theta", "mu", "tau"),
+  n.iter = 10000
+)
+samp_jags_cp <- aperm(abind(samp_jags_cp, along = 3), c(1, 3, 2))
+```
+
+Convergence looks better now, although `tau` is still estimated not very
+efficiently.
+
+```{r}
+mon <- monitor(samp_jags_cp)
+print(mon)
+```
+
+The diagnostic plots of quantiles and small intervals tell a similar story.
+
+```{r}
+plot_local_ess(samp_jags_cp, par = "tau", nalpha = 20)
+plot_quantile_ess(samp_jags_cp, par = "tau", nalpha = 20)
+```
+
+Notably, however, the increase in effective sample size of tau is linear
+in the total number of draws indicating that convergence for `tau`
+may be achieved by simply running longer chains.
+
+```{r}
+plot_change_ess(samp_jags_cp, par = "tau")
+```
+
+**Result:** Similar to Stan, Jags also has convergence problems with the
+centered parameterization of the eight schools model.
+
+#### Non-Centered Eight Schools Model
+
+The Jags code for the non-centered eight schools model looks as follows:
+
+```{r, comment=NA}
+writeLines(readLines("eight_schools_ncp.bugs"))
+```
+
+First, we initialize the Jags model for reusage later.
+
+```{r}
+jags_ncp <- jags.model(
+  "eight_schools_ncp.bugs",
+  data = eight_schools,
+  n.chains = 4, n.adapt = 10000
+)
+```
+
+Next, we sample 1000 iterations for each of the 4 chains for easy
+comparison with the corresponding Stan results.
+
+```{r}
+samp_jags_ncp <- coda.samples(
+  jags_ncp, c("theta", "mu", "tau"),
+  n.iter = 1000
+)
+samp_jags_ncp <- aperm(abind(samp_jags_ncp, along = 3), c(1, 3, 2))
+```
+
+Convergence diagnostics indicate much better mixing than for the centered eight school model.
+
+```{r}
+mon <- monitor(samp_jags_ncp)
+print(mon)
+```
+
+Specifically, the mixing of `tau` looks much better although we still see
+some problems in the estimation of larger quantiles.
+
+```{r}
+plot_local_ess(samp_jags_ncp, par = "tau", nalpha = 20)
+plot_quantile_ess(samp_jags_ncp, par = "tau", nalpha = 20)
+```
+
+Change in effective sample size is roughly linear indicating that some remaining
+convergence problems are likely to be solved by running longer chains.
+
+```{r}
+plot_change_ess(samp_jags_ncp, par = "tau")
+```
+
+**Result:** Similar to Stan, Jags can sample from the non-centered
+parameterization of theeight schools model much better than from the centered parameterization.
 
 
 ## Appendix G: Dynamic HMC and effective sample size {#AppendixG .unnumbered}

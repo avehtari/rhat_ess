@@ -50,11 +50,12 @@ plot_ranknorm <- function(theta, n, m = 1, interval = FALSE) {
   invisible(out)
 }
 
-mcmc_hist_r_scale <- function(x, nbreaks = 50) {
+mcmc_hist_r_scale <- function(x, nbreaks = 50, ...) {
   max <- prod(dim(x)[1:2])
   mcmc_hist(
     r_scale(x), 
-    breaks = seq(0, max, by = max / nbreaks) + 0.5
+    breaks = seq(0, max, by = max / nbreaks) + 0.5,
+    ...
   )
 }
 

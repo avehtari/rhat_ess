@@ -1,0 +1,10 @@
+model {
+  for (j in 1:J) {
+    sigma_prec[j] <- pow(sigma[j], -2)
+    theta_tilde[j] ~ dnorm(0, 1)
+    theta[j] = mu + tau * theta_tilde[j]
+    y[j] ~ dnorm(theta[j], sigma_prec[j])
+  }
+  mu ~ dnorm(0, pow(5, -2))
+  tau ~ dt(0, pow(5, -2), 1)T(0, )
+}

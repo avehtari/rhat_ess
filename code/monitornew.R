@@ -418,7 +418,7 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   )
 }
 
-print.simsummary <- function(x, digits = 2, se = FALSE, ...) {
+print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   atts <- attributes(x)
   rm_atts <- c("chains", "iter", "warmup", "extra")
   attributes(x)[rm_atts] <- NULL
@@ -441,6 +441,8 @@ print.simsummary <- function(x, digits = 2, se = FALSE, ...) {
     "; warmup = ", atts$warmup, "):\n\n", sep = ""
   )
   class(px) <- "data.frame"
+  # add a space between summary and convergence estimates
+  names(px)[names(px) %in% "Rhat"] <- " Rhat"
   print(round(px, digits), ...)
   if (!isTRUE(atts$extra)) {
     cat(
