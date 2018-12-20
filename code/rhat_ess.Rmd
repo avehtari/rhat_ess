@@ -539,8 +539,9 @@ Plots shown in the upcoming sections have dashed lines based on these thresholds
 (in continuous plots, a dashed line at 1.005 is plotted instead of 1.01, as
 values larger than that are usually rounded in our summaries to 1.01).
 
-<!-- TODO: Add more differentiated recommendations about bulk and tail ESS?
-Or just recommend both being above 400?-->
+<!-- 
+TODO: Add more differentiated recommendations about bulk and tail ESS? Or just recommend both being above 400?
+-->
 
 # Examples
 
