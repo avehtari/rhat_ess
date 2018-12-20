@@ -381,7 +381,7 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     zfsplit_ess <- round(ess_rfun(zsims_folded_split))
     zfsplit_ress <- zfsplit_ess / nsamples
     
-    tail_ess <- tail_ess(sims_i)
+    tail_ess <- round(tail_ess(sims_i))
     tail_ress <- tail_ess / nsamples 
     
     sims_med <- (sims_centered <= 0) * 1
@@ -418,32 +418,24 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   )
 }
 
-print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
+print.simsummary <- function(x, digits = 2, se = FALSE, ...) {
   atts <- attributes(x)
-  rm_atts <- c("chains", "iter", "warmup", "extra")
-  attributes(x)[rm_atts] <- NULL
   px <- x
-  if (isTRUE(atts$extra)) {
-    # output of monitor_extra()
-    seff_vars <- names(px)[grepl("seff", names(px))]
-    for (v in seff_vars) {
-      px[, v] <- round(px[, v], 0)
-    }
-  } else {
-    # output of monitor()
-    if (!se) {
-      px <- px[, !grepl("^MCSE_", colnames(px))]
-    }
+  if (!se) {
+    px <- px[, !grepl("^MCSE_", colnames(px))]
   }
+  class(px) <- "data.frame"
+  px$Rhat <- signif(px$Rhat, digits = max(3, digits))
+  estimates <- setdiff(names(px), c("Rhat", "Bulk_ESS", "Tail_ESS"))
+  px[, estimates] <- signif(px[, estimates], digits = digits)
+  # add a space between summary and convergence estimates
+  names(px)[names(px) %in% "Rhat"] <- " Rhat"
   cat(
     "Inference for the input samples (", atts$chains, 
     " chains: each with iter = ", atts$iter, 
     "; warmup = ", atts$warmup, "):\n\n", sep = ""
   )
-  class(px) <- "data.frame"
-  # add a space between summary and convergence estimates
-  names(px)[names(px) %in% "Rhat"] <- " Rhat"
-  print(round(px, digits), ...)
+  print(px, ...)
   if (!isTRUE(atts$extra)) {
     cat(
       "\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
