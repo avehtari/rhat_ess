@@ -418,15 +418,17 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   )
 }
 
-print.simsummary <- function(x, digits = 2, se = FALSE, ...) {
+print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   atts <- attributes(x)
   px <- x
   if (!se) {
     px <- px[, !grepl("^MCSE_", colnames(px))]
   }
   class(px) <- "data.frame"
-  px$Rhat <- signif(px$Rhat, digits = max(3, digits))
+  decimal_places <- max(1, digits - 1)
+  px$Rhat <- round(px$Rhat, digits = max(2, decimal_places))
   estimates <- setdiff(names(px), c("Rhat", "Bulk_ESS", "Tail_ESS"))
+  px[, estimates] <- round(px[, estimates], digits = decimal_places)
   px[, estimates] <- signif(px[, estimates], digits = digits)
   # add a space between summary and convergence estimates
   names(px)[names(px) %in% "Rhat"] <- " Rhat"
