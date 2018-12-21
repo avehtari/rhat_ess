@@ -13,6 +13,8 @@
 *.out
 *.snm
 *.rds
+*.bbl
+*.synctex.gz
 *_cache/
 *_files/
 auto
