@@ -38,21 +38,21 @@ plot_ranknorm <- function(theta, n, m = 1, interval = FALSE) {
       geom_line(data = df, aes(y = pm2sd), color = blue) +
       geom_line(data = df, aes(y = pp2sd), color = blue) +
       ylab('ECDF + normal approximated 95% interval')
-    out <- grid.arrange(p2b, p3b, p3c, nrow = 1)
+    out <- gridExtra::grid.arrange(p2b, p3b, p3c, nrow = 1)
   } else {
-    p1 <- mcmc_hist(as.data.frame(theta)) +
+    p1 <- bayesplot::mcmc_hist(as.data.frame(theta)) +
       xlab('theta')
     p4 <- ggplot(df, aes(x = z, grp = gid)) +
       stat_ecdf(color = blue, size = size, alpha = alpha, pad = FALSE) +
       labs(x = 'z', y = 'ECDF')
-    out <- grid.arrange(p1, p2, p3, p4, nrow = 1)
+    out <- gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 1)
   }
   invisible(out)
 }
 
 mcmc_hist_r_scale <- function(x, nbreaks = 50, ...) {
   max <- prod(dim(x)[1:2])
-  mcmc_hist(
+  bayesplot::mcmc_hist(
     r_scale(x), 
     breaks = seq(0, max, by = max / nbreaks) + 0.5,
     ...
@@ -82,7 +82,7 @@ plot_rhat <- function(res) {
     geom_hline(yintercept = 1) + 
     ylim(c(.99,1.26))
   
-  grid.arrange(p1, p2, p3, nrow = 1)
+  gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
 }
 
 plot_ess <- function(res) {
@@ -132,7 +132,7 @@ plot_ess <- function(res) {
     scale_y_continuous(limits = ylimits) 
   
   blank <- grid::grid.rect(gp = grid::gpar(col = "white"), draw = FALSE)
-  grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
+  gridExtra::grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)
 }
 
 plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
