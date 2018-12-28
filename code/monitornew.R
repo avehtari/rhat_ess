@@ -273,8 +273,11 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
     mean <- mean(sims_i)
     sd <- sd(sims_i)
     mcse_mean <- sd / sqrt(ess)
-    # mcse_sd assumes normality and uses stirling's approximation
-    fac_mcse_sd <- sqrt(exp(1) * (1 - 1 / ess)^(ess - 1) - 1)
+    # mcse_sd assumes normality of sims and uses Stirling's approximation
+    # min of ess for sims and sims^2 is used instead of ess
+    ess2 <- ess_rfun(sims_i^2)
+    essmin <- min(c(ess,ess2))
+    fac_mcse_sd <- sqrt(exp(1) * (1 - 1 / essmin)^(essmin - 1) - 1)
     mcse_sd <- sd * fac_mcse_sd
     
     out[[i]] <- c(
