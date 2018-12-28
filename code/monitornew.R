@@ -429,7 +429,7 @@ print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   px$Rhat <- round(px$Rhat, digits = max(2, decimal_places))
   estimates <- setdiff(names(px), c("Rhat", "Bulk_ESS", "Tail_ESS"))
   px[, estimates] <- round(px[, estimates], digits = decimal_places)
-  px[, estimates] <- signif(px[, estimates], digits = digits)
+  #px[, estimates] <- signif(px[, estimates], digits = digits)
   # add a space between summary and convergence estimates
   names(px)[names(px) %in% "Rhat"] <- " Rhat"
   cat(
