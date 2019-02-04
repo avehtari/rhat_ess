@@ -615,7 +615,7 @@ with longer chains as well.
 
 We can further analyze potential problems using local efficiency and
 rank plots. We specifically investigate x[`r which_min_ess`], which has the
-smallest taill-ESS of `r round(min(mon[,'Tail_ESS']), 2)`. 
+smallest tail-ESS of `r round(min(mon[,'Tail_ESS']), 2)`. 
 
 We examine the sampling efficiency in different parts of the posterior by
 computing the efficiency of small interval probability estimates (see
