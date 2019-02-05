@@ -197,7 +197,7 @@ to these diagnostics.
 \hypertarget{CD}{%
 \section{Convergence diagnostics for iterative algorithms}\label{CD}}
 
-The Split-\(\widehat{R}\) statistic and the \emph{effective sample size}
+The split-\(\widehat{R}\) statistic and the \emph{effective sample size}
 (ESS) are routinely used to monitor the convergence of iterative
 simulations, which are omnipresent in Bayesian statistics in the form of
 Markov-Chain Monte-Carlo samples. The original \(\widehat{R}\) statistic
@@ -583,7 +583,7 @@ It is common practice to only report the Monte Carlo error of the mean,
 but not of quantiles and related quantities. As the delta method for
 computing the variance would require explicit knowledge of the
 normalized posterior density, which we don't have in most non-trivial
-cases, we propose the following alternative approach to compute Montor
+cases, we propose the following alternative approach to compute Monte
 Carlo standard errors of quantiles:
 
 \begin{enumerate}
@@ -649,7 +649,7 @@ Secondly, effective sample sizes for different parameters are on the
 same scale, and thus it is easier to see which part of the model might
 have sampling problems.
 
-After checking that \emph{split}-\(\widehat{R}\) and ESS fullfil the
+After checking that \emph{split}-\(\widehat{R}\) and ESS fulfill the
 above ad hoc requirements, we recommend to take int account the
 application specific requirements for the accuracy of the quantity of
 interest and check that MCSE is low enough or continue sampling.
@@ -705,9 +705,9 @@ tend to squeeze to a fuzzy mess in case of long chains.
 plots}\label{quantile-and-small-interval-plots}}
 
 The efficiency of quantiles or small interval probabilities may vary
-drastistically across different quantiles and small interval positions,
+drastically across different quantiles and small interval positions,
 respectively. We thus propose to use diagnostic plots that display
-efficiency of quanilites or small interval probabilities across their
+efficiency of quantiles or small interval probabilities across their
 whole range to better diagnose areas of the distributions that the
 iterative algorithm fails to explore efficiently.
 
@@ -1119,7 +1119,7 @@ sampling is much faster.
 
 All \emph{split}-\(\widehat{R}<1.01\) and ESS\(>400\) indicate the
 sampling worked much better with the alternative parameterization.
-Oneline appendix has more results using other
+Online appendix has more results using other
 alternative parameterizations. The \(a\) and \(b\) used
 to form the Cauchy distributed \(x\) have stable quantile, mean and
 sd values. As \(x\) is Cauchy distributed it has stable
