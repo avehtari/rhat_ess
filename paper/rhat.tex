@@ -606,28 +606,74 @@ Carlo standard errors of quantiles:
 \end{enumerate}
 
 \hypertarget{warning-thresholds}{%
-\subsection{Warning thresholds}\label{warning-thresholds}}
+\subsection{Interpreting \texorpdfstring{\emph{Split}-\(\widehat{R}\)}{Split-\textbackslash{}widehat\{R\}}, ESS, and MCSE}\label{warning-thresholds}}
 
-Based on the experiments presented in
-\protect\hyperlink{AppendixD}{Appendices D-F}, more strict convergence
-diagnostics and effective sample size warning limits could be used. We
-propose the following warning thresholds although additional experiments
-would be useful:
+The ultimate focus should be in the accuracy of the estimate for the
+quantity of interest. This accuracy can be measure using Monte Carlo
+standard error (or corresponding interval) and the acceptable MCSE
+depends on the quantity and application. MCSE estimate is computed
+using the marginal posterior of the quantity and adjusted using ESS,
+and ESS is based on \emph{split}-\(\widehat{R}\) and autocorrelations
+of the chains.
 
-\begin{itemize}
-\tightlist
-\item
-  Rhat \textgreater{} 1.01
-\item
-  ESS \textless{} 400
-\end{itemize}
+In cases of easy sampling, we could compute ESS only based on the
+autocorrelations, but \emph{split}-\(\widehat{R}\) is very helpful in
+case of multimodality or other reasons causing chains to get stuck in
+part of the target distribution (e.g. in case of unimodal funnel and
+HMC, differences in step size adaptation can lead to chains to have
+different behavior reaching the narrow part of the funnel). In case of
+well separated multimodality the \emph{split}-\(\widehat{R}\)
+adjustment of ESS, makes the ESS estimate to be close to the number of
+distinct modes. If only one chain would be run, and ESS would be
+computed only based on autocorrelations, the ESS would be highly
+over-estimated. The variance of \emph{split}-\(\widehat{R}\) adjusted
+ESS could be improved by running more chains. We recommend running at
+least four chains. The \emph{split}-\(\widehat{R}\) is not alone
+directly determining the MCSE, as it only inflates ESS estimate which
+is part of MCSE computation. As a generic ad hoc rule based on the
+simulations we recommend to aim for \emph{split}-\(\widehat{R}<1.01\).
 
-In case of running 4 chains, an effective sample size of 400 corresponds
-to having an effective sample size of 50 for each 8 split chains, which
-we consider to be minimum for reliable mean, variance and
-autocorrelation estimates needed for the convergence diagnostic. We
-recommend running at least 4 chains to get reliable between chain
-variances for the convergence diagnostics.
+The required ESS can be ultimately decided only in the context of MCSE
+of the quantity of interest. However, there are two reasons to look at
+the ESS before MCSEs. Firstly, the computation of
+\emph{split}-\(\widehat{R}\) and autocorrelations needed for ESS
+itself require estimating means and variances, and in order to get
+reliable convergence and ESS estimate, we recommend to aim for
+ESS$>400$. In case of running four chains, this corresponds to having
+at least effective sample size of 50 per each split chain to be used
+for estimating means, variances and autocorrelations. Often for a
+useful estimation accuracy ESS$>100$ would be sufficient, but that
+would require that we know that ESS$>100$, and when we don't know that
+we need higher ESS to be certain about the sampling efficiency.
+Secondly, effective sample sizes for different parameters are on the
+same scale, and thus it is easier to see which part of the model might
+have sampling problems.
+
+After checking that \emph{split}-\(\widehat{R}\) and ESS fullfil the
+above ad hoc requirements, we recommend to take int account the
+application specific requirements for the accuracy of the quantity of
+interest and check that MCSE is low enough or continue sampling.
+
+% Based on the experiments presented in
+% \protect\hyperlink{AppendixD}{Appendices D-F}, more strict convergence
+% diagnostics and effective sample size warning limits could be used. We
+% propose the following warning thresholds although additional
+% experiments would be useful:
+
+% \begin{itemize}
+% \tightlist
+% \item
+%   Rhat \textgreater{} 1.01
+% \item
+%   ESS \textless{} 400
+% \end{itemize}
+
+% In case of running 4 chains, an effective sample size of 400 corresponds
+% to having an effective sample size of 50 for each 8 split chains, which
+% we consider to be minimum for reliable mean, variance and
+% autocorrelation estimates needed for the convergence diagnostic. We
+% recommend running at least 4 chains to get reliable between chain
+% variances for the convergence diagnostics.
 
 % Plots shown in the upcoming sections have dashed lines based on these
 % thresholds (in continuous plots, a dashed line at 1.005 is plotted
