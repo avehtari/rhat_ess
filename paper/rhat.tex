@@ -850,14 +850,14 @@ bulk-ESS and tail-ESS are for this example.
   \caption{The estimated effective sample sizes with increasing number of iterations for Cauchy model with nominal parameterization.}
   \label{fig:change-ess-fit-nom-1}
 \end{figure}
-Rank plots in Figure~\ref{fig:hist-fit-nom-1.pdf} clearly show the
+Rank plots in Figure~\ref{fig:hist-fit-nom-1} clearly show the
 mixing problem between chains. In case of good mixing all rank plots
 should be close to uniform.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/hist-fit-nom-1.pdf}
   \caption{Rank plots of posterior draws from four chains for Cauchy model with nominal parameterization.}
-  \label{fig:hist-fit-nom-1.pdf}
+  \label{fig:hist-fit-nom-1}
 \end{figure}
 
 \hypertarget{alternative-parameterization-of-cauchy}{%
@@ -1082,7 +1082,6 @@ has the smallest bulk-ESS of 2848.
 %
 Figure~\ref{fig:local-ess-fit-alt1-1} shows
 the local efficiency of small interval probability estimates.
-
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-alt1-1.pdf}
@@ -1218,263 +1217,243 @@ on the sampling performance. More experiments with different
 parameterizations of the half-Cauchy distribution can be found in
 the online appendix.
 
+%\FloatBarrier
+
 \hypertarget{eightschools}{%
 \subsection{Hierarchical model: Eight Schools}\label{eightschools}}
 
 The Eight Schools data is a classic example for hierarchical models
 \citep[see Section 5.5 in][]{BDA3}, which despite the apparent
 simplicity nicely illustrates the typical problems in inference for
-hierarchical models. The Stan models below are from Michael Betancourt's
-case study on
-\href{http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html}{Diagnosing
-Biased Inference with Divergences}.
-\protect\hyperlink{AppendixF}{Appendix F} contains more detailed
-analysis of different algorithm variants.
-
-\FloatBarrier
+hierarchical models. The centered parameterization exhibits a funnel shape
+that contracts into a region of strong curvature around small
+values of population prior scale $\tau$, making it difficult for most Markov chain
+methods to adequately explore.
+Online appendix contains more detailed
+analysis of different algorithm variants including also Gibbs sampling.
 
 \hypertarget{a-centered-eight-schools-model}{%
 \subsubsection{A Centered Eight Schools
 model}\label{a-centered-eight-schools-model}}
 
-\begin{verbatim}
-data {
-  int<lower=0> J;
-  real y[J];
-  real<lower=0> sigma[J];
-}
-
-parameters {
-  real mu;
-  real<lower=0> tau;
-  real theta[J];
-}
-
-model {
-  mu ~ normal(0, 5);
-  tau ~ cauchy(0, 5);
-  theta ~ normal(mu, tau);
-  y ~ normal(theta, sigma);
-}
-\end{verbatim}
-
-\hypertarget{centered-eight-schools-model}{%
-\paragraph{Centered Eight Schools
-model}\label{centered-eight-schools-model}}
-
-We directly run the centered parameterization model with an increased
+We use dynamic HMC and run 4 chains each with 1000 iterations of
+warmup and 1000 iterations stored. Instead of the default options, we
+run the centered parameterization model with an increased
 \texttt{adapt\_delta} value to reduce the probability of getting
-divergent transitions.
+divergent transitions. Despite an increased \texttt{adapt\_delta}, we
+still observe a lot of divergent transitions, which in itself is
+already sufficient indicator of convergence problems. We can use
+\emph{split}-\(\widehat{R}\) and ESS diagnostics to recognize
+problematic parts of the posterior, and they can be used also in cases
+when other MCMC algorithms than HMC is used.
 
-Despite an increased \texttt{adapt\_delta}, we still observe a lot of
-divergent transitions, which in itself is already sufficient indicator
-to not trust the results. We can use Rhat and ESS diagnostics to
-recognize problematic parts of the posterior and they could be used in
-cases when other MCMC algorithms than HMC is used.
+% \begin{verbatim}
+% Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
 
-\begin{verbatim}
-Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
+%              Q5    Q50   Q95   Mean   SD  Rhat Bulk_ESS Tail_ESS
+% mu        -1.11   4.53  9.90   4.44 3.39  1.02      548      754
+% tau        0.39   2.85  9.61   3.62 3.10  1.07       67       82
+% theta[1]  -2.24   5.81 16.30   6.23 5.74  1.02      747     1294
+% theta[2]  -2.60   5.07 13.40   5.08 4.86  1.01      970     1240
+% theta[3]  -5.01   4.35 12.10   3.94 5.33  1.01      899     1147
+% theta[4]  -2.86   5.00 12.80   4.89 4.82  1.01      986     1059
+% theta[5]  -4.74   4.03 10.80   3.66 4.81  1.01      715      988
+% theta[6]  -4.15   4.28 11.60   4.08 4.84  1.01      833      976
+% theta[7]  -1.30   5.97 15.60   6.31 5.18  1.02      612     1182
+% theta[8]  -3.37   5.12 13.80   4.98 5.34  1.01      901     1477
+% lp__     -24.70 -15.00  0.37 -14.00 7.44  1.07       69       89
 
-             Q5    Q50   Q95   Mean   SD  Rhat Bulk_ESS Tail_ESS
-mu        -1.11   4.53  9.90   4.44 3.39  1.02      548      754
-tau        0.39   2.85  9.61   3.62 3.10  1.07       67       82
-theta[1]  -2.24   5.81 16.30   6.23 5.74  1.02      747     1294
-theta[2]  -2.60   5.07 13.40   5.08 4.86  1.01      970     1240
-theta[3]  -5.01   4.35 12.10   3.94 5.33  1.01      899     1147
-theta[4]  -2.86   5.00 12.80   4.89 4.82  1.01      986     1059
-theta[5]  -4.74   4.03 10.80   3.66 4.81  1.01      715      988
-theta[6]  -4.15   4.28 11.60   4.08 4.84  1.01      833      976
-theta[7]  -1.30   5.97 15.60   6.31 5.18  1.02      612     1182
-theta[8]  -3.37   5.12 13.80   4.98 5.34  1.01      901     1477
-lp__     -24.70 -15.00  0.37 -14.00 7.44  1.07       69       89
+% For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
+% effective sample size for bulk and tail quantities respectively (good values is 
+% ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
+% split chains (at convergence, Rhat = 1).
+% \end{verbatim}
 
-For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
-effective sample size for bulk and tail quantities respectively (good values is 
-ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
-split chains (at convergence, Rhat = 1).
-\end{verbatim}
+See online appendix for more details and results of longer chains.
 
-See \protect\hyperlink{AppendixF}{Appendix F} for results of longer
-chains.
+Bulk-ESS and Tail-ESS for the between school standard deviation $\tau$
+are 67 and 82 respectively. Both are less than 400, indicating we
+should investigate that parameter more carefully. We thus examine the
+local sampling efficiency in different parts of the posterior by
+computing the efficiency estimate for small interval estimates.
 
-Bulk-ESS and Tail-ESS for the between school standard deviation
-\texttt{tau} are 67 and 82 respectively. Both are less than 400,
-indicating we should investigate that parameter more carefully. We thus
-examine the sampling efficiency in different parts of the posterior by
-computing the efficiency estimate for small interval estimates for
-\texttt{tau}. These plots may either show quantiles or parameter values
-at the vertical axis. Red ticks show divergent transitions.
-
+Figures~\ref{fig:local-ess-fit-cp-1} and
+\ref{fig:local-ess-fit-cp-norank-1} show the local efficiency of small
+interval probability estimates with respect to ranks and parameter
+values, respectively.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-cp-1.pdf}
-  \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization.}
+  \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
+  \label{fig:local-ess-fit-cp-1}
 \end{figure}
-
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-cp-norank-1.pdf}
-  \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$.}
+  \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
+  \label{fig:local-ess-fit-cp-norank-1}
 \end{figure}
-
-We see that the sampler has difficulties in exploring small \texttt{tau}
-values. As the sampling efficiency for estimating small \texttt{tau}
+The sampler has difficulties in exploring small $\tau$
+values. As the sampling efficiency for estimating small $\tau$
 values is practically zero, we may assume that we may miss substantial
 amount of posterior mass and get biased estimates. Red ticks, which show
-iterations with divergences, have concentrated to small \texttt{tau}
+iterations with divergences, have concentrated to small $\tau$
 values, indicate also problems exploring small values which is likely to
 cause bias.
-
-We examine also the sampling efficiency of different quantile estimates.
-Again, these plots may either show quantiles or parameter values at the
-vertical axis.
-
+%
+Figures~\ref{fig:quantile-ess-fit-cp-1}
+and~\ref{fig:quantile-ess-fit-cp-norank-1} show corresponding
+efficiency of quantile estimates with respect to ranks and parameter
+values, respectively.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/quantile-ess-fit-cp-1.pdf}
-  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization.}
+  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
+  \label{fig:quantile-ess-fit-cp-1}
 \end{figure}
-
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/quantile-ess-fit-cp-norank-1.pdf}
-  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$.}
+  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
+  \label{fig:quantile-ess-fit-cp-norank-1}
 \end{figure}
-
 Most of the quantile estimates have worryingly low effective sample
-size.
+size estimate.
 
-Let's see how the estimated effective sample size changes when we use
-more and more draws. Here we don't see sudden changes, but both bulk-ESS
-and tail-ESS are too low. See \protect\hyperlink{AppendixF}{Appendix F}
-for results of longer chains.
-
+Figure~\ref{fig:change-ess-fit-cp-1} shows how the estimated effective
+sample sizes change when we use more and more draws.  Here we don't
+see sudden changes, but both bulk-ESS and tail-ESS are low. See online
+appendix for results of longer chains.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/change-ess-fit-cp-1.pdf}
   \caption{The estimated effective sample sizes with increasing number of iterations for 8 schools model with centered parameterization.}
+  \label{fig:change-ess-fit-cp-1}
 \end{figure}
 
-In lines with these findings, the rank plots of \texttt{tau} clearly
-show problems in the mixing of the chains.
-
+In line with other findings, the rank plots of $\tau$ in
+Figure~\ref{fig:hist-fit-cp-1} clearly show problems in the mixing of
+the chains.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/hist-fit-cp-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8 schools model with centered parameterization.}
+  \label{fig:hist-fit-cp-1}
 \end{figure}
 
-\FloatBarrier
+%\FloatBarrier
 
 \hypertarget{non-centered-eight-schools-model}{%
 \subsubsection{Non-centered Eight Schools
 model}\label{non-centered-eight-schools-model}}
 
-For hierarchical models, the non-centered parameterization often works
-better than the centered one:
+For hierarchical models, the corresponding non-centered
+parameterization often works better.
 
-\begin{verbatim}
-data {
-  int<lower=0> J;
-  real y[J];
-  real<lower=0> sigma[J];
-}
+% \begin{verbatim}
+% data {
+%   int<lower=0> J;
+%   real y[J];
+%   real<lower=0> sigma[J];
+% }
 
-parameters {
-  real mu;
-  real<lower=0> tau;
-  real theta_tilde[J];
-}
+% parameters {
+%   real mu;
+%   real<lower=0> tau;
+%   real theta_tilde[J];
+% }
 
-transformed parameters {
-  real theta[J];
-  for (j in 1:J)
-    theta[j] = mu + tau * theta_tilde[j];
-}
+% transformed parameters {
+%   real theta[J];
+%   for (j in 1:J)
+%     theta[j] = mu + tau * theta_tilde[j];
+% }
 
-model {
-  mu ~ normal(0, 5);
-  tau ~ cauchy(0, 5);
-  theta_tilde ~ normal(0, 1);
-  y ~ normal(theta, sigma);
-}
-\end{verbatim}
+% model {
+%   mu ~ normal(0, 5);
+%   tau ~ cauchy(0, 5);
+%   theta_tilde ~ normal(0, 1);
+%   y ~ normal(theta, sigma);
+% }
+% \end{verbatim}
 
-For reasons of comparability, we also run the non-centered
-parameterization model with an increased \texttt{adapt\_delta} value:
+We use dynamic HMC and run 4 chains each with 1000 iterations of
+warmup and 1000 iterations stored. For reasons of comparability, we
+use the same \texttt{adapt\_delta} as for the centered
+parameterization model. There are zero divergences and no other
+warnings which is a first good sign.
 
-We get zero divergences and no other warnings which is a first good
-sign.
+% \begin{verbatim}
+% Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
 
-\begin{verbatim}
-Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
+%                    Q5   Q50   Q95  Mean   SD  Rhat Bulk_ESS Tail_ESS
+% mu              -1.14  4.42  9.96  4.47 3.37     1     5531     3004
+% tau              0.30  2.81  9.50  3.59 3.17     1     2872     1908
+% theta_tilde[1]  -1.29  0.31  1.88  0.31 0.98     1     5046     2874
+% theta_tilde[2]  -1.44  0.11  1.62  0.10 0.94     1     4177     2735
+% theta_tilde[3]  -1.64 -0.08  1.48 -0.08 0.97     1     6485     2994
+% theta_tilde[4]  -1.51  0.08  1.62  0.06 0.95     1     6076     2514
+% theta_tilde[5]  -1.71 -0.17  1.39 -0.16 0.94     1     5608     3177
+% theta_tilde[6]  -1.64 -0.06  1.53 -0.06 0.97     1     4855     2773
+% theta_tilde[7]  -1.25  0.40  1.87  0.37 0.96     1     4796     2849
+% theta_tilde[8]  -1.54  0.07  1.66  0.06 0.96     1     6142     2972
+% theta[1]        -1.62  5.64 16.30  6.25 5.58     1     4907     3015
+% theta[2]        -2.42  4.82 13.00  5.01 4.68     1     5122     3242
+% theta[3]        -4.63  4.26 12.10  4.09 5.27     1     5457     3407
+% theta[4]        -2.73  4.75 12.50  4.82 4.78     1     4695     3130
+% theta[5]        -3.96  3.82 11.00  3.72 4.62     1     5346     3398
+% theta[6]        -3.88  4.27 11.40  4.13 4.95     1     5670     3393
+% theta[7]        -0.98  5.88 15.40  6.38 5.10     1     4708     3242
+% theta[8]        -3.23  4.78 13.10  4.87 5.17     1     4924     3037
+% lp__           -11.20 -6.60 -3.78 -6.92 2.31     1     1641     2344
 
-                   Q5   Q50   Q95  Mean   SD  Rhat Bulk_ESS Tail_ESS
-mu              -1.14  4.42  9.96  4.47 3.37     1     5531     3004
-tau              0.30  2.81  9.50  3.59 3.17     1     2872     1908
-theta_tilde[1]  -1.29  0.31  1.88  0.31 0.98     1     5046     2874
-theta_tilde[2]  -1.44  0.11  1.62  0.10 0.94     1     4177     2735
-theta_tilde[3]  -1.64 -0.08  1.48 -0.08 0.97     1     6485     2994
-theta_tilde[4]  -1.51  0.08  1.62  0.06 0.95     1     6076     2514
-theta_tilde[5]  -1.71 -0.17  1.39 -0.16 0.94     1     5608     3177
-theta_tilde[6]  -1.64 -0.06  1.53 -0.06 0.97     1     4855     2773
-theta_tilde[7]  -1.25  0.40  1.87  0.37 0.96     1     4796     2849
-theta_tilde[8]  -1.54  0.07  1.66  0.06 0.96     1     6142     2972
-theta[1]        -1.62  5.64 16.30  6.25 5.58     1     4907     3015
-theta[2]        -2.42  4.82 13.00  5.01 4.68     1     5122     3242
-theta[3]        -4.63  4.26 12.10  4.09 5.27     1     5457     3407
-theta[4]        -2.73  4.75 12.50  4.82 4.78     1     4695     3130
-theta[5]        -3.96  3.82 11.00  3.72 4.62     1     5346     3398
-theta[6]        -3.88  4.27 11.40  4.13 4.95     1     5670     3393
-theta[7]        -0.98  5.88 15.40  6.38 5.10     1     4708     3242
-theta[8]        -3.23  4.78 13.10  4.87 5.17     1     4924     3037
-lp__           -11.20 -6.60 -3.78 -6.92 2.31     1     1641     2344
+% For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
+% effective sample size for bulk and tail quantities respectively (good values is 
+% ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
+% split chains (at convergence, Rhat = 1).
+% \end{verbatim}
 
-For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
-effective sample size for bulk and tail quantities respectively (good values is 
-ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
-split chains (at convergence, Rhat = 1).
-\end{verbatim}
-
-All Rhat \textless{} 1.01 and ESS \textgreater{} 400 indicate a much
-better performance of the non-centered parameterization.
-
+All \emph{split}-\(\widehat{R}<1.01\) and ESS\(>400\) indicate a much
+better efficiency of the non-centered parameterization.
+%
 We examine the sampling efficiency in different parts of the posterior
 by computing the effective sample size for small interval probability
-estimates for \texttt{tau}.
+estimates for $\tau$.
 
+Figures~\ref{fig:local-ess-fit-cp-1} and
+\ref{fig:quantile-ess-fit-cp-1} show the efficiency of small interval
+probability estimates and the efficiency of quantile estimates for
+$\tau$.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-ncp2-1.pdf}
   \caption{The local efficiency of small interval probability estimates for 8 schools model with non-centered parameterization.}
+  \label{fig:local-ess-fit-ncp2-1}
 \end{figure}
-
-Small \texttt{tau} values are still more difficult to explore, but the
-relative efficiency is in a good range. We may also check this with a
-finer resolution:
-
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-ncp2-finer-1.pdf}
-  \caption{The local efficiency of small interval probability estimates with more fine resolution for 8 schools model with non-centered parameterization.}
-\end{figure}
-
-The sampling efficiency for different quantile estimates looks good as
-well.
-
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/local-ess-fit-ncp2-finer-1.pdf}
+%   \caption{The local efficiency of small interval probability estimates with more fine resolution for 8 schools model with non-centered parameterization.}
+% \end{figure}
+% The sampling efficiency for different quantile estimates looks good as
+% well.
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/quantile-ess-fit-ncp2-1.pdf}
   \caption{The efficiency of quantile estimates for 8 schools model with non-centered parameterization.}
+  \label{fig:quantile-ess-fit-ncp2-1}
 \end{figure}
-
-In line with these findings, the rank plots of \texttt{tau} show no
+Small $\tau$ values are still more difficult to explore, but the
+relative efficiency is good.
+% We may also check this with a finer resolution:
+%
+The rank plots of $\tau$ Figure~\ref{fig:hist-fit-ncp2-1} show no
 substantial differences between chains.
-
 \begin{figure}[tp]
   \centering
   \includegraphics[width=0.6\linewidth]{graphics/hist-fit-ncp2-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8 schools model with non-centered parameterization.}
+  \label{fig:hist-fit-ncp2-1}
 \end{figure}
 
 \FloatBarrier
@@ -2899,7 +2878,7 @@ Still, it may be worth looking at additional diagnostics to better
 understand what's happening.
 
 Some rank-normalized split-Rhats are still larger than \(1.01\).
-Bulk-ESS for \texttt{tau} and \texttt{lp\_\_} are around 800 which
+Bulk-ESS for $\tau$ and \texttt{lp\_\_} are around 800 which
 corresponds to low relative efficiency of \(1\%\), but is above our
 recommendation of ESS\textgreater{}400. In this kind of cases, it is
 useful to look at the local efficiency estimates, too (and the larger
@@ -2907,7 +2886,7 @@ number of divergences is clear indication of problems, too).
 
 We examine the sampling efficiency in different parts of the posterior
 by computing the effective sample size for small intervals for
-\texttt{tau}.
+$\tau$.
 
 \begin{figure}[tp]
   \centering
@@ -2915,8 +2894,8 @@ by computing the effective sample size for small intervals for
 \end{figure}
 
 We see that the sampling has difficulties in exploring small
-\texttt{tau} values. As ESS\textless{}400 for small probability
-intervals in case of small \texttt{tau} values, we may suspect that we
+$\tau$ values. As ESS\textless{}400 for small probability
+intervals in case of small $\tau$ values, we may suspect that we
 may miss substantial amount of posterior mass and get biased estimates.
 
 We also examine the effective sample size of different quantile
@@ -2943,7 +2922,7 @@ Tail-ESS\textgreater{}400, they are not sufficient to detect convergence
 problems in this case, even the tail quantile estimates are able to
 detect these problems.
 
-The rank plot visualisation of \texttt{tau} also shows clear sticking
+The rank plot visualisation of $\tau$ also shows clear sticking
 and mixing problems.
 
 \begin{figure}[tp]
@@ -2952,7 +2931,7 @@ and mixing problems.
 \end{figure}
 
 Similar results are obtained for \texttt{lp\_\_}, which is closely
-connected to \texttt{tau} for this model.
+connected to $\tau$ for this model.
 
 \begin{figure}[tp]
   \centering
@@ -2969,15 +2948,15 @@ We may also examine small interval efficiencies for \texttt{mu}.
 There are gaps of poor efficiency which again indicates problems in the
 mixing of the chains. However, these problems do not occur for any
 specific range of values of \texttt{mu} as was the case for
-\texttt{tau}. This tells us that it's probably not \texttt{mu} with
-which the sampler has problems, but more likely \texttt{tau} or a
+$\tau$. This tells us that it's probably not \texttt{mu} with
+which the sampler has problems, but more likely $\tau$ or a
 related quantity.
 
 As we observed divergences, we shouldn't trust any Monte Carlo standard
 error (MCSE) estimates as they are likely biased, as well. However, for
 illustration purposes, we compute the MCSE, tail quantiles and
 corresponding effective sample sizes for the median of \texttt{mu} and
-\texttt{tau}. Comparing to the shorter MCMC run, using 10 times more
+$\tau$. Comparing to the shorter MCMC run, using 10 times more
 draws has not reduced the MCSE to one third as would be expected without
 problems in the mixing of the chains.
 
@@ -3066,7 +3045,7 @@ lp__         1070     0.00    10100     0.03    13800     0.03
 \end{verbatim}
 
 Rhat, Bulk-ESS and Tail-ESS are not able to detect problems, although
-Tail-ESS for \texttt{tau} is suspiciously low compared to total number
+Tail-ESS for $\tau$ is suspiciously low compared to total number
 of draws.
 
 \begin{figure}[tp]
@@ -3079,8 +3058,8 @@ of draws.
   \includegraphics[width=0.6\linewidth]{graphics/quantile-ess-fit-cp3-tau-1.pdf}
 \end{figure}
 
-And the rank plots of \texttt{tau} also show sticking and mixing
-problems for small values of \texttt{tau}.
+And the rank plots of $\tau$ also show sticking and mixing
+problems for small values of $\tau$.
 
 \begin{figure}[tp]
   \centering
@@ -3184,7 +3163,7 @@ theta[8]     3970     0.99     4140     1.03     3830     0.96
 lp__         2620     0.65     3840     0.96     3910     0.98
 \end{verbatim}
 
-Diagnostic plots for \texttt{tau} look reasonable as well.
+Diagnostic plots for $\tau$ look reasonable as well.
 
 \begin{figure}[tp]
   \centering
@@ -3374,8 +3353,8 @@ lp__               0.70
 \end{verbatim}
 
 All Rhats are close to 1, and ESSs are good despite a few divergent
-transitions. Small interval and quantile plots of \texttt{tau} reveal
-some sampling problems for small \texttt{tau} values, but not nearly as
+transitions. Small interval and quantile plots of $\tau$ reveal
+some sampling problems for small $\tau$ values, but not nearly as
 strong as for the centered parameterization.
 
 \begin{figure}[tp]
@@ -3442,7 +3421,7 @@ Next, we sample 1000 iterations for each of the 4 chains for easy
 comparison with the corresponding Stan results.
 
 Convergence diagnostics indicate problems in the sampling of \texttt{mu}
-and \texttt{tau}, but also to a lesser degree in all other paramters.
+and $\tau$, but also to a lesser degree in all other paramters.
 
 \begin{verbatim}
 Inference for the input samples (4 chains: each with iter = 1000; warmup = 0):
@@ -3465,7 +3444,7 @@ ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
 split chains (at convergence, Rhat = 1).
 \end{verbatim}
 
-We also see problems in the sampling of \texttt{tau} using various
+We also see problems in the sampling of $\tau$ using various
 diagnostic plots.
 
 \begin{figure}[tp]
@@ -3485,7 +3464,7 @@ diagnostic plots.
 
 Let's see what happens if we run 10 times longer chains.
 
-Convergence looks better now, although \texttt{tau} is still estimated
+Convergence looks better now, although $\tau$ is still estimated
 not very efficiently.
 
 \begin{verbatim}
@@ -3524,7 +3503,7 @@ story.
 
 Notably, however, the increase in effective sample size of tau is linear
 in the total number of draws indicating that convergence for
-\texttt{tau} may be achieved by simply running longer chains.
+$\tau$ may be achieved by simply running longer chains.
 
 \begin{figure}[tp]
   \centering
@@ -3595,7 +3574,7 @@ ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
 split chains (at convergence, Rhat = 1).
 \end{verbatim}
 
-Specifically, the mixing of \texttt{tau} looks much better although we
+Specifically, the mixing of $\tau$ looks much better although we
 still see some problems in the estimation of larger quantiles.
 
 \begin{figure}[tp]
