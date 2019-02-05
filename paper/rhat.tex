@@ -57,7 +57,7 @@
 \setlength{\emergencystretch}{3em}  % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{5}
+\setcounter{secnumdepth}{3}
 % Redefines (sub)paragraphs to behave more like sections
 \ifx\paragraph\undefined\else
 \let\oldparagraph\paragraph
@@ -690,7 +690,7 @@ these visualizations by means of several examples in Section
 \ref{examples}.
 
 \hypertarget{rank-plots}{%
-\subsubsection{Rank plots}\label{rank-plots}}
+\paragraph{Rank plots}\label{rank-plots}}
 
 Extending the idea of using ranks instead of the original parameter
 values, we propose to use rank plots for each chain instead
@@ -701,7 +701,7 @@ good mixing of the chains. As compared to trace plots, rank plots don't
 tend to squeeze to a fuzzy mess in case of long chains.
 
 \hypertarget{quantile-and-small-interval-plots}{%
-\subsubsection{Quantile and small interval
+\paragraph{Quantile and small interval
 plots}\label{quantile-and-small-interval-plots}}
 
 The efficiency of quantiles or small interval probabilities may vary
@@ -712,7 +712,7 @@ whole range to better diagnose areas of the distributions that the
 iterative algorithm fails to explore efficiently.
 
 \hypertarget{efficiency-change-plots}{%
-\subsubsection{Efficiency per iteration plots}\label{efficiency-change-plots}}
+\paragraph{Efficiency per iteration plots}\label{efficiency-change-plots}}
 
 For a well explored distribution, we expect the ESS measures to grow
 linearly with the total number of draws \(S\), or, equivalently, that
