@@ -426,6 +426,7 @@ normalize ranks via the inverse normal transformation
 \begin{equation}
 z^{(nm)} = \phi^{-1}((r^{(nm)}-1/2)/S).
 \end{equation}
+See online appendix for illustration of rank normalization.
 
 For continuous variables and \(S \rightarrow \infty\), the rank
 normalized values are normally distributed. Using normalized ranks
@@ -515,6 +516,9 @@ of \(\bar{I}_\alpha\). Thus, we can use the effective sample size for
 the ECDF (we computed using the indicator function
 \(I(\theta^{(s)} \leq \theta_\alpha)\)) also for the corresponding
 quantile estimates.
+%
+See online appendix for more details variance of the cumulative
+distribution function.
 
 To get a better sense of the efficiency of the chains in the
 distributions' tails, we propose to compute the minimum of the effective
@@ -1468,200 +1472,200 @@ substantial differences between chains.
 \section*{Appendices}\label{appendices}}
 \addcontentsline{toc}{section}{Appendices}
 
-\hypertarget{AppendixA}{%
-\subsection*{Appendix A: Abbreviations}\label{AppendixA}}
-\addcontentsline{toc}{subsection}{Appendix A: Abbreviations}
+% \hypertarget{AppendixA}{%
+% \subsection*{Appendix A: Abbreviations}\label{AppendixA}}
+% \addcontentsline{toc}{subsection}{Appendix A: Abbreviations}
 
-The following abbreviations are used throughout the appendices:
+% The following abbreviations are used throughout the appendices:
 
-\begin{itemize}
-\tightlist
-\item
-  N = total number of draws
-\item
-  Rhat = classic no-split-Rhat
-\item
-  sRhat = classic split-Rhat
-\item
-  zsRhat = rank-normalized split-Rhat
+% \begin{itemize}
+% \tightlist
+% \item
+%   N = total number of draws
+% \item
+%   Rhat = classic no-split-Rhat
+% \item
+%   sRhat = classic split-Rhat
+% \item
+%   zsRhat = rank-normalized split-Rhat
 
-  \begin{itemize}
-  \tightlist
-  \item
-    all chains are jointly ranked and z-transformed
-  \item
-    can detect differences in location and trends
-  \end{itemize}
-\item
-  zfsRhat = rank-normalized folded split-Rhat
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     all chains are jointly ranked and z-transformed
+%   \item
+%     can detect differences in location and trends
+%   \end{itemize}
+% \item
+%   zfsRhat = rank-normalized folded split-Rhat
 
-  \begin{itemize}
-  \tightlist
-  \item
-    all chains are jointly ``folded'' by computing absolute deviation
-    from median, ranked and z-transformed
-  \item
-    can detect differences in scales
-  \end{itemize}
-\item
-  seff = no-split effective sample size
-\item
-  reff = seff / N
-\item
-  zsseff = rank-normalized split effective sample size
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     all chains are jointly ``folded'' by computing absolute deviation
+%     from median, ranked and z-transformed
+%   \item
+%     can detect differences in scales
+%   \end{itemize}
+% \item
+%   seff = no-split effective sample size
+% \item
+%   reff = seff / N
+% \item
+%   zsseff = rank-normalized split effective sample size
 
-  \begin{itemize}
-  \tightlist
-  \item
-    estimates the efficiency of mean estimate for rank normalized values
-  \end{itemize}
-\item
-  zsreff = zsseff / N
-\item
-  zfsseff = rank-normalized folded split effective sample size
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     estimates the efficiency of mean estimate for rank normalized values
+%   \end{itemize}
+% \item
+%   zsreff = zsseff / N
+% \item
+%   zfsseff = rank-normalized folded split effective sample size
 
-  \begin{itemize}
-  \tightlist
-  \item
-    estimates the efficiency of rank normalized \emph{mean} absolute
-    deviation
-  \end{itemize}
-\item
-  zfsreff = zfsseff / N
-\item
-  tailseff = minimum of rank-normalized split effective sample sizes of
-  the 5\% and 95\% quantiles
-\item
-  tailreff = tailseff / N
-\item
-  medsseff = median split effective sample size
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     estimates the efficiency of rank normalized \emph{mean} absolute
+%     deviation
+%   \end{itemize}
+% \item
+%   zfsreff = zfsseff / N
+% \item
+%   tailseff = minimum of rank-normalized split effective sample sizes of
+%   the 5\% and 95\% quantiles
+% \item
+%   tailreff = tailseff / N
+% \item
+%   medsseff = median split effective sample size
 
-  \begin{itemize}
-  \tightlist
-  \item
-    estimates the efficiency of the median
-  \end{itemize}
-\item
-  medsreff = medsseff / N
-\item
-  madsseff = mad split effective sample size
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     estimates the efficiency of the median
+%   \end{itemize}
+% \item
+%   medsreff = medsseff / N
+% \item
+%   madsseff = mad split effective sample size
 
-  \begin{itemize}
-  \tightlist
-  \item
-    estimates the efficiency of the median absolute deviation
-  \end{itemize}
-\item
-  madsreff = madsseff / N
-\end{itemize}
+%   \begin{itemize}
+%   \tightlist
+%   \item
+%     estimates the efficiency of the median absolute deviation
+%   \end{itemize}
+% \item
+%   madsreff = madsseff / N
+% \end{itemize}
 
-\hypertarget{AppendixB}{%
-\subsection*{Appendix B: Examples of rank
-normalization}\label{AppendixB}}
-\addcontentsline{toc}{subsection}{Appendix B: Examples of rank
-normalization}
+% \hypertarget{AppendixB}{%
+% \subsection*{Appendix B: Examples of rank
+% normalization}\label{AppendixB}}
+% \addcontentsline{toc}{subsection}{Appendix B: Examples of rank
+% normalization}
 
-We will illustrate the rank normalization with a few examples. First, we
-plot histograms, and empirical cumulative distribution functions (ECDF)
-with respect to the original parameter values (\(\theta\)), scaled ranks
-(ranks divided by the maximum rank), and rank normalized values (z). We
-used scaled ranks to make the plots look similar for different number of
-draws.
+% We will illustrate the rank normalization with a few examples. First, we
+% plot histograms, and empirical cumulative distribution functions (ECDF)
+% with respect to the original parameter values (\(\theta\)), scaled ranks
+% (ranks divided by the maximum rank), and rank normalized values (z). We
+% used scaled ranks to make the plots look similar for different number of
+% draws.
 
-100 draws from Normal(0, 1):
+% 100 draws from Normal(0, 1):
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-normal-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-normal-1.pdf}
+% \end{figure}
 
-100 draws from Exponential(1):
+% 100 draws from Exponential(1):
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-exp-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-exp-1.pdf}
+% \end{figure}
 
-100 draws from Cauchy(0, 1):
+% 100 draws from Cauchy(0, 1):
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy-1.pdf}
+% \end{figure}
 
-In the above plots, the ECDF with respect to scaled rank and rank
-normalized \(z\)-values look exactly the same for all distributions. In
-\emph{Split}-\(\widehat{R}\) and effective sample size computations, we
-rank all draws jointly, but then compare ranks and ECDF of individual
-split chains. To illustrate the variation between chains, we draw 8
-batches of 100 draws each from Normal(0, 1):
+% In the above plots, the ECDF with respect to scaled rank and rank
+% normalized \(z\)-values look exactly the same for all distributions. In
+% \emph{Split}-\(\widehat{R}\) and effective sample size computations, we
+% rank all draws jointly, but then compare ranks and ECDF of individual
+% split chains. To illustrate the variation between chains, we draw 8
+% batches of 100 draws each from Normal(0, 1):
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-normal2-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-normal2-1.pdf}
+% \end{figure}
 
-The variation in ECDF due to the variation ranks is now visible also in
-scaled ranks and rank normalized \(z\)-values from different batches
-(chains).
+% The variation in ECDF due to the variation ranks is now visible also in
+% scaled ranks and rank normalized \(z\)-values from different batches
+% (chains).
 
-The benefit of rank normalization is more obvious for non-normal
-distribution such as Cauchy:
+% The benefit of rank normalization is more obvious for non-normal
+% distribution such as Cauchy:
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy2-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy2-1.pdf}
+% \end{figure}
 
-Rank normalization makes the subsequent computations well defined and
-invariant under bijective transformations. This means that we get the
-same results, for example, if we use unconstrained or constrained
-parameterisations in a model.
+% Rank normalization makes the subsequent computations well defined and
+% invariant under bijective transformations. This means that we get the
+% same results, for example, if we use unconstrained or constrained
+% parameterisations in a model.
 
-\hypertarget{AppendixC}{%
-\subsection*{Appendix C: Variance of the cumulative distribution
-function}\label{AppendixC}}
-\addcontentsline{toc}{subsection}{Appendix C: Variance of the cumulative
-distribution function}
+% \hypertarget{AppendixC}{%
+% \subsection*{Appendix C: Variance of the cumulative distribution
+% function}\label{AppendixC}}
+% \addcontentsline{toc}{subsection}{Appendix C: Variance of the cumulative
+% distribution function}
 
-In Section 3, we had defined the empirical CDF (ECDF) for any
-\(\theta_\alpha\) as
+% In Section 3, we had defined the empirical CDF (ECDF) for any
+% \(\theta_\alpha\) as
 
-\[
-p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
-I(\theta^{(s)} \leq\theta_\alpha),
-\]
+% \[
+% p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
+% I(\theta^{(s)} \leq\theta_\alpha),
+% \]
 
-For independent draws, \(\bar{I}_\alpha\) has a
-\({\rm Beta}(\bar{I}_\alpha+1, S - \bar{I}_\alpha + 1)\) distribution.
-Thus we can easily examine the variation of the ECDF for any
-\(\theta_\alpha\) value from a single chain. If \(\bar{I}_\alpha\) is
-not very close to \(1\) or \(S\) and \(S\) is large, we can use the
-variance of Beta distribution
+% For independent draws, \(\bar{I}_\alpha\) has a
+% \({\rm Beta}(\bar{I}_\alpha+1, S - \bar{I}_\alpha + 1)\) distribution.
+% Thus we can easily examine the variation of the ECDF for any
+% \(\theta_\alpha\) value from a single chain. If \(\bar{I}_\alpha\) is
+% not very close to \(1\) or \(S\) and \(S\) is large, we can use the
+% variance of Beta distribution
 
-\[
-{\rm Var}[p(\theta \leq \theta_\alpha)] =
-\frac{(\bar{I}_\alpha+1)*(S-\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
-\] We illustrate uncertainty intervals of the Beta distribution and
-normal approximation of ECDF for 100 draws from Normal(0, 1):
+% \[
+% {\rm Var}[p(\theta \leq \theta_\alpha)] =
+% \frac{(\bar{I}_\alpha+1)*(S-\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
+% \] We illustrate uncertainty intervals of the Beta distribution and
+% normal approximation of ECDF for 100 draws from Normal(0, 1):
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-beta-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-beta-1.pdf}
+% \end{figure}
 
-Uncertainty intervals of ECDF for draws from Cauchy(0, 1) illustrate
-again the improved visual clarity in plotting when using scaled ranks:
+% Uncertainty intervals of ECDF for draws from Cauchy(0, 1) illustrate
+% again the improved visual clarity in plotting when using scaled ranks:
 
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy3-1.pdf}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.6\linewidth]{graphics/ranknorm-cauchy3-1.pdf}
+% \end{figure}
 
-The above plots illustrate that the normal approximation is accurate for
-practical purposes in MCMC diagnostics.
+% The above plots illustrate that the normal approximation is accurate for
+% practical purposes in MCMC diagnostics.
 
-\FloatBarrier
+% \FloatBarrier
 
 \hypertarget{AppendixD}{%
 \subsection*{Appendix D: Normal distributions with additional trend,
