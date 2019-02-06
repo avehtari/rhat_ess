@@ -209,7 +209,7 @@ the latter is computed from split chains (hence the name).
 \hypertarget{SplitRhat}{%
 \subsection{\texorpdfstring{\emph{Split}-\(\widehat{R}\)}{Split-\textbackslash{}widehat\{R\}}}\label{SplitRhat}}
 
-Below, we present the computation of \emph{Split}-\(\widehat{R}\)
+Below, we present the computation of \emph{split}-\(\widehat{R}\)
 following \citet{BDA3}, but using the notation style of
 \citet{StanBook}. These implementations represent the current de facto
 standard of convergence diagnostics for iterative simulations. In the
@@ -291,8 +291,8 @@ One way to define effective sample size for correlated simulation draws
 is to consider the statistical efficiency of the average of the
 simulations \(\bar{\theta}^{(..)}\) as an estimate of the posterior mean
 \(\mbox{E}(\theta \mid y)\). This also generalizes to posterior
-expectations of functionals of parameters \(\mbox{E}(g(\theta) \mid y)\)
-and we return later to how to estimate the effective sample size of
+expectations of functionals of parameters \(\mbox{E}(g(\theta) \mid y)\).
+We return later to how to estimate the effective sample size of
 quantiles which cannot be presented as expectations. For simplification,
 in this section we consider the effective sample size for the posterior
 mean.
@@ -329,10 +329,10 @@ N_{\rm eff} \ = \
 
 Effective sample size \(N_{\rm eff}\) can be larger than \(N\) in case
 of antithetic Markov chains, which have negative autocorrelations on odd
-lags. The Dynamic Hamiltonian Monte-Carlo algorithms used in Stan
+lags. The dynamic Hamiltonian Monte-Carlo algorithms used in Stan
 \citep{Hoffman+Gelman:2014, betancourt2017conceptual} can produce
 \(N_{\rm eff}>N\) for parameters with a close to Gaussian posterior (in
-the unconstrained space) and low dependency on other parameters.
+the unconstrained space) and low dependency on the other parameters.
 
 In practice, the probability function in question cannot be tractably
 integrated and thus neither autocorrelation nor the effective sample
@@ -396,8 +396,8 @@ close to the number of chains.
 \subsection{Problems of current
 diagnostics}\label{problems-of-current-diagnostics}}
 
-\emph{split}-\(\widehat{R}\), and \(S_{\rm eff}\) are well defined
-only if the marginal posteriors have finite mean and variance, which is not always the case. \emph{split}-\(\widehat{R}\), and \(S_{\rm eff}\) can also be unstable even if the mean and variance are finite, if the marginal distribution has thick tails. Usually \emph{split}-\(\widehat{R}\), and \(S_{\rm eff}\) are computed only for the posterior mean, which can miss convergence and sampling efficiency problems in tails which affect, for example, the posterior interval estimates.
+Split-\(\widehat{R}\), and \(S_{\rm eff}\) are well defined
+only if the marginal posteriors have finite mean and variance, which is not always the case. Split-\(\widehat{R}\), and \(S_{\rm eff}\) can also be unstable even if the mean and variance are finite, if the marginal distribution has thick tails. Usually split-\(\widehat{R}\), and \(S_{\rm eff}\) are computed only for the posterior mean, which can miss convergence and sampling efficiency problems in tails which affect, for example, the posterior interval estimates.
 
 \hypertarget{improving-convergence-diagnostics}{%
 \section{Improving convergence
@@ -426,18 +426,18 @@ normalize ranks via the inverse normal transformation
 \begin{equation}
 z^{(nm)} = \phi^{-1}((r^{(nm)}-1/2)/S).
 \end{equation}
-See online appendix for illustration of rank normalization.
 
 For continuous variables and \(S \rightarrow \infty\), the rank
 normalized values are normally distributed. Using normalized ranks
 \(z^{(nm)}\) instead of ranks \(r^{(nm)}\) themselves has the additional
 benefit that the behavior of \(\widehat{R}\) and \(S_{\rm eff}\) do
 not change for normally distributed parameters.
+See online appendix for illustration of rank normalization.
 
 We will use the term \emph{bulk effective sample size} (bulk-ESS or
 bulk-\(S_{\rm eff}\)) to refer to the effective sample size based on the
 rank normalized draws. Bulk-ESS is useful for diagnosing problems due to
-trends or different locations of the chains (see section/appendix). Further, it is
+trends or different locations of the chains (see Appendix). Further, it is
 well defined even for distributions with infinite mean or variance, a
 case where previous ESS estimates fail. However, due to the rank
 normalization, Bulk-ESS is no longer directly applicable to estimate the
@@ -451,7 +451,7 @@ draws}\label{diagnostics-for-folded-draws}}
 
 Both original and rank-normalized \emph{split}-\(\widehat{R}\) can be
 fooled if the chains have different scales but the same location as
-shown in (see section/appendix). To alleviate this problem, we propose to compute a
+shown in (see Appendix). To alleviate this problem, we propose to compute a
 rank normalized \emph{split}-\(\widehat{R}\) statistic not only for the
 original draws \(\theta^{(nm)}\), but also for the corresponding folded
 draws \(\zeta^{(mn)}\), that is the absolute deviations from the median
@@ -513,19 +513,19 @@ delta method approach reveals that the variance of \(\bar{I}_\alpha\)
 for some \(\theta_\alpha\) is scaled by the (usually unknown) density
 \(f(\theta_\alpha)\), but the efficiency depends only on the efficiency
 of \(\bar{I}_\alpha\). Thus, we can use the effective sample size for
-the ECDF (we computed using the indicator function
+the ECDF (computed using the indicator function
 \(I(\theta^{(s)} \leq \theta_\alpha)\)) also for the corresponding
 quantile estimates.
 %
-See online appendix for more details variance of the cumulative
+See online appendix for more details of variance of the cumulative
 distribution function.
 
-To get a better sense of the efficiency of the chains in the
+To get a better sense of the sampling efficiency in the
 distributions' tails, we propose to compute the minimum of the effective
 sample sizes of the 5\% and 95\% quantiles, which we will call
 \emph{tail effective sample size} (tail-ESS or tail-\(S_{\rm eff}\)).
 Tail-ESS can help diagnosing problems due to different scales of the
-chains (see section/appendix).
+chains (see Appendix).
 
 % TODO: I (Paul) think we need to justify shortly why we compute ``tail-Rhat''
 % (i.e., \emph{folded-split}-\(\widehat{R}\)) based on the folded draws,
@@ -554,7 +554,7 @@ I(\zeta^{(s)} \leq \zeta_{0.5}),
 where \(\zeta_{0.5}\) is the median of the folded values. We see that
 the efficiency estimate for the MAD is obtained by applying the same
 approach as for the median (and other quantiles) but with the folded
-parameters values also used in the computation of the tail-ESS.
+parameters values.
 
 \hypertarget{small_interval_S_eff}{%
 \subsection{Efficiency estimates for small interval probability
@@ -602,7 +602,7 @@ Carlo standard errors of quantiles:
 \item
   Use the corresponding \(\theta^{(s)}\) from the list of sorted
   posterior draws as quantiles from the error distribution. These
-  quantiles can be used to approximate the Monte Carlo standard error.
+  quantiles can be used to approximate the Monte Carlo standard error of quantiles.
 \end{enumerate}
 
 \hypertarget{warning-thresholds}{%
