@@ -131,7 +131,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-Abstract
+Add abstract here
 \end{abstract}
 
 \hypertarget{introduction}{%
@@ -171,9 +171,9 @@ between and within chains.
 \begin{figure}
 \vspace{-.22\textwidth}
 \centerline{\hspace{-.1\textwidth}
-\includegraphics[width=\textwidth]{graphics/convergechallenge1.pdf}
+\includegraphics[width=0.98\textwidth]{graphics/convergechallenge1.pdf}
 \hspace{-.5\textwidth}
-\includegraphics[width=\textwidth]{graphics/convergechallenge2.pdf}}
+\includegraphics[width=0.98\textwidth]{graphics/convergechallenge2.pdf}}
 \vspace{-.22\textwidth}
 \caption{\em Examples of two challenges in assessing convergence of iterative
 simulations. (a) In the left plot, either sequence alone looks stable, but the
@@ -741,9 +741,10 @@ details, code to reproduce the results and more detailed analysis of
 different algorithm variants and further
 examples\footnote{\url{https://avehtari.github.io/rhat_ess/rhat_ess.html}}.
 
-We use either dynamic Hamiltonian Monte Carlo with multinomial
-sampling \citep{betancourt2017conceptual} as implemented in Stan
-\citep{StanManual.2.18.0} or Gibbs sampling as implemented in JAGS.
+Unless mentioned otherwise we use dynamic Hamiltonian Monte Carlo with
+multinomial sampling \citep{betancourt2017conceptual} as implemented
+in Stan \citep{StanManual.2.18.0} and run 4 chains each with 1000
+iterations of warmup and 1000 iterations stored.
 
 \hypertarget{cauchy-a-distribution-with-infinite-mean-and-variance}{%
 \subsection{Cauchy: A distribution with infinite mean and
@@ -784,8 +785,7 @@ The nominal Cauchy model with direct parameterization is
   x \sim \Cauchy(0,1).
 \end{align}
 We set independent Cauchy distribution for 50 dimensional vector $x$.
-We use dynamic HMC and run 4 chains each with 1000 iterations of
-warmup and 1000 iterations stored. Dynamic HMC specific diagnostics
+Dynamic HMC specific diagnostics
 treedepth exceedences and Bayesian fraction of missing information
 indicate slow mixing of the chains.
 
@@ -862,29 +862,30 @@ specific run has the smallest tail-ESS of 34. Figure~\ref{fig:local-ess-fit-nom-
 the local efficiency of small interval probability estimates (see
 Section \protect\hyperlink{small_interval_S_eff}{Efficiency estimate for
   small interval probability estimates}).
+The efficiency of sampling is very low in the tails (which is
+caused by slow mixing in long tails of Cauchy).  
+%
+Figure~\ref{fig:quantile-ess-fit-nom-1} shows the efficiency
+of quantile estimates (see Section
+\protect\hyperlink{quantile_S_eff}{Efficiency for quantiles})
+is also very low in the tails. 
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-nom-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-nom-1.pdf}
   \caption{The local efficiency of small interval probability
     estimates for Cauchy model with nominal parameterization. Orange
     ticks show iterations that exceeded the maximum treedepth in
     dynamic HMC algorithm.}
 \label{fig:local-ess-fit-nom-1}
-\end{figure}
-The efficiency of sampling is worryingly low in the tails (which is
-caused by slow mixing in long tails of Cauchy).  
-%
-Figure~\ref{fig:quantile-ess-fit-nom-1} shows the efficiency
-of quantile estimates (see Section
-\protect\hyperlink{quantile_S_eff}{Efficiency for quantiles}).
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-nom-1.pdf}
-  \caption{The efficiency of quantile estimates for Cauchy model with nominal parameterization.}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-nom-1.pdf}
+  \caption{The efficiency of quantile estimates for Cauchy model with nominal parameterization.\\~\\~\\~}
   \label{fig:quantile-ess-fit-nom-1}
+\end{minipage}
 \end{figure}
-Similar as above, the sampling efficiency is worryingly low in the
-tails. 
 
 We may also investigate how the estimated effective sample sizes
 change when we use more and more draws (\citet{Brooks+Gelman:1998}
@@ -894,20 +895,23 @@ more draws, or even decreases, this indicates that simply running
 longer chains will likely not solve the convergence issues. In
 Figure~\ref{fig:change-ess-fit-nom-1}, we see how unstable both
 bulk-ESS and tail-ESS are for this example.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/change-ess-fit-nom-1.pdf}
-  \caption{The estimated effective sample sizes with increasing number of iterations for Cauchy model with nominal parameterization.}
-  \label{fig:change-ess-fit-nom-1}
-\end{figure}
+%
 Rank plots in Figure~\ref{fig:hist-fit-nom-1} clearly show the
 mixing problem between chains. In case of good mixing all rank plots
 should be close to uniform.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-fit-nom-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/change-ess-fit-nom-1.pdf}
+  \caption{The estimated effective sample sizes with increasing number of iterations for Cauchy model with nominal parameterization.}
+  \label{fig:change-ess-fit-nom-1}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/hist-fit-nom-1.pdf}
   \caption{Rank plots of posterior draws from four chains for Cauchy model with nominal parameterization.}
   \label{fig:hist-fit-nom-1}
+\end{minipage}
 \end{figure}
 
 \hypertarget{alternative-parameterization-of-cauchy}{%
@@ -926,10 +930,8 @@ computed from those. In addition to improved sampling performance, the
 example illustrates that focusing on diagnostics matters.
 
 We set define 50 dimensional parameter vectors $a$ and $b$ from which
-50 dimensional quantity $x$ is computed.
-We use dynamic HMC and run 4 chains each with 1000 iterations of
-warmup and 1000 iterations stored. There are no warnings, and the
-sampling is much faster.
+50 dimensional quantity $x$ is computed.  There are no warnings, and
+the sampling is much faster.
 
 % \begin{verbatim}
 % parameters {
@@ -1130,54 +1132,45 @@ We can further analyze potential problems using local efficiency
 estimates and rank plots. We take a detailed look at \(x_{40}\), which
 has the smallest bulk-ESS of 2848.
 %
-Figure~\ref{fig:local-ess-fit-alt1-1} shows
-the local efficiency of small interval probability estimates.
+Figures~\ref{fig:local-ess-fit-alt1-1} and
+\ref{fig:quantile-ess-alt1-1} show the good sampling efficiency for the
+small interval probability and quantile estimates.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-alt1-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-alt1-1.pdf}
   \caption{The local efficiency of small interval probability estimates for Cauchy model with alternative parameterization.}
 \label{fig:local-ess-fit-alt1-1}
-\end{figure}
-Figure~\ref{fig:quantile-ess-alt1-1} shows also the good sampling efficiency
-of quantile estimates.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-alt1-1.pdf}
-  \caption{The efficiency of quantile estimates for Cauchy model with alternative parameterization.}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-alt1-1.pdf}
+  \caption{The efficiency of quantile estimates for Cauchy model with alternative parameterization.\\~}
   \label{fig:quantile-ess-alt1-1}
+\end{minipage}
 \end{figure}
 %
 Rank plots in Figure~\ref{fig:hist-fit-alt1-1} also look quite uniform across chains.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-fit-alt1-1.pdf}
+  \includegraphics[width=0.47\textwidth]{graphics/hist-fit-alt1-1.pdf}
   \caption{Rank plots of posterior draws from four chains for Cauchy model with alternative parameterization.}
   \label{fig:hist-fit-alt1-1}
 \end{figure}
-
-In summary, the alternative parameterization produces results that look
-much better than for the nominal parameterization.
 
 \hypertarget{half-cauchy-with-nominal-parameterization}{%
 \subsubsection{Half-Cauchy with nominal
 parameterization}\label{half-cauchy-with-nominal-parameterization}}
 
 Half-Cauchy priors are common and, for example, in Stan usually set
-using the nominal parameterization
-\begin{align}
-  x \sim \Cauchy^+(0,1).
-\end{align}
-However, when the constraint \texttt{\textless{}lower=0\textgreater{}}
-is used, Stan does the sampling automatically in the unconstrained
-\(\log(x)\) space, which changes the geometry crucially.
-
-We set independent half-Cauchy distribution for 50 dimensional vector
-$x$ with automatic transformation so that sampling is done in
-\(\log(x)\) space.  We use dynamic HMC and run 4 chains each with 1000
-iterations of warmup and 1000 iterations stored.  There are no
-warnings, and the sampling is much faster than for the Cauchy nominal
-model.
-
+using the nominal parameterization.  We set independent half-Cauchy
+distribution for 50 dimensional vector $x$ with positivity constraint
+(\texttt{\textless{}lower=0\textgreater{}}).  Stan does then the
+sampling automatically in the unconstrained \(\log(x)\) space, which
+changes the geometry crucially.  There are no warnings, and all
+\emph{split}-\(\widehat{R}<1.01\) and ESS\(>400\) indicate good
+performance of the sampler.  More experiments for half-Cauchy
+distribution can be found in the online appendix.
 
 % \begin{verbatim}
 % parameters {
@@ -1260,14 +1253,6 @@ model.
 % split chains (at convergence, Rhat = 1).
 % \end{verbatim}
 
-All \emph{split}-\(\widehat{R}<1.01\) and ESS\(>400\) indicate good
-performance of the sampler. We see that the Stan's automatic (and
-implicit) transformation of constraint parameters can have a big effect
-on the sampling performance. More experiments with different
-parameterizations of the half-Cauchy distribution can be found in
-the online appendix.
-
-%\FloatBarrier
 
 \hypertarget{eightschools}{%
 \subsection{Hierarchical model: Eight Schools}\label{eightschools}}
@@ -1279,23 +1264,22 @@ hierarchical models. The centered parameterization exhibits a funnel shape
 that contracts into a region of strong curvature around small
 values of population prior scale $\tau$, making it difficult for most Markov chain
 methods to adequately explore.
-Online appendix contains more detailed
-analysis of different algorithm variants including also Gibbs sampling.
+Online appendix contains more detailed analysis of different algorithm
+variants and results of longer chains.
 
 \hypertarget{a-centered-eight-schools-model}{%
 \subsubsection{A Centered Eight Schools
 model}\label{a-centered-eight-schools-model}}
 
-We use dynamic HMC and run 4 chains each with 1000 iterations of
-warmup and 1000 iterations stored. Instead of the default options, we
-run the centered parameterization model with an increased
-\texttt{adapt\_delta} value to reduce the probability of getting
-divergent transitions. Despite an increased \texttt{adapt\_delta}, we
-still observe a lot of divergent transitions, which in itself is
-already sufficient indicator of convergence problems. We can use
-\emph{split}-\(\widehat{R}\) and ESS diagnostics to recognize
-problematic parts of the posterior, and they can be used also in cases
-when other MCMC algorithms than HMC is used.
+Instead of the default options, we run the centered parameterization
+model with an increased \texttt{adapt\_delta} value to reduce the
+probability of getting divergent transitions. Despite an increased
+\texttt{adapt\_delta}, we still observe a lot of divergent
+transitions, which in itself is already sufficient indicator of
+convergence problems. We can use \emph{split}-\(\widehat{R}\) and ESS
+diagnostics to recognize problematic parts of the posterior, and they
+can be used also in cases when other MCMC algorithms than HMC is used.
+%
 
 % \begin{verbatim}
 % Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
@@ -1319,79 +1303,93 @@ when other MCMC algorithms than HMC is used.
 % split chains (at convergence, Rhat = 1).
 % \end{verbatim}
 
-See online appendix for more details and results of longer chains.
-
 Bulk-ESS and Tail-ESS for the between school standard deviation $\tau$
 are 67 and 82 respectively. Both are less than 400, indicating we
-should investigate that parameter more carefully. We thus examine the
-local sampling efficiency in different parts of the posterior by
-computing the efficiency estimate for small interval estimates.
-
+should investigate that parameter more carefully.
+% Figures~\ref{fig:local-ess-fit-cp-1} and
+% \ref{fig:local-ess-fit-cp-norank-1} show the local efficiency of small
+% interval probability estimates with respect to ranks and parameter
+% values, respectively.
+% \begin{figure}[tp]
+%   \centering
+%   \begin{minipage}{0.48\textwidth}
+%   \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-cp-1.pdf}
+%   \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
+%   \label{fig:local-ess-fit-cp-1}
+% \end{minipage}
+% \hfill
+%   \begin{minipage}{0.48\textwidth}
+%   \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-cp-norank-1.pdf}
+%   \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
+%   \label{fig:local-ess-fit-cp-norank-1}
+% \end{figure}
 Figures~\ref{fig:local-ess-fit-cp-1} and
-\ref{fig:local-ess-fit-cp-norank-1} show the local efficiency of small
-interval probability estimates with respect to ranks and parameter
-values, respectively.
+\ref{fig:quantile-ess-fit-cp-1} show the sampling efficiency for the
+small interval probability and quantile estimates.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-cp-1.pdf}
   \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
   \label{fig:local-ess-fit-cp-1}
-\end{figure}
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp-norank-1.pdf}
-  \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
-  \label{fig:local-ess-fit-cp-norank-1}
-\end{figure}
-The sampler has difficulties in exploring small $\tau$
-values. As the sampling efficiency for estimating small $\tau$
-values is practically zero, we may assume that we may miss substantial
-amount of posterior mass and get biased estimates. Red ticks, which show
-iterations with divergences, have concentrated to small $\tau$
-values, indicate also problems exploring small values which is likely to
-cause bias.
-%
-Figures~\ref{fig:quantile-ess-fit-cp-1}
-and~\ref{fig:quantile-ess-fit-cp-norank-1} show corresponding
-efficiency of quantile estimates with respect to ranks and parameter
-values, respectively.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-cp-1.pdf}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-cp-1.pdf}
   \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
   \label{fig:quantile-ess-fit-cp-1}
+ \end{minipage}
 \end{figure}
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-cp-norank-1.pdf}
-  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
-  \label{fig:quantile-ess-fit-cp-norank-1}
-\end{figure}
-Most of the quantile estimates have worryingly low effective sample
-size estimate.
+The sampler has difficulties in exploring small $\tau$ values. As the
+sampling efficiency for small $\tau$ values is practically zero, we
+may assume that we may miss substantial amount of posterior mass and
+get biased estimates. In this case, the severe sampling problems for
+small $\tau$ values is reflected in the sampling efficiency for all
+quantiles.
+%
+Red ticks, which show iterations with divergences, have
+concentrated to small $\tau$ values, indicate also problems exploring
+small values which is likely to cause bias.
+%
+% Figures~\ref{fig:quantile-ess-fit-cp-1}
+% and~\ref{fig:quantile-ess-fit-cp-norank-1} show corresponding
+% efficiency of quantile estimates with respect to ranks and parameter
+% values, respectively.
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-cp-1.pdf}
+%   \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Red ticks show divergent transitions.}
+%   \label{fig:quantile-ess-fit-cp-1}
+% \end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-cp-norank-1.pdf}
+%   \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization. Vertical axis is instead of ranks in scale of parameter $\tau$. Red ticks show divergent transitions.}
+%   \label{fig:quantile-ess-fit-cp-norank-1}
+% \end{figure}
 
 Figure~\ref{fig:change-ess-fit-cp-1} shows how the estimated effective
 sample sizes change when we use more and more draws.  Here we don't
 see sudden changes, but both bulk-ESS and tail-ESS are low. See online
 appendix for results of longer chains.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/change-ess-fit-cp-1.pdf}
-  \caption{The estimated effective sample sizes with increasing number of iterations for 8 schools model with centered parameterization.}
-  \label{fig:change-ess-fit-cp-1}
-\end{figure}
-
+%
 In line with other findings, the rank plots of $\tau$ in
 Figure~\ref{fig:hist-fit-cp-1} clearly show problems in the mixing of
 the chains.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-fit-cp-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/change-ess-fit-cp-1.pdf}
+  \caption{The estimated effective sample sizes with increasing number of iterations for 8 schools model with centered parameterization.}
+  \label{fig:change-ess-fit-cp-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/hist-fit-cp-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8 schools model with centered parameterization.}
   \label{fig:hist-fit-cp-1}
+\end{minipage}
 \end{figure}
-
-%\FloatBarrier
 
 \hypertarget{non-centered-eight-schools-model}{%
 \subsubsection{Non-centered Eight Schools
@@ -1399,26 +1397,29 @@ model}\label{non-centered-eight-schools-model}}
 
 For hierarchical models, the corresponding non-centered
 parameterization often works better.
-
+%
+For reasons of comparability, we use the same \texttt{adapt\_delta} as
+for the centered parameterization model. 
+%
 % \begin{verbatim}
 % data {
 %   int<lower=0> J;
 %   real y[J];
 %   real<lower=0> sigma[J];
 % }
-
+%
 % parameters {
 %   real mu;
 %   real<lower=0> tau;
 %   real theta_tilde[J];
 % }
-
+%
 % transformed parameters {
 %   real theta[J];
 %   for (j in 1:J)
 %     theta[j] = mu + tau * theta_tilde[j];
 % }
-
+%
 % model {
 %   mu ~ normal(0, 5);
 %   tau ~ cauchy(0, 5);
@@ -1426,16 +1427,11 @@ parameterization often works better.
 %   y ~ normal(theta, sigma);
 % }
 % \end{verbatim}
-
-We use dynamic HMC and run 4 chains each with 1000 iterations of
-warmup and 1000 iterations stored. For reasons of comparability, we
-use the same \texttt{adapt\_delta} as for the centered
-parameterization model. There are zero divergences and no other
-warnings which is a first good sign.
-
+%
+%
 % \begin{verbatim}
 % Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
-
+%
 %                    Q5   Q50   Q95  Mean   SD  Rhat Bulk_ESS Tail_ESS
 % mu              -1.14  4.42  9.96  4.47 3.37     1     5531     3004
 % tau              0.30  2.81  9.50  3.59 3.17     1     2872     1908
@@ -1456,42 +1452,35 @@ warnings which is a first good sign.
 % theta[7]        -0.98  5.88 15.40  6.38 5.10     1     4708     3242
 % theta[8]        -3.23  4.78 13.10  4.87 5.17     1     4924     3037
 % lp__           -11.20 -6.60 -3.78 -6.92 2.31     1     1641     2344
-
+%
 % For each parameter, Bulk_ESS and Tail_ESS are crude measures of 
 % effective sample size for bulk and tail quantities respectively (good values is 
 % ESS > 400), and Rhat is the potential scale reduction factor on rank normalized
 % split chains (at convergence, Rhat = 1).
 % \end{verbatim}
-
+%
+There are zero divergences and no other warnings.
+%
 All \emph{split}-\(\widehat{R}<1.01\) and ESS\(>400\) indicate a much
 better efficiency of the non-centered parameterization.
 %
-We examine the sampling efficiency in different parts of the posterior
-by computing the effective sample size for small interval probability
-estimates for $\tau$.
-
 Figures~\ref{fig:local-ess-fit-cp-1} and
 \ref{fig:quantile-ess-fit-cp-1} show the efficiency of small interval
 probability estimates and the efficiency of quantile estimates for
 $\tau$.
 \begin{figure}[tp]
+  \begin{minipage}{0.48\textwidth}
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-ncp2-1.pdf}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-ncp2-1.pdf}
   \caption{The local efficiency of small interval probability estimates for 8 schools model with non-centered parameterization.}
   \label{fig:local-ess-fit-ncp2-1}
-\end{figure}
-% \begin{figure}[tp]
-%   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-ncp2-finer-1.pdf}
-%   \caption{The local efficiency of small interval probability estimates with more fine resolution for 8 schools model with non-centered parameterization.}
-% \end{figure}
-% The sampling efficiency for different quantile estimates looks good as
-% well.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-ncp2-1.pdf}
-  \caption{The efficiency of quantile estimates for 8 schools model with non-centered parameterization.}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-ncp2-1.pdf}
+  \caption{The efficiency of quantile estimates for 8 schools model with non-centered parameterization.\\~}
   \label{fig:quantile-ess-fit-ncp2-1}
+\end{minipage}
 \end{figure}
 Small $\tau$ values are still more difficult to explore, but the
 relative efficiency is good.
@@ -1501,18 +1490,21 @@ The rank plots of $\tau$ Figure~\ref{fig:hist-fit-ncp2-1} show no
 substantial differences between chains.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-fit-ncp2-1.pdf}
+  \includegraphics[width=0.47\textwidth]{graphics/hist-fit-ncp2-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8 schools model with non-centered parameterization.}
   \label{fig:hist-fit-ncp2-1}
 \end{figure}
-
-\FloatBarrier
 
 % \hypertarget{references}{%
 % \section*{References}\label{references}}
 % \addcontentsline{toc}{section}{References}
 
 % \hypertarget{refs}{}
+
+\hypertarget{discussion}{%
+\section{Discussion}\label{discussion}}
+
+Add dicussion here
 
 \hypertarget{appendices}{%
 \section*{Appendices}\label{appendices}}
@@ -1622,21 +1614,21 @@ substantial differences between chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-normal-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-normal-1.pdf}
 % \end{figure}
 
 % 100 draws from Exponential(1):
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-exp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-exp-1.pdf}
 % \end{figure}
 
 % 100 draws from Cauchy(0, 1):
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-cauchy-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-cauchy-1.pdf}
 % \end{figure}
 
 % In the above plots, the ECDF with respect to scaled rank and rank
@@ -1648,7 +1640,7 @@ substantial differences between chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-normal2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-normal2-1.pdf}
 % \end{figure}
 
 % The variation in ECDF due to the variation ranks is now visible also in
@@ -1660,7 +1652,7 @@ substantial differences between chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-cauchy2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-cauchy2-1.pdf}
 % \end{figure}
 
 % Rank normalization makes the subsequent computations well defined and
@@ -1697,7 +1689,7 @@ substantial differences between chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-beta-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-beta-1.pdf}
 % \end{figure}
 
 % Uncertainty intervals of ECDF for draws from Cauchy(0, 1) illustrate
@@ -1705,7 +1697,7 @@ substantial differences between chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ranknorm-cauchy3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ranknorm-cauchy3-1.pdf}
 % \end{figure}
 
 % The above plots illustrate that the normal approximation is accurate for
@@ -1751,14 +1743,7 @@ First all the chains are from the same Normal(0, 1) distribution plus
 a linear trend added to all chains. Figure~\ref{fig:rhat-same-trend-1}
 shows that if we don't split chains, \(\widehat{R}\) misses the trends
 if all chains still have a similar marginal distribution.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/rhat-same-trend-1.pdf}
-  \caption{\(\widehat{R}\) without splitting for varying chain lengths
-    for chains which have the same trend and a similar marginal
-    distribution.}
-  \label{fig:rhat-same-trend-1}
-\end{figure}
+%
 Figure~\ref{fig:zsrhat-same-trend-1} shows that split-\(\widehat{R}\)
 detects the trend, even if the marginals of the chains are similar. If
 we use a threshold of \(1.01\), we can detect trends which account for
@@ -1767,33 +1752,52 @@ we use a threshold of \(1.01\), we can detect trends which account for
 marginal variance.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsrhat-same-trend-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/rhat-same-trend-1.pdf}
+  \caption{\(\widehat{R}\) without splitting for varying chain lengths
+    for chains which have the same trend and a similar marginal
+    distribution.}
+  \label{fig:rhat-same-trend-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsrhat-same-trend-1.pdf}
   \caption{Split-\(\widehat{R}\) for varying chain lengths
     for chains which have the same trend and a similar marginal
     distribution.}
   \label{fig:zsrhat-same-trend-1}
+\end{minipage}
 \end{figure}
 
 The effective sample size is based on split-\(\widehat{R}\) and
 within-chain autocorrelation. Figure~\ref{fig:zsreff-same-trend-1}
-shows the relative Bulk-ESS \(Bulk-ESS divided by S\) for easier
+shows the relative Bulk-ESS \(Bulk-ESS\) divided by \(S\) for easier
 comparison between different values of \(S\).
 % Since we plot the relative efficiency instead of the effective sample
 % size itself, this threshold is divided by \(S\), which we compute here
 % as the number of iterations per chain (variable \texttt{iter}) times
 % the number of chains (\(4\)).
+We see that split-\(\widehat{R}\) is more sensitive to trends for
+small sample sizes, but ESS becomes more sensitive for larger samples
+sizes (as autocorrelations can be estimated more accurately).
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsreff-same-trend-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsreff-same-trend-1.pdf}
   \caption{Relative Bulk-ESS for varying chain lengths for chains which have
     the same trend and a similar marginal distribution. The dashed
     lines indicate the threshold \(S_{\rm eff} > 400\) at which we
     would consider the effective sample size to be sufficient.}
   \label{fig:zsreff-same-trend-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsrhat-shifted-chain-1.pdf}
+  \caption{Split-\(\widehat{R}\) for varying chain lengths
+    for chains with one sampled with a different mean than the others.\\~\\~}
+  \label{fig:zsrhat-shifted-chain-1}
+\end{minipage}
 \end{figure}
-We see that split-\(\widehat{R}\) is more sensitive to trends for
-small sample sizes, but ESS becomes more sensitive for larger samples
-sizes (as autocorrelations can be estimated more accurately).
 
 \hypertarget{shifting-one-chain}{%
 \paragraph{Shifting one chain}\label{shifting-one-chain}}
@@ -1807,13 +1811,13 @@ magnitude of one third or more of the marginal standard deviation. If
 we use a threshold of \(1.1\), split-\(\widehat{R}\) detects shifts
 with a magnitude equal to or larger than the marginal standard
 deviation.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsrhat-shifted-chain-1.pdf}
-  \caption{Split-\(\widehat{R}\) for varying chain lengths
-    for chains with one sampled with a different mean than the others.}
-  \label{fig:zsrhat-shifted-chain-1}
-\end{figure}
+% \begin{figure}[tp]
+%   \centering
+%   \includegraphics[width=0.47\textwidth]{graphics/zsrhat-shifted-chain-1.pdf}
+%   \caption{Split-\(\widehat{R}\) for varying chain lengths
+%     for chains with one sampled with a different mean than the others.}
+%   \label{fig:zsrhat-shifted-chain-1}
+% \end{figure}
 Figure~\ref{fig:zsreff-shifted-chain-1} shows the the relative
 Bulk-ESS \(Bulk-ESS divided by S\) for the same case. The effective
 sample size is not as sensitive as split-\(\widehat{R}\), but a shift
@@ -1822,26 +1826,27 @@ lead to very low relative efficiency when the total number of draws
 increases.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsreff-shifted-chain-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsreff-shifted-chain-1.pdf}
   \caption{Relative Bulk-ESS for varying chain lengths for chains with one
     sampled with a different mean than the others. The dashed lines
     indicate the threshold \(S_{\rm eff} > 400\) at which we would
     consider the effective sample size to be sufficient.}
   \label{fig:zsreff-shifted-chain-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/hist-shifted-chain-1.pdf}
+  \caption{Rank plots of posterior draws from four chains with one
+    sampled with a different mean than the others.\\~\\}
+  \label{fig:hist-shifted-chain-1}
+\end{minipage}
 \end{figure}
-
 Rank plots are practical way to visualize differences between
 chains. Figure~\ref{fig:hist-shifted-chain-1} shows rank plots for the
 case of 4 chains, 250 draws per chain, and one chain sampled with mean
 0.5 instead of 0. In this case split-\(\widehat{R} = 1.05\), but the
 rank plots clearly show that the first chain behaves differently.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-shifted-chain-1.pdf}
-  \caption{Rank plots of posterior draws from four chains with one
-    sampled with a different mean than the others.}
-  \label{fig:hist-shifted-chain-1}
-\end{figure}
 
 \hypertarget{scaling-one-chain}{%
 \paragraph{Scaling one chain}\label{scaling-one-chain}}
@@ -1852,13 +1857,7 @@ except one of the chains is sampled with variance less than 1.
 Figure~\ref{fig:zsrhat-scaled-chain-1} shows that
 split-\(\widehat{R}\) is not able to detect scale differences between
 chains.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsrhat-scaled-chain-1.pdf}
-  \caption{Split-\(\widehat{R}\) for varying chain lengths
-    for chains with one sampled with a different variance than the others.}
-  \label{fig:zsrhat-scaled-chain-1}
-\end{figure}
+%
 Figure~\ref{fig:zfsrhat-scaled-chain-1} shows that
 folded-split-\(\widehat{R}\) which focuses on scales detects scale
 differences. With a threshold of \(1.01\),
@@ -1868,10 +1867,19 @@ folded-split-\(\widehat{R}\) detects a chain with scale less than
 deviation less than \(1/4\) of the standard deviation of the others.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zfsrhat-scaled-chain-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsrhat-scaled-chain-1.pdf}
+  \caption{Split-\(\widehat{R}\) for varying chain lengths
+    for chains with one sampled with a different variance than the others.}
+  \label{fig:zsrhat-scaled-chain-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zfsrhat-scaled-chain-1.pdf}
   \caption{Folded-split-\(\widehat{R}\) for varying chain lengths
     for chains with one sampled with a different variance than the others.}
   \label{fig:zfsrhat-scaled-chain-1}
+\end{minipage}
 \end{figure}
 
 Figure~\ref{fig:zsreff-scaled-chain-1} shows the the relative Bulk-ESS
@@ -1880,24 +1888,25 @@ size of the mean does not see a problem as it focuses on location
 differences between chains.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/zsreff-scaled-chain-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/zsreff-scaled-chain-1.pdf}
   \caption{Relative Bulk-ESS for varying chain lengths for chains with
     one sampled with a different variance than the others.}
   \label{fig:zsreff-scaled-chain-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/hist-scaled-chain-1.pdf}
+  \caption{Rank plots of posterior draws from four chains with
+    one sampled with a different variance than the others.}
+  \label{fig:hist-scaled-chain-1}
+\end{minipage}
 \end{figure}
-
 Figure~\ref{fig:hist-scaled-chain-1} shows rank plots for the case of
 4 chains, 250 draws per chain, and one chain sampled with standard
 deviation 0.75 instead of 1. Although
 folded-split-\(\widehat{R} = 1.06\), the rank plots clearly show that
 the first chain behaves differently.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-scaled-chain-1.pdf}
-  \caption{Rank plots of posterior draws from four chains with
-    one sampled with a different variance than the others.}
-  \label{fig:hist-scaled-chain-1}
-\end{figure}
 
 \hypertarget{AppendixE}{%
 \subsection*{Appendix E: Cauchy: A distribution with infinite mean and
@@ -1955,10 +1964,11 @@ parameter look wild with occasional large values, and it is difficult
 to interpret possible convergence.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/trace-fit-nom-td20-1.pdf}
-  \caption{Trace plots of four chains for Cauchy model with nominal parameterization and \texttt{max\_treedepth}=20.}
+  \includegraphics[width=0.47\textwidth]{graphics/trace-fit-nom-td20-1.pdf}
+  \caption{Trace plots of four chains for Cauchy model with nominal parameterization and \texttt{max\_treedepth}=20.\\~}
   \label{fig:trace-fit-nom-td20-1}
 \end{figure}
+%
 Figure~\ref{fig:rhat-fit-nom-td20-1} shows classic split-\(\widehat{R}\) ,
 rank normalized split-\(\widehat{R}\), and rank normalized
 folded-split-\(\widehat{R}\) for all 50 parameters. Classic split-\(\widehat{R}\), which is
@@ -1966,22 +1976,29 @@ not well-defined in this case, has much higher variability than rank
 normalized split-\(\widehat{R}\).  Rank normalized
 folded-split-\(\widehat{R}\) has higher values than Rank normalized
 split-\(\widehat{R}\) indicating slow mixing especially in tails.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-nom-td20-1.pdf}
-  \caption{Classic split-\(\widehat{R}\), rank normalized
-    split-\(\widehat{R}\), and rank normalized
-    folded-split-\(\widehat{R}\) for Cauchy model with nominal
-    parameterization and \texttt{max\_treedepth}=20.}
-  \label{fig:rhat-fit-nom-td20-1}
-\end{figure}
-
 % For one parameter, Rhats exceed the classic threshold of 1.1. Depending
 % on the Rhat estimate, a few others also exceed the threshold of 1.01.
 % The rank normalized split-Rhat has several values over 1.01. Please note
 % that the classic split-Rhat is not well defined in this example, because
 % mean and variance of the Cauchy distribution are not finite.
-
+\begin{figure}[tp]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/rhat-fit-nom-td20-1.pdf}
+  \caption{Classic split-\(\widehat{R}\), rank normalized
+    split-\(\widehat{R}\), and rank normalized
+    folded-split-\(\widehat{R}\) for Cauchy model with nominal
+    parameterization and \texttt{max\_treedepth}=20.}
+  \label{fig:rhat-fit-nom-td20-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/ess-fit-nom-td20-1.pdf}
+  \caption{Classic ESS, Bulk-ESS, Tail-ESS, Median-ESS and MAD-ESS for
+    Cauchy model with nominal parameterization \texttt{max\_treedepth}=20.}
+  \label{fig:ess-fit-nom-td20-1}
+\end{minipage}
+\end{figure}
 Figure~\ref{fig:rhat-fit-nom-td20-1} shows different effective sample
 size estimates for all 50 parameters. Classic ESS, which is not well
 defined in this case, has very high variability. Bulk ESS is much more
@@ -1997,14 +2014,6 @@ values except classic ESS (which is not well defined) keep improving
 with more iterations. It is however recommended to use more efficient
 parameterization especially if the tail quantiles are quantities of
 interest.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/ess-fit-nom-td20-1.pdf}
-  \caption{Classic ESS, Bulk-ESS, Tail-ESS, Median-ESS and MAD-ESS for
-    Cauchy model with nominal parameterization \texttt{max\_treedepth}=20.}
-  \label{fig:ess-fit-nom-td20-1}
-\end{figure}
-
 
 % We also check the log posterior value \texttt{lp\_\_} and find out that
 % the effective sample size is worryingly low.
@@ -2033,7 +2042,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-nom-td20-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-nom-td20-2-1.pdf}
 % \end{figure}
 
 % We see that the efficiency is worryingly low in the tails (which is
@@ -2049,7 +2058,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-nom-td20-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-nom-td20-2-1.pdf}
 % \end{figure}
 
 % We see that the efficiency is worryingly low in the tails (which is
@@ -2061,7 +2070,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-nom-td20-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-nom-td20-2-1.pdf}
 % \end{figure}
 
 % \hypertarget{default-stan-options-increased-maximum-treedepth}{%
@@ -2078,14 +2087,14 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/trace-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/trace-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % We check the diagnostics for all \(x\).
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % All Rhats are below \(1.1\), but many are over \(1.01\). Classic
@@ -2096,7 +2105,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % Some classic effective sample sizes are very small. If we wouldn't
@@ -2135,7 +2144,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % It seems that increasing \texttt{max\_treedepth} has not much improved
@@ -2144,7 +2153,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % The rank plot visualisation of x{[}11{]}, which has the smallest
@@ -2152,7 +2161,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-nom-td20-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-nom-td20-1.pdf}
 % \end{figure}
 
 % The rank plot visualisation of \texttt{lp\_\_}, which has an effective
@@ -2160,7 +2169,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-nom-td20-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-nom-td20-lp-1.pdf}
 % \end{figure}
 
 % \hypertarget{default-stan-options-increased-maximum-treedepth-longer-chains}{%
@@ -2176,14 +2185,14 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/trace-fit-nom-td20l-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/trace-fit-nom-td20l-1.pdf}
 % \end{figure}
 
 % Let's check the diagnostics for all \(x\).
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-nom-td20l-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-nom-td20l-1.pdf}
 % \end{figure}
 
 % All Rhats are below \(1.01\). The classic split-Rhat has more variation
@@ -2192,7 +2201,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-nom-td20l-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-nom-td20l-1.pdf}
 % \end{figure}
 
 % Most classic ESS's are close to zero. Running longer chains just made
@@ -2226,7 +2235,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-nom-td20l-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-nom-td20l-1.pdf}
 % \end{figure}
 
 % Increasing the chain length did not seem to change the relative
@@ -2235,7 +2244,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-nom-td20l-finer-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-nom-td20l-finer-1.pdf}
 % \end{figure}
 
 % The sampling efficiency far in the tails is worryingly low. This was
@@ -2244,7 +2253,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-nom-td20l-finer-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-nom-td20l-finer-1.pdf}
 % \end{figure}
 
 % Let's look at the rank plot visualisation of x{[}39{]}, which has the
@@ -2252,7 +2261,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-nom-td20l-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-nom-td20l-1.pdf}
 % \end{figure}
 
 % Increasing the number of iterations couldn't remove the mixing problems
@@ -2297,7 +2306,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-alt1-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-alt1-1.pdf}
 % \end{figure}
 
 % All Rhats are below \(1.01\). Classic split-Rhats also look good even
@@ -2305,7 +2314,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-alt1-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-alt1-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} Rank normalized ESS's have less variation than classic
@@ -2330,7 +2339,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-alt1-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-alt1-2-1.pdf}
 % \end{figure}
 
 % The effective sample size is good in all parts of the posterior. We also
@@ -2338,7 +2347,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-alt1-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-alt1-2-1.pdf}
 % \end{figure}
 
 % We compare the mean relative efficiencies of the underlying parameters
@@ -2370,7 +2379,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-alt1-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-alt1-2-1.pdf}
 % \end{figure}
 
 % Similarly, the rank plot visualisation of \texttt{lp\_\_}, which has a
@@ -2381,7 +2390,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-alt1-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-alt1-lp-1.pdf}
 % \end{figure}
 
 % \hypertarget{another-alternative-parameterization-of-the-cauchy-distribution}{%
@@ -2419,7 +2428,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-alt3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-alt3-1.pdf}
 % \end{figure}
 
 % All Rhats except some folded Rhats are below 1.01. Classic split-Rhat's
@@ -2428,7 +2437,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-alt3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-alt3-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} Rank normalized relative efficiencies have less
@@ -2455,14 +2464,14 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-alt3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-alt3-1.pdf}
 % \end{figure}
 
 % We examine also the sampling efficiency of different quantile estimates.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-alt3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-alt3-1.pdf}
 % \end{figure}
 
 % The effective sample size in tails is worse than for the first
@@ -2495,12 +2504,12 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-alt3-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-alt3-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-alt3-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-alt3-lp-1.pdf}
 % \end{figure}
 
 % \hypertarget{half-cauchy-distribution-with-nominal-parameterization}{%
@@ -2537,7 +2546,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-half-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-half-nom-1.pdf}
 % \end{figure}
 
 % All Rhats are below \(1.01\). Classic split-Rhats also look good even
@@ -2545,7 +2554,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-half-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-half-nom-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} Rank normalized effective sample size have less
@@ -2559,7 +2568,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-half-nom-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-half-nom-2-1.pdf}
 % \end{figure}
 
 % \(\log(x)\) is quite close to Gaussian, and thus classic effective
@@ -2577,7 +2586,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-half-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-half-nom-1.pdf}
 % \end{figure}
 
 % The effective sample size is good overall, with only a small dip in
@@ -2586,7 +2595,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-half-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-half-nom-1.pdf}
 % \end{figure}
 
 % The rank plot visualisation of x{[}32{]}, which has the smallest
@@ -2594,7 +2603,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-half-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-half-nom-1.pdf}
 % \end{figure}
 
 % The rank plot visualisation of \texttt{lp\_\_} reveals some small
@@ -2603,7 +2612,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-half-nom-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-half-nom-lp-1.pdf}
 % \end{figure}
 
 % \hypertarget{alternative-parameterization-of-the-half-cauchy-distribution}{%
@@ -2639,12 +2648,12 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/rhat-fit-half-reparam-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/rhat-fit-half-reparam-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/ess-fit-half-reparam-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/ess-fit-half-reparam-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} The Rank normalized relative efficiencies have less
@@ -2674,7 +2683,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-half-reparam-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-half-reparam-1.pdf}
 % \end{figure}
 
 % We also examine the effective sample size for different quantile
@@ -2682,7 +2691,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-half-reparam-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-half-reparam-1.pdf}
 % \end{figure}
 
 % The effective sample size near zero is much worse than for the
@@ -2694,7 +2703,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-half-reparam-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-half-reparam-1.pdf}
 % \end{figure}
 
 % A similar result is obtained when looking at the rank plots of
@@ -2702,7 +2711,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-half-reparam-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-half-reparam-lp-1.pdf}
 % \end{figure}
 
 % \hypertarget{the-cauchy-distribution-with-jags}{%
@@ -2820,7 +2829,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-jags-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-jags-nom-1.pdf}
 % \end{figure}
 
 % The efficiency estimate is good in all parts of the posterior. Further,
@@ -2828,14 +2837,14 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-jags-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-jags-nom-1.pdf}
 % \end{figure}
 
 % Rank plots also look rather similar across chains.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-jags-nom-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-jags-nom-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} Jags seems to be able to sample from the nominal
@@ -2972,7 +2981,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp2-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-cp2-tau-1.pdf}
 % \end{figure}
 
 % We see that the sampling has difficulties in exploring small
@@ -2985,7 +2994,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-cp2-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-cp2-tau-1.pdf}
 % \end{figure}
 
 % Several quantile estimates have ESS\textless{}400, which raises a doubt
@@ -2996,7 +3005,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/change-ess-fit-cp2-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/change-ess-fit-cp2-tau-1.pdf}
 % \end{figure}
 
 % We see that given recommendation that Bulk-ESS\textgreater{}400 and
@@ -3009,7 +3018,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-cp2-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-cp2-tau-1.pdf}
 % \end{figure}
 
 % Similar results are obtained for \texttt{lp\_\_}, which is closely
@@ -3017,14 +3026,14 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-cp2-lp-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-cp2-lp-1.pdf}
 % \end{figure}
 
 % We may also examine small interval efficiencies for \texttt{mu}.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp2-mu-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-cp2-mu-1.pdf}
 % \end{figure}
 
 % There are gaps of poor efficiency which again indicates problems in the
@@ -3132,12 +3141,12 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp3-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-cp3-tau-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-cp3-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-cp3-tau-1.pdf}
 % \end{figure}
 
 % And the rank plots of $\tau$ also show sticking and mixing
@@ -3145,7 +3154,7 @@ interest.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/hist-fit-cp3-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/hist-fit-cp3-tau-1.pdf}
 % \end{figure}
 
 % What we do see is an advantage of rank plots over trace plots as even
@@ -3201,24 +3210,36 @@ similarly in exploring the narrowest part of the funnel and all
 chains seem to ``converge'' to a wrong stationary distribution.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-cp4-tau-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-fit-cp4-tau-1.pdf}
   \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization, very long chains, and thinning.}
   \label{fig:local-ess-fit-cp4-tau-1}
-\end{figure}
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-cp4-tau-1.pdf}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-cp4-tau-1.pdf}
   \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization, very long chains, and thinning.}
   \label{fig:quantile-ess-fit-cp4-tau-1}
+\end{minipage}
 \end{figure}
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/change-ess-fit-cp4-tau-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/change-ess-fit-cp4-tau-1.pdf}
+  \caption{The estimated effective sample sizes with increasing number of iterations for 8 schools model with centered parameterization, very long chains, and thinning.}
+  \label{fig:change-ess-fit-cp4-tau-1}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/hist-fit-cp4-tau-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8
     schools model with centered parameterization, very long chains, and
     thinning.}
-  \label{fig:change-ess-fit-cp4-tau-1}
+  \label{fig:hist-fit-cp4-tau-1}
+\end{minipage}
 \end{figure}
+However, the rank plots shown in Figure~\ref{fig:hist-fit-cp4-tau-1}
+are still able to show the problem.
 
 % \begin{verbatim}
 % Inference for the input samples (4 chains: each with iter = 400000; warmup = 200000):
@@ -3282,17 +3303,6 @@ chains seem to ``converge'' to a wrong stationary distribution.
 % theta[8]     3970     0.99     4140     1.03     3830     0.96
 % lp__         2620     0.65     3840     0.96     3910     0.98
 % \end{verbatim}
-
-However, the rank plots shown in Figure~\ref{fig:hist-fit-cp4-tau-1}
-are still able to show the problem.
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/hist-fit-cp4-tau-1.pdf}
-  \caption{Rank plots of posterior draws from four chains for 8
-    schools model with centered parameterization, very long chains,
-    and thinning.}
-  \label{fig:hist-fit-cp4-tau-1}
-\end{figure}
 
 % \hypertarget{non-centered-eight-schools-model-1}{%
 % \subsubsection*{Non-centered Eight Schools
@@ -3466,12 +3476,12 @@ are still able to show the problem.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-ncp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-ncp-tau-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-ncp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-ncp-tau-1.pdf}
 % \end{figure}
 
 % Overall, the non-centered parameterization looks good even for the
@@ -3490,12 +3500,12 @@ are still able to show the problem.
 So far, we have run all models in Stan, but here we demonstrate that
 these diagnostics are useful also for other samplers than variants of
 Hamiltonian Monte-Carlo.  We will fit the eight schools models also
-with Jags, which uses a dialect of the BUGS language to specify
-models. Jags uses a clever mix of Gibbs and Metropolis-Hastings
-sampling. This kind of sampling does not usually scale well to high
-dimensional posteriors of strongly interdependent parameters, but for
-the relatively simple models discussed in this case study it works
-just fine.
+with Jags \citep{plummer2003jags}, which uses a dialect of the BUGS
+language \citep{lunn2009bugs} to specify models. Jags uses a clever
+mix of Gibbs and Metropolis-Hastings sampling. This kind of sampling
+does not usually scale well to high dimensional posteriors of strongly
+interdependent parameters, but for the relatively simple models
+discussed in this case study it works just fine.
 
 % \hypertarget{centered-eight-schools-model-1}{%
 % \paragraph{Centered Eight Schools
@@ -3569,17 +3579,17 @@ Bulk-ESS$=677$, and Tail-ESS$=1027$, which are all good.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-jags-cp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-jags-cp-tau-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-jags-cp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-jags-cp-tau-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/change-ess-jags-cp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/change-ess-jags-cp-tau-1.pdf}
 % \end{figure}
 
 % Let's see what happens if we run 10 times longer chains.
@@ -3627,19 +3637,21 @@ reasonable time. The online appendix shows additional results for Gibbs
 sampling with more efficient non-centered parameterization.
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/local-ess-jags-cp-tau-longer-1.pdf}
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/local-ess-jags-cp-tau-longer-1.pdf}
   \caption{The local efficiency of small interval probability estimates for 8 schools model with centered parameterization and Gibbs sampling.}
   \label{fig:local-ess-jags-cp-tau-longer-1}
-\end{figure}
-\begin{figure}[tp]
-  \centering
-  \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-jags-cp-tau-longer-1.pdf}
-  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization and Gibbs sampling..}
+\end{minipage}
+\hfill
+  \begin{minipage}{0.48\textwidth}
+  \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-jags-cp-tau-longer-1.pdf}
+  \caption{The efficiency of quantile estimates for 8 schools model with centered parameterization and Gibbs sampling.}
   \label{fig:quantile-ess-jags-cp-tau-longer-1}
+\end{minipage}
 \end{figure}
 \begin{figure}[tp]
   \centering
-  \includegraphics[width=0.5\linewidth]{graphics/change-ess-jags-cp-tau-longer-1.pdf}
+  \includegraphics[width=0.47\textwidth]{graphics/change-ess-jags-cp-tau-longer-1.pdf}
   \caption{Rank plots of posterior draws from four chains for 8
     schools model with centered parameterization and Gibbs sampling.}
   \label{fig:change-ess-jags-cp-tau-longer-1}
@@ -3714,12 +3726,12 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-jags-ncp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-jags-ncp-tau-1.pdf}
 % \end{figure}
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-jags-ncp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-jags-ncp-tau-1.pdf}
 % \end{figure}
 
 % Change in effective sample size is roughly linear indicating that some
@@ -3728,7 +3740,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/change-ess-jags-ncp-tau-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/change-ess-jags-ncp-tau-1.pdf}
 % \end{figure}
 
 % \textbf{Result:} Similar to Stan, Jags can sample from the non-centered
@@ -3866,7 +3878,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-n-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-n-1.pdf}
 % \end{figure}
 
 % The effective sample size for probability estimate for a small interval
@@ -3876,7 +3888,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-n-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-n-1.pdf}
 % \end{figure}
 
 % Central quantile estimates have higher effective sample size than tail
@@ -3982,7 +3994,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/local-ess-fit-n-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/local-ess-fit-n-2-1.pdf}
 % \end{figure}
 
 % The effective sample size is mostly a bit below 1, but for the right
@@ -3993,7 +4005,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/quantile-ess-fit-n-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/quantile-ess-fit-n-2-1.pdf}
 % \end{figure}
 
 % We can see the correlation between \texttt{lp\_\_} and magnitude of
@@ -4001,7 +4013,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/qplot-fit-n-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/qplot-fit-n-1.pdf}
 % \end{figure}
 
 % Low \texttt{lp\_\_} values corresponds to high energy and more variation
@@ -4011,7 +4023,7 @@ sampling with more efficient non-centered parameterization.
 
 % \begin{figure}[tp]
 %   \centering
-%   \includegraphics[width=0.5\linewidth]{graphics/qplot-fit-n-2-1.pdf}
+%   \includegraphics[width=0.47\textwidth]{graphics/qplot-fit-n-2-1.pdf}
 % \end{figure}
 
 % This shows that even if we get high effective sample size estimates for
