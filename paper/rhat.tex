@@ -1269,7 +1269,7 @@ can be found in the online appendix.
 The eight schools problem is a classic example
 \citep[see Section 5.5 in][]{BDA3}, which even in its
 simplicity illustrates the typical problems in inference for
-hierarchical models. We can parameterize this simplemodel
+hierarchical models. We can parameterize this simple model
 in at least two ways. The centered parameterization looks as follows:
 \begin{align*}
 \theta_j &\sim \text{normal}(\mu, \tau) \\
@@ -3210,10 +3210,10 @@ to a common wrong stationary distribution.
 
 When autocorrelation time is high, it has been common to thin the
 chains by saving only a small portion of the draws. This will throw
-away useful information also for convergence diagnostics. We run the eight
-schools model with centered parameterization with $4\times 10^5$ iterations
-per chain. We thin by 200, ending up with 4000 iterations as with the
-default settings. {\bf I don't understand where 4000 comes from here.---AG}
+away useful information also for convergence diagnostics. We run the
+eight schools model with centered parameterization with $4\times 10^5$
+iterations per chain. We remove the first half as warm-up and thin by
+200, ending up with 4000 iterations as with the default settings.
 
 We observe several divergent transitions and the estimated Bayesian
 fraction of missing information is also low, which still indicate
