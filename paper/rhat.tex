@@ -131,7 +131,17 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-Add abstract here
+  We extend $\widehat{R}$ diagnostic and effective sample size
+  estimates, two tools we use to routinely monitor the convergence of
+  iterative simulations.  As these are well defined only if the
+  marginal posteriors have finite mean and variance, we propose to use
+  rank normalized parameter values instead of the actual parameter
+  values for the purpose of diagnosing convergence. We also introduce
+  a version of $\widehat{R}$ which is more sensitive to scale
+  differences between chains, CDF and quantile based local efficiency
+  measures, and a practical approach for computing Monte Carlo error
+  estimates for quantiles. We suggest that common trace plots should
+  be replaced with rank plots from multiple chains.
 \end{abstract}
 
 \hypertarget{introduction}{%
@@ -397,7 +407,7 @@ diagnostics}\label{problems-of-current-diagnostics}}
 
 There are two main problems with the diagnostics as described so far, which we
 will highlight below and illustrate in detail in Section \ref{examples} as well 
-as in the online appendix. For each problem, we propose possible solutions 
+as in the online appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}. For each problem, we propose possible solutions 
 that, together, will result in a new set of convergence diagnostics and 
 recommendations for reasonable criteria to determine (non-)convergence.
 
@@ -1529,14 +1539,17 @@ show no substantial differences between chains.
 
 % \hypertarget{refs}{}
 
-\hypertarget{discussion}{%
-\section{Discussion}\label{discussion}}
+% \hypertarget{discussion}{%
+% \section{Discussion}\label{discussion}}
 
-Add dicussion here
+% Add discussion here
 
 \hypertarget{appendices}{%
 \section*{Appendices}\label{appendices}}
 \addcontentsline{toc}{section}{Appendices}
+
+More results and code available in online
+appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}.
 
 % \hypertarget{AppendixA}{%
 % \subsection*{Appendix A: Abbreviations}\label{AppendixA}}
@@ -1734,7 +1747,7 @@ Add dicussion here
 % \FloatBarrier
 
 \hypertarget{AppendixD}{%
-\subsection*{Appendix D: Normal distributions with additional trend,
+\subsection*{Appendix A: Normal distributions with additional trend,
 shift or scaling}\label{AppendixD}}
 \addcontentsline{toc}{subsection}{Appendix D: Normal distributions with
 additional trend, shift or scaling}
@@ -1931,7 +1944,7 @@ folded-split-\(\widehat{R} = 1.06\), the rank plots clearly show that
 the first chain behaves differently.
 
 \hypertarget{AppendixE}{%
-\subsection*{Appendix E: Cauchy: A distribution with infinite mean and
+\subsection*{Appendix B: Cauchy: A distribution with infinite mean and
 variance}\label{AppendixE}}
 \addcontentsline{toc}{subsection}{Appendix E: Cauchy: A distribution
 with infinite mean and variance}
@@ -3194,7 +3207,7 @@ interest.
 % if other diagnostics indicate convergence problems!
 
 \hypertarget{a-centered-eight-schools-model-1}{%
-\subsection*{A centered eight schools model with very long chains and
+\subsection*{Appendic C: A centered eight schools model with very long chains and
 thinning}\label{a-centered-eight-schools-model-1}}
 \addcontentsline{toc}{subsection}{A centered eight schools model}
 
@@ -3516,7 +3529,7 @@ are still able to show the problem.
 % adjust our model to achieve trustworthy inference.
 
 \hypertarget{eight-schools-with-jags}{%
-\subsection*{A centered eight schools model fit using a Gibbs sampler}\label{eight-schools-with-jags}}
+\subsection*{Appendix D: A centered eight schools model fit using a Gibbs sampler}\label{eight-schools-with-jags}}
 \addcontentsline{toc}{subsection}{Eight Schools with Jags}
 
 So far, we have run all models in Stan, but here we demonstrate that
