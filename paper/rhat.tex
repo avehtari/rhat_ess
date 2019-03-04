@@ -84,15 +84,7 @@
 
 \setlength{\droptitle}{-2em}
 
-  \title{Improving Convergence Diagnostics of Iterative Algorithms}
-    \pretitle{\vspace{\droptitle}\centering\huge}
-  \posttitle{\par}
-    \author{Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul Bürkner}
-    \preauthor{\centering\large\emph}
-  \postauthor{\par}
-    \date{7 Feb 2019}
-    \predate{}\postdate{}
-  
+   
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
@@ -127,16 +119,29 @@
 \DeclareMathOperator{\Cauchy}{Cauchy}
 \DeclareMathOperator{\N}{N}
 \DeclareMathOperator{\Gam}{Gamma}
+\newcommand{\Rhat}{$\widehat{R}$}
+\newcommand{\sRhat}{split-$\widehat{R}$}
+
+
+ \title{$\widehat{R}$ does not work! Building better ways to assess the convergence of iterative algorithms}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul Bürkner}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{4 March 2019}
+    \predate{}\postdate{}
+
 
 \begin{document}
 \maketitle
 \begin{abstract}
-  We extend $\widehat{R}$ diagnostic and effective sample size
-  estimates, two tools we use to routinely monitor the convergence of
-  iterative simulations.  As these are well defined only if the
-  marginal posteriors have finite mean and variance, we propose to use
-  rank normalized parameter values instead of the actual parameter
-  values for the purpose of diagnosing convergence. We also introduce
+  Markov chain Monte Carlo is the main computational tool for Bayesian 
+  statistics, however it is known that we must carefully monitor the
+  convergence behaviour of the chain lest poor computation bias our estimates.
+In this paper we show that the most commonly used convergence diagnostic \Rhat\ 
+of Gelman and Rubin \textcolor{red}{CITE!} has serious flaws and we
+show ways around them.  We also introduce
   a version of $\widehat{R}$ which is more sensitive to scale
   differences between chains, CDF and quantile based local efficiency
   measures, and a practical approach for computing Monte Carlo error
@@ -147,30 +152,52 @@
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
 
-Iterative simulations, particularly Markov chain Monte Carlo (MCMC), are 
-increasingly popular in statistics,
-especially in Bayesian applications where the goal is to represent
-posterior inference using a sample of posterior draws. Iterative
-simulation algorithms typically can be proven to converge
+Iterative simulations, particularly Markov chain Monte Carlo (MCMC), form the core
+of many methods in computational statistics, especially 
+in Bayesian applications where the goal is to represent
+posterior inference using a sample of posterior draws. While iterative
+simulation algorithms can usually be proven to converge
 to the target distribution as the number of draws approaches infinity,
-but convergence is only approximate for any finite number of draws. To better 
-understand convergence in the finite case, we run multiple 
+there are rarely strong guarantees about their behaviour after a 
+finite number of draws. In fact, decades of experience tell us that
+the finite sample behaviour of these algorithms can be almost arbitrarily bad.
+
+
+In an attempt to assuage our fear that our iterative simulation algorithm may
+not have converged, we typically run multiple 
 independent chains of the iterative algorithm to see if the obtained 
-distribution is similar across chains.
+distribution is similar across chains.  We typically also visually inspect
+the sample path of the chain as well as some summary statistics such as
+investigating the empirical autocorrelation function. 
 
-In practice we have two concerns:
+Probably the most widely-used attempt to construct a more formally justified 
+convergence diagnostic  is the  \(\widehat{R}\) statistic
+\citep{Gelman+Rubin:1992, Brooks+Gelman:1998} and
+split-\(\widehat{R}\) \citep{BDA3}.  These quantities monitor the ratio of
+the within-chain marginal variances and the between-chain marginal variances
+of the simulations. The idea is that if a chain has not converged to 
+stationarity, these quantities will be quite different.  The difference between
+the original $\widehat{R}$ and split-$\widehat{R}$ is that the latter also compares 
+the marginal distributions of the first half of each chain with the second
+half of each chain, to try to ensure that each chain has itself converged.
 
-\begin{enumerate}
-\item The chains may not have not mixed well, so that the simulations do not
-represent the target distribution because they still retain the influence of
-their history.
-\item The effective sample size (number of effective simulation draws) is low,
-possibly much less than the total number of draws across chains, because
-of the dependence of consecutive draws (autocorrelation) within each chain.
-\end{enumerate}
+The \sRhat\ is most effective if it is computed using multiple chains initialized at a 
+diverse set of starting points. This is to reduce the dependence of diagnostic
+on the starting point of the chain and reduce the chance that we falsely diagnose
+the chain as converging when beginning at a different point would lead to a 
+qualitatively different posterior.
 
-These two issues are related. It is only possible to have a large number
-of effective draws if the chains have mixed well. Figure
+In the context of Markov chain Monte Carlo, one can interpret \sRhat\ 
+with diverse seeding as an operationalization of the qualitative statement 
+that the Markov chain is relatively insensitive to the starting point (at least within a 
+reasonable part of the parameter space). This is the closest we can come to 
+verifying that the Markov chain is geometrically ergodic, which is a critical 
+property if we want  a central limit theorem to hold for the approximate
+posterior expectations. Without this, we have no control over the large
+deviation behaviour of the estimates and the constructed Markov chains will
+be useless for practical purposes.
+
+ Figure
 \ref{converge.challenge} illustrates two ways in which sequences of
 iterative simulations can fail to mix. In the first example, two chains
 are in different parts of the target distribution, in the second
@@ -197,14 +224,81 @@ assessing convergence. From Gelman et al. (2013).}
 \label{converge.challenge}
 \end{figure}
 
-The other relevant point is that we are often fitting models with large
-numbers of parameters, so that it is not realistic to expect to make
+
+The problem is that \Rhat\ and \sRhat\ do not reliably work when analyzing generic iterative algorithms.  This is particularly a problem when we use them within generic software packages like \texttt{Stan} or analysis tools like \texttt{R}'s \texttt{coda} library.  We have identified two problems with \sRhat : 
+\begin{enumerate}
+\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others;
+\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$.
+\end{enumerate}
+This is bad. It means that if we rely on the standard \sRhat\ estimate, we incorrectly conclude that the chain is behaving well even when it is not.
+
+As we are often fitting models with large
+numbers of parameters, it is not realistic to expect to make and interpret
 trace plots such as in Figure \ref{converge.challenge} for all
-quantities of interest. We need numerical summaries that can flag
-potential problems. However, as we will show in this paper, the
-currently existing and widely applied convergence diagnostics have
-serious flaws under some conditions. We will thus propose improvements
-to these diagnostics.
+quantities of interest. Hence we need numerical summaries that can flag
+potential problems. 
+
+In this paper, we propose improvements of 
+\sRhat\ that overcome the two 
+problems described above. Furthermore, we show that the convergence
+of the Markov chain need not be uniform across the parameter space
+and propose a localized version of both \sRhat\ and an effective sample size 
+calculation that allow us to assess better the behaviour of localized 
+functionals of the chain. Finally, we propose three new methods to visualize the 
+convergence of an iterative algorithm that are more informative than standard 
+trace plots.
+
+
+  
+
+%
+%In practice we have two concerns:
+%
+%\begin{enumerate}
+%\item The chains may not have not mixed well, so that the simulations do not
+%represent the target distribution because they still retain the influence of
+%their history.
+%\item The effective sample size (number of effective simulation draws) is low,
+%possibly much less than the total number of draws across chains, because
+%of the dependence of consecutive draws (autocorrelation) within each chain.
+%\end{enumerate}
+%
+%These two issues are related. It is only possible to have a large number
+%of effective draws if the chains have mixed well. Figure
+%\ref{converge.challenge} illustrates two ways in which sequences of
+%iterative simulations can fail to mix. In the first example, two chains
+%are in different parts of the target distribution, in the second
+%example, the chains move but have not attained stationarity. Slow mixing can arise with multimodal target distributions or when a chain is
+%stuck in a region of high curvature with a step size too large to make an
+%acceptable proposal for the next step. The two examples in Figure \ref{converge.challenge}  make it clear that 
+%any method for assessing mixing and effective sample size should use information
+%between and within chains.
+%
+%\begin{figure}
+%\vspace{-.22\textwidth}
+%\centerline{\hspace{-.1\textwidth}
+%\includegraphics[width=0.98\textwidth]{graphics/convergechallenge1.pdf}
+%\hspace{-.5\textwidth}
+%\includegraphics[width=0.98\textwidth]{graphics/convergechallenge2.pdf}}
+%\vspace{-.22\textwidth}
+%\caption{\em Examples of two challenges in assessing convergence of iterative
+%simulations. (a) In the left plot, either sequence alone looks stable, but the
+%juxtaposition makes it clear that they have not converged to a common
+%distribution. (b) In the right plot, the two sequences happen to cover a common
+%distribution but neither sequence appears stationary. These graphs demonstrate
+%the need to use between-sequence and also within-sequence information when
+%assessing convergence. From Gelman et al. (2013).}
+%\label{converge.challenge}
+%\end{figure}
+%
+%The other relevant point is that we are often fitting models with large
+%numbers of parameters, so that it is not realistic to expect to make
+%trace plots such as in Figure \ref{converge.challenge} for all
+%quantities of interest. We need numerical summaries that can flag
+%potential problems. However, as we will show in this paper, the
+%currently existing and widely applied convergence diagnostics have
+%serious flaws under some conditions. We will thus propose improvements
+%to these diagnostics.
 
 \hypertarget{CD}{%
 \section{Convergence diagnostics for iterative algorithms}\label{CD}}
