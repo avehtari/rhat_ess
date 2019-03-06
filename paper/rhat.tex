@@ -123,14 +123,24 @@
 \newcommand{\sRhat}{split-$\widehat{R}$}
 \newtheorem{example}{Example}
 
- \title{$\widehat{R}$ does not work! Building better ways to assess the convergence of iterative algorithms}
+ \title{Rank-normalization, folding, and localization: A version of $\widehat{R}$ that successfully assesses the convergence of iterative simulation algorithms}
     \pretitle{\vspace{\droptitle}\centering\huge}
   \posttitle{\par}
     \author{Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul Bürkner}
+    
+    \author{
+Aki Vehtari\footnote{Helsinki Institute for Information Technology HIIT,
+  Department of Computer Science, Aalto University, Finland.},
+   Andrew Gelman\footnote{Department of Statistics, Columbia University, New York.},
+ Daniel Simpson\footnote{Department of Statistical Sciences, University of Toronto, Canada.},
+ Bob Carpenter$^{\dagger}$,
+and Paul B\"{u}rkner\footnote{Department of Psychology, University of M\"{u}nster, Germany}
+}
+    
     \preauthor{\centering\large\emph}
   \postauthor{\par}
-    \date{4 March 2019}
-    \predate{}\postdate{}
+%    \date{4 March 2019}
+%    \predate{}\postdate{}
 
 
 \begin{document}
@@ -141,12 +151,13 @@
   convergence behaviour of the chain lest poor computation bias our estimates.
 In this paper we show that the most commonly used convergence diagnostic \Rhat\ 
 of \citet{Gelman+Rubin:1992} has serious flaws and we
-show ways around them.  We also introduce
-  a version of $\widehat{R}$ which is more sensitive to scale
-  differences between chains, CDF and quantile based local efficiency
+propose an alternative that fixes them. We also introduce
+  a collection of quantile based local efficiency
   measures, and a practical approach for computing Monte Carlo error
   estimates for quantiles. We suggest that common trace plots should
-  be replaced with rank plots from multiple chains.
+  be replaced with rank plots from multiple chains. Finally, we give
+  concrete recommendations for how these methods should be used
+  in practice.
 \end{abstract}
 
 \hypertarget{introduction}{%
@@ -188,7 +199,7 @@ between and within chains.
 \hspace{-.5\textwidth}
 \includegraphics[width=0.98\textwidth]{graphics/convergechallenge2.pdf}}
 \vspace{-.22\textwidth}
-\caption{\em Examples of two challenges in assessing convergence of iterative
+\caption{ Examples of two challenges in assessing convergence of iterative
 simulations. (a) In the left plot, either sequence alone looks stable, but the
 juxtaposition makes it clear that they have not converged to a common
 distribution. (b) In the right plot, the two sequences happen to cover a common
@@ -239,9 +250,20 @@ The problem is that \Rhat\ and \sRhat\ do not reliably work when analyzing gener
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{graphics/simple_rhat_compare.png}
-\caption{ Caption. \label{fig:simple_example}}
+\caption{  The synthetic problem described in Example 1 demonstrates
+two modes of failure for the existing \sRhat\ estimator. Each plot shows
+histograms of \sRhat\ values over $1000$ replications of four chains each
+with a thousand draws. In the left column, one of these four chains was 
+incorrect. In the top left plot, one of the four chains had a variance that was too low.
+In the bottom left plot, one of the four chains was systematically biased. 
+In both cases, the traditional \sRhat\ estimate does not detect the poor
+behaviour, while the new value does. In the right column, all the chains are
+simulated with the same distribution. The chains used for the top row plots target 
+a normal distribution, while the chains used for the bottom row plots target
+a Cauchy distribution. \label{fig:simple_example}}
 \end{figure}
 \begin{example}
+
 Figure~\ref{fig:simple_example} shows the distribution of \sRhat\  values over $1000$ replications for four different scenarios where four chains are run for $1000$ iterations. The chains on the top row are independent AR(1) processes with autoregressive parameter $\rho=0.3$. The figure in the top left column reports the distribution of the \sRhat\ statistics  when the variance of one of the four chains is $1/3$ of the variance of the others. This corresponds to a scenario where one chain fails to correctly explore the parameter space. The \sRhat\ statistic defined in \citet{BDA3}  does not detect the poor mixing, while the new variant of \sRhat\ defined later in this paper does. The second column of the top row is the same scenario but with all the chains having the same variance and both \sRhat\ values correctly identify that mixing occurs.
 
 The second row of Figure~\ref{fig:simple_example} shows the behaviour of \sRhat\ when the target distribution has infinite variance. In this case the chains were constructed as a ratio of stationary AR(1) processes with autoregressive parameter  $\rho=0.3$, which makes the target distribution Cauchy.  All of the simulated chains have  unit scale parameter, but in the left hand column one of the four chains is shifted two  units to the right.  Whereas the \citet{BDA3} version of \sRhat\ would catch this behavior if the chain had finite variance, we can see here that it incorrectly returns a value very close to one. On the other hand, our new \sRhat\ statistic correctly catches the error. The bottom right column shows that both version of \sRhat\ work when the four chains have the same distribution. 
@@ -249,17 +271,24 @@ The second row of Figure~\ref{fig:simple_example} shows the behaviour of \sRhat\
 
 This example identifies two problems with \sRhat : 
 \begin{enumerate}
-\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$;
-\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others.
+\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$.
+\item If the the chains don't have finite variance, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others. This can also lead to numerical instability for thick-tailed distributions even if they technically have a finite (but large) mean. We note that it's typically very hard to assess empirically
+if a chain has large but finite variance or infinite variance.
 \end{enumerate}
-This is bad. It means that if we rely on the standard \sRhat\ estimate, we incorrectly conclude that the chain is behaving well even when it is not.
 
 
+A problem is that split-\(\widehat{R}\) and \(S_{\rm eff}\) are 
+usually computed only for the posterior mean. While this provides an estimate 
+for the efficiency in the bulk of the distribution, it says little about the 
+efficiencies in the tails, which is a concern for posterior 
+interval estimates as well as for inferences about rare events.
 
-
-In this paper, we propose improvements of 
-\sRhat\ that overcome the two 
-problems described above. Furthermore, we show that the convergence
+All of these observations lead to the conclusion that the \Rhat\ statistic as it is 
+currently defined is not a good measure of convergence. However, it is 
+easy to compute and sensitive to certain types of non-convergence. So 
+in this paper  we propose improvements of 
+\sRhat\ that overcome the  
+problems described above. Furthermore, as the convergence
 of the Markov chain need not be uniform across the parameter space
 and propose a localized version of both \sRhat\ and an effective sample size 
 calculation that allow us to assess better the behaviour of localized 
@@ -269,7 +298,84 @@ trace plots.
 
 The paper begins by reviewing the standard \sRhat\ and effective samples size calculations, before proposing improvements that repair the problems noted above. We then propose some localized diagnostics and some new diagnostic plots. Finally, we show the behavior of the new diagnostics on a variety of examples.
 
-  
+
+\subsection{Recommendations for practice}
+In this section we lay out our specific recommendations for using the tools 
+developed in this paper in practice. In the interest of specificity, we have provided
+numerical targets for both \Rhat\ and the effective sample size, however
+these values should be adapted as necessary for the given application.
+
+In Section \ref{improving-convergence-diagnostics}, we propose modifications to the 
+standard \Rhat\ estimator based on rank-normalizing (Section 
+\ref{rank-normalization}) and folding (Section
+ \ref{diagnostics-for-folded-draws}) the posterior draws.
+These allow us to produce a single number summary  that demonstrates how
+ robust estimators of the location and scale of the target distribution differs
+ between chains.  For simplicity, we still write this as \Rhat .
+ 
+ When there might be difficulties with mixing, it is important to use between-chain 
+ information in computing effective sample size. For instance, in the sorts of
+  funnel-shaped distributions that arise with hierarchical models, differences 
+  in step size adaptation can lead to chains to have
+different behavior reaching the narrow part of the funnel. In multimodal 
+distributions with well-separated modes, the split-\(\widehat{R}\)
+adjustment of the ESS leads to an ESS estimate the is close to the number of
+distinct modes that are found. In this situation, ESS computed on from a single
+chain will most likely overestimate the ESS.
+The robustness of a split-\(\widehat{R}\) adjusted
+ESS can be improved by running more chains and we recommend running at
+least four chains by default and
+ only using a sampler if  $\widehat{R} < 1.01$.  This is a much tighter threshold than 
+the one recommended by \citet{Gelman+Rubin:1992}, reflecting lessons learnt
+over more than 25 years of use.
+
+As \citet{vats2018revisiting} note, a small value of \Rhat\ is not enough to ensure 
+that a MCMC procedure is useful in practice. It also needs to have a sufficiently
+large number of effective samples. Rather than reducing the threshold for \Rhat\
+to indirectly ensure the number of effective samples, we recommend monitoring
+the Effective Sample Size (ESS) directly.  As with the value of \Rhat , we 
+recommend computing the ESS on the rank-normalized chain. This does not
+compute the ESS relevant for computing the mean of the parameter, but 
+instead computes a quantity that is well defined even if the chain does not 
+have finite mean or variance.  Specifically, it computes the ESS of samples 
+from a \emph{normalized} version of the parameter, that is the parameter 
+transformed to normality. This is still indicative of the number of effective 
+samples for computing means and, in particular, if it is low it is unlikely that
+the computed expectations will be good approximations to the actual
+target expectation.  
+
+The required  rank-normalized ESS can be ultimately decided based on how
+ the fitted model will be used. However, there are two reasons to look at
+the rank-normalized ESS before looking at the MCSE for the quantity of interest.
+ Firstly, the formula for rank-normalized ESS requires the estimation of means
+ and variances of the rank-normalized parameter. To ensure the stability of 
+ these calculations, we recommend requiring that the rank-normalized ESS is 
+ $>400$. When running four chains, this corresponds to having
+a rank-normalized effective sample size of at least 50 per split chain to be used
+for estimating means, variances and autocorrelations. 
+%To obtain
+%useful estimation accuracy in practice, ESS $> 100$ will often be sufficient. 
+%However, this would require that we know that \emph{actually} ESS $ > 100$ and 
+%we cannot be certain about that until we achieved a higher ESS estimate.
+
+Only when the rank-normalized and folded \Rhat\ values are less than the
+prescribed threshold and the rank-normalized ESS is $>400$ do we recommend
+computing the actual (ie not rank-normalize) effective sample size for the 
+quantity of interest. This can be used to assess the Monte Carlo standard
+error (MCSE) for the quantity of interest. Application specific information is needed to 
+assess if the MCSE is small enough to answer the question at hand.
+
+Finally, if you plan to report quantile estimates as well as mean estimates, we 
+strongly suggest assess the convergence of the chain for these quantiles.
+In Section \ref{convergence-diagnostics-for-quantiles} we show that
+convergence of Markov chains is not uniform across the parameter space
+and propose diagnostics and effective sample sizes specifically for extreme 
+quantiles. This is \emph{different} from the standard ESS estimate (which 
+we refer to as the ``bulk-ESS``), which mainly assesses how well
+the centre of the distribution is resolved. These ``tail-ESS`` measures
+allow the user to estimate the MCSE for interval estimates.
+
+
 
 %
 %In practice we have two concerns:
@@ -320,12 +426,13 @@ The paper begins by reviewing the standard \sRhat\ and effective samples size ca
 %serious flaws under some conditions. We will thus propose improvements
 %to these diagnostics.
 
-\hypertarget{CD}{%
-\section{Convergence diagnostics for iterative algorithms}\label{CD}}
 
 
 \hypertarget{SplitRhat}{%
-\subsection{Split-$\widehat{R}$}\label{SplitRhat}}
+\section{Split-$\widehat{R}$ and the effective sample size}\label{SplitRhat}}
+
+When coupled with an estimate of the Effective Sample Size (ESS), the  \sRhat\ is the most common way to  assess whether an MCMC algorithm has converged.  While there is a link between these two measures 
+for a single chain \citep{vats2018revisiting}, we prefer to treat them as two separate questions: ``Did the chain converge?'' and ``Do we have enough samples?''.  In this section we define the \sRhat\ statistic that we propose to modify. The definition of the ESS is given in Appendix~\ref{ESS}.
 
 
 The original \(\widehat{R}\) statistic
@@ -359,7 +466,6 @@ because it is based on the variance of the within-chain means,
 values \(\theta^{(nm)}\). We can estimate \(\mbox{var}(\theta | y)\),
 the marginal posterior variance of the estimand, by a weighted average
 of \(W\) and \(B\), namely,
-
 \begin{equation}
 \widehat{\mbox{var}}^+(\theta| y) = \frac{N-1}{N}W + \frac{1}{N}B.
 \end{equation}
@@ -371,14 +477,14 @@ overdispersed compared to the target distribution, but is
 distribution equals the target distribution), or in the limit
 \(N\rightarrow\infty\). To have an overdispersed starting distribution,
 independent Markov chains should be initialized with diffuse starting
-values for the parameters.
+values for the parameters. 
 
 Meanwhile, for any finite \(N\), the within-chain variance \(W\) should
 \emph{underestimate} \(\mbox{var}(\theta |y)\) because the
 individual chains haven't had the time to explore all of the target
 distribution and, as a result, will have less variability. In the limit
 as \(N\rightarrow\infty\), the expectation of \(W\) also approaches
-\(\mbox{var}(\theta |y)\).
+\(\mbox{var}(\theta |y)\). \citet{vats2018revisiting} propose a different variance estimator that is more efficient for single chains, however we are willing to trade off a slightly higher variance for the increase diagnostic sensitivity (described in the Introduction) that running multiple chains brings.
 
 We monitor convergence of the iterative simulations to the target
 distribution by estimating the factor by which the scale of the current
@@ -388,162 +494,48 @@ reduction is estimated as,
 \begin{equation}
 \widehat{R} = \sqrt{\frac{\widehat{\mbox{var}}^+(\theta | y)}{W}},
 \end{equation}
-
 which for an ergodic process declines to 1 as \(N\rightarrow\infty\). We call this
 split-\(\widehat{R}\) because we are applying it to chains that
 have been split in half so that \(M\) is twice the number of actual
 chains. Without splitting, \(\widehat{R}\) would get fooled by
 non-stationary chains as in Figure \ref{converge.challenge}b.
 
-Split-\(\widehat{R}\) is also well defined for
-sequences that are not Markov chains. However, for simplicity, we always
-refer to ``chains'' instead of more generally to ``sequences'' as the former
-is our primary use case for \(\widehat{R}\)-like measures.
+%Split-\(\widehat{R}\) is also well defined for
+%sequences that are not Markov chains. However, for simplicity, we always
+%refer to ``chains'' instead of more generally to ``sequences'' as the former
+%is our primary use case for \(\widehat{R}\)-like measures.
 
-\hypertarget{ESS}{%
-\subsection{Effective sample size}\label{ESS}}
 
-If the \(N\) simulation draws within each chain were truly independent,
-the between-chain variance \(B\) would be an unbiased estimate of the
-posterior variance, \(\mbox{var}(\theta | y)\), and we would have a
-total of \(S = MN\) independent simulations from the \(M\) chains. In
-general, however, the simulations of \(\theta\) within each chain will
-be autocorrelated, and thus \(B\) will be larger than
-\(\mbox{var}(\theta | y)\), in expectation.
 
-One way to define effective sample size for correlated simulation draws
-is to consider the statistical efficiency of the average of the
-simulations \(\bar{\theta}^{(..)}\) as an estimate of the posterior mean
-\(\mbox{E}(\theta | y)\). This also generalizes to posterior
-expectations of functionals of parameters \(\mbox{E}(g(\theta) | y)\).
-We return later to how to estimate the effective sample size of
-quantiles which cannot be presented as expectations. For simplification,
-in this section we consider the effective sample size for the posterior
-mean.
 
-The effective sample size of a chain is defined in terms of the
-autocorrelations within the chain at different lags. The autocorrelation
-\(\rho_t\) at lag \(t \geq 0\) for a chain with joint probability
-function \(p(\theta)\) with mean \(\mu\) and standard deviation \(\sigma\) is
-defined to be
 
-\begin{equation}
-\rho_t = \frac{1}{\sigma^2} \, \int_{\Theta} (\theta^{(n)} - \mu)
-(\theta^{(n+t)} - \mu) \, p(\theta) \, d \theta.
-\end{equation}
 
-This is just the correlation between the two chains offset by \(t\)
-positions. Because we know \(\theta^{(n)}\) and \(\theta^{(n+t)}\) have
-the same marginal distribution in an MCMC setting, multiplying the two
-difference terms and reducing yields
 
-\begin{equation}
-\rho_t = \frac{1}{\sigma^2} \, \int_{\Theta} \theta^{(n)} \, \theta^{(n+t)}
-\, p(\theta) \, d \theta.
-\end{equation}
 
-The effective sample size of one chain generated by a process with
-autocorrelations \(\rho_t\) is defined by
+%\hypertarget{problems-of-current-diagnostics}{%
+%\subsection{Problems with current
+%diagnostics}\label{problems-of-current-diagnostics}}
+%
+%There are two main problems with the diagnostics as described so far, which we
+%will highlight below and illustrate in detail in Section \ref{examples} as well 
+%as in the online appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}. For each problem, we propose possible solutions 
+%that, together, will result in a new set of convergence diagnostics and 
+%recommendations for reasonable criteria to determine (non-)convergence.
+%
+%The first problem is that split-\(\widehat{R}\) and \(S_{\rm eff}\)
+%are well defined only if the marginal distribution of the quantity of interest has finite 
+%mean and variance, which is not necessarily the case and may not even be immediately
+%clear based on the obtained posterior draws. Split-\(\widehat{R}\) and 
+%\(S_{\rm eff}\) can also be unstable when the mean and variance are 
+%finite if the marginal distribution has thick tails. 
 
-\begin{equation}
-N_{\rm eff} \ = \
-\frac{N}{\sum_{t = -\infty}^{\infty} \rho_t} \ = \
-\frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
-\end{equation}
-
-The effective sample size \(N_{\rm eff}\) can be larger than \(N\) in case
-of antithetic Markov chains, which have negative autocorrelations on odd
-lags. The dynamic Hamiltonian Monte Carlo algorithms used in Stan
-\citep{Hoffman+Gelman:2014, betancourt2017conceptual} can produce
-\(N_{\rm eff}>N\) for parameters with a close to Gaussian posterior (in
-the unconstrained space) and low dependence on the other parameters.
-
-In practice, the probability function in question cannot be tractably
-integrated and thus neither autocorrelation nor the effective sample
-size can be directly calculated. Instead, these quantities must be estimated from
-the samples themselves. The rest of this section describes an
-autocorrelation and split-\(\widehat{R}\) based effective sample size
-estimator, based on multiple split chains. For simplicity, each chain
-will be assumed to be of the same length \(N\).
-
-Computations of autocorrelations for all lags simultaneously can be done
-via the fast Fourier transform algorithm \citep[FFT; see][]{Geyer:2011}. The autocorrelation estimates \(\hat{\rho}_{t,m}\)
-at lag \(t\) from multiple chains \(m \in (1,\ldots,M)\) are combined
-with the within-chain variance estimate \(W\) and the multi-chain
-variance estimate \(\widehat{\mbox{var}}^{+}\) introduced above to
-compute the combined autocorrelation at lag \(t\) as,
-
-\begin{equation}
-\hat{\rho}_t
-= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M 
-\hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
-\end{equation}
-
-If the chains have not converged, the variance estimator
-\(\widehat{\mbox{var}}^{+}\) will overestimate the true marginal
-variance which leads to an overestimation of the autocorrelation and an
-underestimation of the effective sample size.
-
-Because of noise in the correlation estimates \(\hat{\rho}_t\) increases
-as \(t\) increases, typically the truncated sum of \(\hat{\rho}_t\) is
-used. Negative autocorrelations can happen only on odd lags and by
-summing over pairs starting from lag \(t=0\), the paired autocorrelation
-is guaranteed to be positive, monotone and convex modulo estimator noise
-\citep{Geyer:1992, Geyer:2011}. The effective sample size of combined
-chains is then defined as,
-
-\begin{equation}
-S_{\rm eff} = \frac{N \, M}{\hat{\tau}},
-\end{equation} where \begin{equation}
-\hat{\tau} = 1 + 2 \sum_{t=1}^{2k+1} \hat{\rho}_t = 
--1 + 2 \sum_{t'=0}^{k} \hat{P}_{t'},
-\end{equation}
-
-and \(\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}\). The initial
-positive sequence estimator is obtained by choosing the largest \(k\)
-such that \(\hat{P}_{t'}>0\) for all \(t' = 1,\ldots,k\). The initial
-monotone sequence estimator is obtained by further reducing
-\(\hat{P}_{t'}\) to the minimum of the preceding values so that the
-estimated sequence becomes monotone.
-
-The effective sample size \(S_{\rm eff}\) described here is different
-from similar formulas in the literature in that we use multiple chains
-and between-chain variance in the computation, which typically gives us
-more conservative claims (lower values of \(S_{\rm eff}\)) compared to
-single chain estimates, especially when mixing of the chains is poor. If
-the chains are not mixing at all (e.g., if the posterior is multimodal and
-the chains are stuck in different modes), then our \(S_{\rm eff}\) is
-close to the number of chains.
-
-\hypertarget{problems-of-current-diagnostics}{%
-\subsection{Problems with current
-diagnostics}\label{problems-of-current-diagnostics}}
-
-There are two main problems with the diagnostics as described so far, which we
-will highlight below and illustrate in detail in Section \ref{examples} as well 
-as in the online appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}. For each problem, we propose possible solutions 
-that, together, will result in a new set of convergence diagnostics and 
-recommendations for reasonable criteria to determine (non-)convergence.
-
-The first problem is that split-\(\widehat{R}\) and \(S_{\rm eff}\)
-are well defined only if the marginal distribution of the quantity of interest has finite 
-mean and variance, which is not necessarily the case and may not even be immediately
-clear based on the obtained posterior draws. Split-\(\widehat{R}\) and 
-\(S_{\rm eff}\) can also be unstable when the mean and variance are 
-finite if the marginal distribution has thick tails. 
-
-The second problem is that split-\(\widehat{R}\) and \(S_{\rm eff}\) are 
-usually computed only for the posterior mean. While this provides an estimate 
-for the efficiency in the bulk of the distribution, it says little about the 
-efficiencies in the tails, which is a concern for posterior 
-interval estimates as well as for inferences about rare events.
 
 \hypertarget{improving-convergence-diagnostics}{%
 \section{Improving convergence
 diagnostics}\label{improving-convergence-diagnostics}}
 
 \hypertarget{rank-normalization}{%
-\subsection{Rank normalization}\label{rank-normalization}}
+\subsection{Rank normalization helps  \Rhat\ when there are heavy tails}\label{rank-normalization}}
 
 As split-\(\widehat{R}\) and \(S_{\rm eff}\) are well defined
 only if the marginal posteriors have finite mean and variance, we
@@ -551,14 +543,14 @@ propose to use rank normalized parameter values instead of the actual
 parameter values for the purpose of diagnosing convergence.
 
 Rank normalized split-\(\widehat{R}\) and \(S_{\rm eff}\) are
-computed using the equations in Section \ref{CD}, but
+computed using the equations in Section \ref{SplitRhat} and Appendix \ref{ESS}, but
 replacing the original parameter values \(\theta^{(nm)}\) with their
 corresponding rank normalized values denoted as \(z^{(nm)}\). Rank
 normalization is done a follows: First, replace each value
-\(\theta^{(nm)}\) by its rank \(r^{(nm)}\). Average rank for ties are
+\(\theta^{(nm)}\) by its rank \(r^{(nm)}\) within the pooled draws from all chains.
+ Average rank for ties are
 used to conserve the number of unique values of discrete quantities.
-Ranks are computed jointly for all draws from all chains. Second,
-normalize ranks via the inverse normal transformation,
+ Second, normalize ranks via the inverse normal transformation,
 \begin{equation}
 z^{(nm)} = \Phi^{-1}((r^{(nm)}-0.5)/S).
 \end{equation}
@@ -567,8 +559,10 @@ For continuous variables and \(S \rightarrow \infty\), the rank
 normalized values are normally distributed. Using normalized ranks
 \(z^{(nm)}\) instead of ranks \(r^{(nm)}\) themselves has the additional
 benefit that the behavior of \(\widehat{R}\) and \(S_{\rm eff}\) do
-not change for normally distributed parameters.
-See online appendix for illustration of rank normalization.
+not change for normally distributed parameters.  Furthermore, rank-normalized \Rhat\ and \(S_{\rm eff}\) are invariant to univariate transformations. Hence    
+rank-normalized \Rhat\ and \(S_{\rm eff}\) are approximations to the ordinary \Rhat\ and \(S_{\rm eff}\) for a nice transformation of the parameter of interest.
+
+Rank normalization is further explored in the online appendix.
 
 We will use the term \emph{bulk effective sample size} (bulk-ESS or
 bulk-\(S_{\rm eff}\)) to refer to the effective sample size based on the
@@ -582,37 +576,41 @@ the issue of computing Monte Carlo standard errors for relevant
 quantities in Section \ref{mcse}.
 
 \hypertarget{diagnostics-for-folded-draws}{%
-\subsection{Diagnostics for folded
-draws}\label{diagnostics-for-folded-draws}}
+\subsection{Folding chains detects errors in variance and trouble exploring the tails}\label{diagnostics-for-folded-draws}}
+
 
 Both original and rank normalized split-\(\widehat{R}\) can be
-fooled if the chains have the same location but different scales, which can happen if one or more chains is stuck near the middle of the distribution. To alleviate this problem, we propose to compute a
+fooled if the chains have the same location but different scales. This
+can happen if one or more chains is stuck near the middle of the distribution. 
+To alleviate this problem, we propose a
 rank normalized split-\(\widehat{R}\) statistic not only for the
 original draws \(\theta^{(nm)}\), but also for the corresponding {\em folded}
 draws \(\zeta^{(mn)}\), absolute deviations from the median,
 \begin{equation}
 \label{zeta}
-\zeta^{(mn)} = {\rm abs}(\theta^{(nm)}-{\rm median}(\theta)).
+\zeta^{(mn)} = \left|\theta^{(nm)}-{\rm median}(\theta)\right|.
 \end{equation}
 
-We label as \emph{folded-split}-\(\widehat{R}\) the rank normalized split-\(\widehat{R}\) measure computed on the
-basis of \(\zeta^{(mn)}\). It measures convergence in the
+We call the rank normalized split-\(\widehat{R}\) measure computed on the
+ \(\zeta^{(mn)}\) values  \emph{folded-split}-\(\widehat{R}\).
+  This measures convergence in the
 tails rather than in the bulk of the distribution. To obtain a single
 conservative \(\widehat{R}\) estimate, we propose to report the maximum
 of rank normalized split-\(\widehat{R}\) and rank normalized
 folded-split-\(\widehat{R}\) for each parameter.
 
 \hypertarget{convergence-diagnostics-for-quantiles}{%
-\subsection{Convergence diagnostics for
-quantiles}\label{convergence-diagnostics-for-quantiles}}
+\subsection{Localizing convergence diagnostics: assessing the quality of quantiles, the median absolute deviation, and small-interval probabilities }\label{convergence-diagnostics-for-quantiles}}
 
 The new \(\widehat{R}\) and bulk-ESS introduced above are useful as overall efficiency
 measures. Next we introduce
-convergence diagnostics for quantiles and related quantities, which are more focused measures and help to diagnose reliability of often reported
+convergence diagnostics for quantiles and related quantities, which are more focused measures and help to diagnose reliability of  reported
 posterior intervals. Estimating
 the efficiency of quantile estimates has a high practical
 relevance in particular as we observe the efficiency for tail quantiles
-to often be lower than for the mean or median.
+to often be lower than for the mean or median.  This especially has implications
+if people are making decisions based on whether or not a specific quantile
+is below or above a fixed value (for example, if a credible interval contains zero).
 
 The \(\alpha\)-quantile
 is defined as the parameter value \(\theta_\alpha\) for which
@@ -632,7 +630,7 @@ probability,
 p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
 I(\theta^{(s)} \leq\theta_\alpha),
 \end{equation}
-where \(I()\) is the indicator function. The indicator function
+where \(I(\cdot)\) is the indicator function. The indicator function
 transforms simulation draws to 0's and 1's, and thus the subsequent
 computations are bijectively invariant. Efficiency estimates of the ECDF
 at any \(\theta_\alpha\) can now be obtained by applying
@@ -645,7 +643,7 @@ the delta method to compute a variance estimate for
 \(F^{-1}(\bar{I}_\alpha)\). Although we don't usually know \(F\), the
 delta method approach reveals that the variance of \(\bar{I}_\alpha\)
 for some \(\theta_\alpha\) is scaled by the (usually unknown) density
-\(f(\theta_\alpha)\), but the efficiency depends only on the efficiency
+\(f(\theta_\alpha)\), but the efficiency depends only on the ratio of variances, which means that the efficiency of \(F^{-1}(\bar{I}_\alpha)\) is well approximated asymptotically by the  efficiency
 of \(\bar{I}_\alpha\). Thus, we can use the effective sample size for
 the ECDF (computed using the indicator function
 \(I(\theta^{(s)} \leq \theta_\alpha)\)) also for the corresponding
@@ -659,16 +657,14 @@ sample sizes of the 5\% and 95\% quantiles, which we will call
 Tail-ESS can help diagnosing problems due to different scales of the
 chains (see Appendix).
 
-% TODO: I (Paul) think we need to justify shortly why we compute ``tail-Rhat''
-% (i.e., \emph{folded-split}-\(\widehat{R}\)) based on the folded draws,
-% but tail-ESS based on tail quantiles.
 
-\hypertarget{efficiency-estimates-for-the-median-absolute-deviation}{%
-\subsection{Efficiency estimates for the median absolute
-deviation}\label{efficiency-estimates-for-the-median-absolute-deviation}}
+% 
+%\hypertarget{efficiency-estimates-for-the-median-absolute-deviation}{%
+%\subsection{Efficiency estimates for the median absolute
+%deviation}\label{efficiency-estimates-for-the-median-absolute-deviation}}
 
 Since the marginal posterior distributions might not have finite mean
-and variance, by default rstan \citep{RStan.2.17} and rstanarm
+and variance, by default \texttt{rstan} \citep{RStan.2.17} and \texttt{rstanarm}
 \citep{RStanARM.2.17} report median and median absolute deviation (MAD)
 instead of mean and standard error. Median and MAD are well defined
 even when the marginal distribution does not have finite mean and
@@ -687,9 +683,9 @@ where \(\zeta_{0.5}\) is the median of the folded values. The efficiency estimat
 approach as for the median (and other quantiles) but with the folded
 parameters values.
 
-\hypertarget{small_interval_S_eff}{%
-\subsection{Efficiency estimates for small interval probability
-estimates}\label{small_interval_S_eff}}
+%\hypertarget{small_interval_S_eff}{%
+%\subsection{Efficiency estimates for small interval probability
+%estimates}\label{small_interval_S_eff}}
 
 We can get more local efficiency estimates by considering small
 probability intervals. We propose to compute the efficiency estimates
@@ -713,7 +709,7 @@ distribution.
 It is common practice to only report the Monte Carlo error of the mean,
 but not of quantiles and related quantities. As the delta method for
 computing the variance would require explicit knowledge of the
-normalized posterior density, which we don't have in most non-trivial
+normalized posterior density, which we don't have except in most non-trivial
 cases, we propose the following alternative approach to compute Monte
 Carlo standard errors of quantiles:
 
@@ -732,52 +728,11 @@ Carlo standard errors of quantiles:
   \(s = {\rm round(Q \times S)}\).
 \item
   Use the corresponding \(\theta^{(s)}\) from the list of sorted
-  posterior draws as quantiles from the error distribution. These
-  quantiles can be used to approximate the Monte Carlo standard error of quantiles.
+  posterior draws as quantiles from the error distribution. 
 \end{enumerate}
 
 
-\subsection{Interpreting split-$\widehat{R}$}\label{warning-thresholds}
 
-The ultimate focus should be on the accuracy of the estimate for the
-quantity of interest. This accuracy can be measured using the Monte Carlo
-standard error (MCSE) or a corresponding uncertainty interval. The MCSE estimate is 
-obtained based on the marginal posterior of the quantity and adjusted using the effective sample size,
-which in turn is based on split-\(\widehat{R}\) and the autocorrelation
-of the chains. There is no general rule that determines an acceptable value 
-for the MCSE. Instead, this will necessarily depend on the quantity of interest 
-and the context of application.
-
-When there might be difficulties with mixing, it is important to use between-chain information in computing effective sample size. For instance, in the sorts of funnel-shaped distributions that arise with hierarchical models, differences in step size adaptation can lead to chains to have
-different behavior reaching the narrow part of the funnel. In multimodal distributions with well-separated modes, the split-\(\widehat{R}\)
-adjustment of the ESS leads to an ESS estimate the is close to the number of
-distinct modes that are found. If were to run only a single chain and 
-computed the effective sample size only based on autocorrelations, it would be highly
-overestimated in such cases. The robustness of a split-\(\widehat{R}\) adjusted
-ESS can be improved by running more chains and we recommend running at
-least four chains by default. As a generic ad hoc rule based on the
-simulations we recommend to aim for split-\(\widehat{R} < 1.01\) for all quantities of interest.
-
-The required ESS can be ultimately decided based on how the fitted model will be used. However, there are two reasons to look at
-the ESS before looking at the MCSE. Firstly, the computation of
-split-\(\widehat{R}\) and autocorrelations needed for ESS
-itself require estimating means and variances, and in order to get
-reliable convergence and ESS estimates, we recommend to aim for
-ESS $>400$. When running four chains, this corresponds to having
-an effective sample size of at least 50 per split chain to be used
-for estimating means, variances and autocorrelations. To obtain
-useful estimation accuracy in practice, ESS $> 100$ will often be sufficient. 
-However, this would require that we know that \emph{actually} ESS $ > 100$ and 
-we cannot be certain about that until we achieved a higher ESS estimate.
-Secondly, effective sample sizes for different parameters are on the
-same scale, and thus it is easier to see which part of the model might
-have sampling problems.
-
-After checking that split-\(\widehat{R}\) and ESS fulfill the
-above ad hoc requirements, we recommend to take into account the
-application-specific requirements for the accuracy of the quantity of
-interest and check that MCSE is low enough. Otherwise, running longer chains
-or reparameterizing the model may be necessary.
 
 % Based on the experiments presented in
 % \protect\hyperlink{AppendixD}{Appendices D-F}, more strict convergence
@@ -818,9 +773,12 @@ these visualizations by means of several examples in Section
 \paragraph{Rank plots.}\label{rank-plots}}
 Extending the idea of using ranks instead of the original parameter
 values, we propose to use rank plots for each chain instead
-of trace plots. Rank plots are nothing else than histograms of the
+of trace plots. Rank plots are histograms of the
 ranked posterior samples (ranked over all chains) plotted separately for
-each chain. If rank plots of all chains look similar, this indicates
+each chain. If all of the chains are targeting the same posterior, we expect the 
+ranks in each chain to be uniform, whereas if one chain has a different location
+or scale parameter, this will be reflected in the deviation from uniformity. 
+ If rank plots of all chains look similar, this indicates
 good mixing of the chains. As compared to trace plots, rank plots don't
 tend to squeeze to a fuzzy mess in case of long chains.
 
@@ -858,9 +816,9 @@ small.
 
 In this section, we will go through some examples to demonstrate the
 usefulness of our proposed methods as well as the associated workflow
-in determining convergence. The online appendix contains all model
+for determining convergence. The online appendix contains all model
 details, code to reproduce the results and more detailed analysis of
-different algorithm variants and further
+different algorithm variants, and further
 examples\footnote{\url{https://avehtari.github.io/rhat_ess/rhat_ess.html}}.
 
 Unless mentioned otherwise, we use dynamic Hamiltonian Monte Carlo with
@@ -982,7 +940,7 @@ We can further analyze potential problems using local efficiency and
 rank plots. We specifically investigate \(x_{36}\), which, in this
 specific run, had the smallest tail-ESS of 34. 
 Figure~\ref{fig:local-ess-fit-nom-1} shows the local efficiency of small 
-interval probability estimates (see Section \ref{small_interval_S_eff}).
+interval probability estimates (see Section \ref{convergence-diagnostics-for-quantiles}).
 The efficiency of sampling is very low in the tails, which is clearly
 caused by slow mixing in long tails of the Cauchy distribution.  
 %
@@ -1245,10 +1203,10 @@ the sampling is much faster.
 % split chains (at convergence, Rhat = 1).
 % \end{verbatim}
 
-All split-\(\widehat{R}<1.01\) and ESS \(>400\) indicate that
-sampling worked much better with the alternative parameterization.
+For all parameters, the split-\(\widehat{R}\) was less than \(1.01\) and ESS was \(>400\) ,indicating that
+sampling worked much better with this alternative parameterization.
 The online appendix contains more results using other parameterizations 
-of the cauchy distribution. The vectors \(a\) and \(b\) used
+of the Cauchy distribution. The vectors \(a\) and \(b\) used
 to form the Cauchy distributed \(x\) have stable quantile, mean and
 variance values. As \(x\) is Cauchy distributed it has stable
 quantiles, but wildly varying mean and variance estimates as the true values
@@ -1397,14 +1355,14 @@ hierarchical models. We can parameterize this simple model
 in at least two ways. The centered parameterization looks as follows:
 \begin{align*}
 \theta_j &\sim \text{normal}(\mu, \tau) \\
-y_j &\sim \text{normal}(\theta_j, \sigma)
+y_j &\sim \text{normal}(\theta_j, \sigma_j)
 \end{align*}
 
 In contrast, the non-centered parameterization can be written as:
 \begin{align*}
 \tilde{\theta}_j &\sim \text{normal}(0, 1) \\
 \theta_j &= \mu + \tau \tilde{\theta}_j \\
-y_j &\sim \text{normal}(\theta_j, \sigma)
+y_j &\sim \text{normal}(\theta_j, \sigma_j)
 \end{align*}
 
 In both parameterizations, $\theta_j$ are the school specific means,
@@ -1448,10 +1406,13 @@ of problems in exploring small values.
 
 Figure~\ref{fig:change-ess-fit-cp-1} shows how the estimated effective
 sample sizes change when we use more and more draws. Here we do not
-see sudden changes, but both bulk-ESS and tail-ESS are consistenly low. 
+see sudden changes, but both bulk-ESS and tail-ESS are consistently low. 
 In line with the other findings, rank plots of $\tau$ displayed in
 Figure~\ref{fig:hist-fit-cp-1} clearly show problems in the mixing of
-the chains. Results for longer chains are provided in the online appendix.
+the chains.  In particular, the rank plot for the first chain indicates that it was unable to 
+explore the lower-end of the posterior range, while the spike in the rank plot 
+for chain 2 indicates that it spent too much time stuck in these values.
+  Results for longer chains are provided in the online appendix.
 
 % \begin{verbatim}
 % Inference for the input samples (4 chains: each with iter = 2000; warmup = 1000):
@@ -1657,13 +1618,137 @@ show no substantial differences between chains.
 % \section{Discussion}\label{discussion}}
 
 % Add discussion here
+%
+%\hypertarget{appendices}{%
+%\section*{Appendices}\label{appendices}}
+%\addcontentsline{toc}{section}{Appendices}
+%
 
-\hypertarget{appendices}{%
-\section*{Appendices}\label{appendices}}
-\addcontentsline{toc}{section}{Appendices}
 
-More results and code available in online
-appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}.
+
+
+
+\hypertarget{refs}{}
+
+\bibliography{rhat}
+
+\newpage
+\hypertarget{ESS}{%
+\subsection*{Appendix A: Computing the effective sample size}\label{ESS}}
+
+If the \(N\) simulation draws within each chain were truly independent,
+the between-chain variance \(B\) would be an unbiased estimate of the
+posterior variance, \(\mbox{var}(\theta | y)\), and we would have a
+total of \(S = MN\) independent simulations from the \(M\) chains. In
+general, however, the simulations of \(\theta\) within each chain will
+be autocorrelated, and thus \(B\) will be larger than
+\(\mbox{var}(\theta | y)\), in expectation.
+
+One way to define effective sample size for correlated simulation draws
+is to consider the statistical efficiency of the average of the
+simulations \(\bar{\theta}^{(..)}\) as an estimate of the posterior mean
+\(\mbox{E}(\theta | y)\). This also generalizes to posterior
+expectations of functionals of parameters \(\mbox{E}(g(\theta) | y)\).
+Section \ref{convergence-diagnostics-for-quantiles} deals with 
+estimating the effective sample size of
+quantiles, which cannot be presented as expectations. For simplification,
+in this section we consider the effective sample size for the posterior
+mean.
+
+The effective sample size of a chain is defined in terms of the
+autocorrelations within the chain at different lags. The autocorrelation
+\(\rho_t\) at lag \(t \geq 0\) for a chain with joint probability
+function \(p(\theta)\) with mean \(\mu\) and standard deviation \(\sigma\) is
+defined to be
+
+\begin{equation}
+\rho_t = \frac{1}{\sigma^2} \, \int_{\Theta} (\theta^{(n)} - \mu)
+(\theta^{(n+t)} - \mu) \, p(\theta) \, d \theta.
+\end{equation}
+
+This is just the correlation between the two chains offset by \(t\)
+positions. Because we know \(\theta^{(n)}\) and \(\theta^{(n+t)}\) have
+the same marginal distribution in an MCMC setting, multiplying the two
+difference terms and reducing yields
+
+\begin{equation}
+\rho_t = \frac{1}{\sigma^2} \, \int_{\Theta} \theta^{(n)} \, \theta^{(n+t)}
+\, p(\theta) \, d \theta.
+\end{equation}
+
+The effective sample size of one chain generated by a process with
+autocorrelations \(\rho_t\) is defined by
+
+\begin{equation}
+N_{\rm eff} \ = \
+\frac{N}{\sum_{t = -\infty}^{\infty} \rho_t} \ = \
+\frac{N}{1 + 2 \sum_{t = 1}^{\infty} \rho_t}.
+\end{equation}
+
+The effective sample size \(N_{\rm eff}\) can be larger than \(N\) in case
+of antithetic Markov chains, which have negative autocorrelations on odd
+lags. The dynamic Hamiltonian Monte Carlo algorithms used in Stan
+\citep{Hoffman+Gelman:2014, betancourt2017conceptual} can produce
+\(N_{\rm eff}>N\) for parameters with a close to Gaussian posterior (in
+the unconstrained space) and low dependence on the other parameters.
+
+In practice, the probability function in question cannot be tractably
+integrated and thus neither autocorrelation nor the effective sample
+size can be directly calculated. Instead, these quantities must be estimated from
+the samples themselves. The rest of this section describes an
+autocorrelation and split-\(\widehat{R}\) based effective sample size
+estimator, based on multiple split chains. For simplicity, each chain
+will be assumed to be of the same length \(N\).
+
+Computations of autocorrelations for all lags simultaneously can be done
+via the fast Fourier transform algorithm \citep[FFT; see][]{Geyer:2011}. The autocorrelation estimates \(\hat{\rho}_{t,m}\)
+at lag \(t\) from multiple chains \(m \in (1,\ldots,M)\) are combined
+with the within-chain variance estimate \(W\) and the multi-chain
+variance estimate \(\widehat{\mbox{var}}^{+}\) introduced above to
+compute the combined autocorrelation at lag \(t\) as,
+
+\begin{equation}
+\hat{\rho}_t
+= 1 - \frac{\displaystyle W - \textstyle \frac{1}{M}\sum_{m=1}^M 
+\hat{\rho}_{t,j}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+\end{equation}
+
+If the chains have not converged, the variance estimator
+\(\widehat{\mbox{var}}^{+}\) will overestimate the true marginal
+variance which leads to an overestimation of the autocorrelation and an
+underestimation of the effective sample size.
+
+Because of noise in the correlation estimates \(\hat{\rho}_t\) increases
+as \(t\) increases, typically the truncated sum of \(\hat{\rho}_t\) is
+used. Negative autocorrelations can happen only on odd lags and by
+summing over pairs starting from lag \(t=0\), the paired autocorrelation
+is guaranteed to be positive, monotone and convex modulo estimator noise
+\citep{Geyer:1992, Geyer:2011}. The effective sample size of combined
+chains is then defined as,
+
+\begin{equation}
+S_{\rm eff} = \frac{N \, M}{\hat{\tau}},
+\end{equation} where \begin{equation}
+\hat{\tau} = 1 + 2 \sum_{t=1}^{2k+1} \hat{\rho}_t = 
+-1 + 2 \sum_{t'=0}^{k} \hat{P}_{t'},
+\end{equation}
+
+and \(\hat{P}_{t'}=\hat{\rho}_{2t'}+\hat{\rho}_{2t'+1}\). The initial
+positive sequence estimator is obtained by choosing the largest \(k\)
+such that \(\hat{P}_{t'}>0\) for all \(t' = 1,\ldots,k\). The initial
+monotone sequence estimator is obtained by further reducing
+\(\hat{P}_{t'}\) to the minimum of the preceding values so that the
+estimated sequence becomes monotone.
+
+The effective sample size \(S_{\rm eff}\) described here is different
+from similar formulas in the literature in that we use multiple chains
+and between-chain variance in the computation, which typically gives us
+more conservative claims (lower values of \(S_{\rm eff}\)) compared to
+single chain estimates, especially when mixing of the chains is poor. If
+the chains are not mixing at all (e.g., if the posterior is multimodal and
+the chains are stuck in different modes), then our \(S_{\rm eff}\) is
+close to the number of chains.
+
 
 % \hypertarget{AppendixA}{%
 % \subsection*{Appendix A: Abbreviations}\label{AppendixA}}
@@ -1861,9 +1946,9 @@ appendix\footnote{\url{https://avehtari.github.io/rhat_ess/}}.
 % \FloatBarrier
 
 \hypertarget{AppendixD}{%
-\subsection*{Appendix A: Normal distributions with additional trend,
+\subsection*{Appendix B: Normal distributions with additional trend,
 shift or scaling}\label{AppendixD}}
-\addcontentsline{toc}{subsection}{Appendix D: Normal distributions with
+\addcontentsline{toc}{subsection}{Appendix B: Normal distributions with
 additional trend, shift or scaling}
 
 Here we demonstrate the behavior of non-split-\(\widehat{R}\),
@@ -2058,9 +2143,9 @@ folded-split-\(\widehat{R} = 1.06\), the rank plots clearly show that
 the first chain behaves differently.
 
 \hypertarget{AppendixE}{%
-\subsection*{Appendix B: Cauchy: A distribution with infinite mean and
+\subsection*{Appendix C: Cauchy: A distribution with infinite mean and
 variance}\label{AppendixE}}
-\addcontentsline{toc}{subsection}{Appendix E: Cauchy: A distribution
+\addcontentsline{toc}{subsection}{Appendix c: Cauchy: A distribution
 with infinite mean and variance}
 
 Here we provide some additional results for the the nominal Cauchy
@@ -3321,9 +3406,9 @@ interest.
 % if other diagnostics indicate convergence problems!
 
 \hypertarget{a-centered-eight-schools-model-1}{%
-\subsection*{Appendic C: A centered eight schools model with very long chains and
+\subsection*{Appendix D: A centered eight schools model with very long chains and
 thinning}\label{a-centered-eight-schools-model-1}}
-\addcontentsline{toc}{subsection}{A centered eight schools model}
+\addcontentsline{toc}{subsection}{Appendix D: A centered eight schools model}
 
 % \hypertarget{centered-parameterization-with-very-long-chains-and-thinning}{%
 % \paragraph{Centered parameterization with very long chains and
@@ -3643,8 +3728,8 @@ are still able to show the problem.
 % adjust our model to achieve trustworthy inference.
 
 \hypertarget{eight-schools-with-jags}{%
-\subsection*{Appendix D: A centered eight schools model fit using a Gibbs sampler}\label{eight-schools-with-jags}}
-\addcontentsline{toc}{subsection}{Eight Schools with Jags}
+\subsection*{Appendix E: A centered eight schools model fit using a Gibbs sampler}\label{eight-schools-with-jags}}
+\addcontentsline{toc}{subsection}{Appendix E: Eight Schools with Jags}
 
 So far, we have run all models in Stan, but here we demonstrate that
 these diagnostics are useful also sampler other than 
@@ -4180,11 +4265,6 @@ sampling with more efficient non-centered parameterization.
 % sample size of \texttt{lp\_\_} can also indicate problems of sampling in
 % the tails.
 
-\newpage
-
-\hypertarget{refs}{}
-
-\bibliography{rhat}
 
 
 \end{document}

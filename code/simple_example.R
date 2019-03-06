@@ -1,8 +1,9 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-source('~/Documents/rhat/code/monitornew.R')
 
+source('~/Documents/rhat/code/monitornew.R')
+set.seed(666)
 nreps = 1000
 nchains=4;
 niter = 1000;
@@ -44,7 +45,16 @@ for (rep in 1:nreps) {
 
 Rhat %>% ggplot(aes(rhat,colour=version, fill=version)) + 
   geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) +
-  theme_minimal() + theme(strip.text = element_text(size=16),axis.title = element_text(size=16), axis.text = element_text(size=16))
+  theme_minimal() + 
+  theme(strip.text = element_text(size=16),axis.title = element_text(size=16), 
+        axis.text = element_text(size=16),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=16),
+        axis.title.x = element_text(size=16)) +
+  scale_fill_discrete(name=paste("Version of Rhat"),
+                      breaks=c("new", "old"),
+                      labels=c("This paper","Gelman et al. (2013)")) +
+  guides(colour=FALSE) + labs(y="", x="Rhat")
 ggsave(file="simple_rhat_compare.png",width=12, height = 7.5, units="in")
 Rhat %>% ggplot(aes(neff,colour=version, fill=version)) + geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) + theme_minimal() + theme(strip.text = element_text(size=16),axis.title = element_text(size=16), axis.text = element_text(size=16)) 
 ggsave(file="simple_neff_compare.png",width=12, height = 7.5, units="in")
