@@ -244,13 +244,13 @@ The problem is that \Rhat\ and \sRhat\ do not reliably work when analyzing gener
 \begin{example}
 Figure~\ref{fig:simple_example} shows the distribution of \sRhat\  values over $1000$ replications for four different scenarios where four chains are run for $1000$ iterations. The chains on the top row are independent AR(1) processes with autoregressive parameter $\rho=0.3$. The figure in the top left column reports the distribution of the \sRhat\ statistics  when the variance of one of the four chains is $1/3$ of the variance of the others. This corresponds to a scenario where one chain fails to correctly explore the parameter space. The \sRhat\ statistic defined in \citet{BDA3}  does not detect the poor mixing, while the new variant of \sRhat\ defined later in this paper does. The second column of the top row is the same scenario but with all the chains having the same variance and both \sRhat\ values correctly identify that mixing occurs.
 
-
+The second row of Figure~\ref{fig:simple_example} shows the behaviour of \sRhat\ when the target distribution has infinite variance. In this case the chains were constructed as a ratio of stationary AR(1) processes with autoregressive parameter  $\rho=0.3$, which makes the target distribution Cauchy.  All of the simulated chains have  unit scale parameter, but in the left hand column one of the four chains is shifted two  units to the right.  Whereas the \citet{BDA3} version of \sRhat\ would catch this behavior if the chain had finite variance, we can see here that it incorrectly returns a value very close to one. On the other hand, our new \sRhat\ statistic correctly catches the error. The bottom right column shows that both version of \sRhat\ work when the four chains have the same distribution. 
 \end{example}
 
-We have identified two problems with \sRhat : 
+This example identifies two problems with \sRhat : 
 \begin{enumerate}
-\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others;
-\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$.
+\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$;
+\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others.
 \end{enumerate}
 This is bad. It means that if we rely on the standard \sRhat\ estimate, we incorrectly conclude that the chain is behaving well even when it is not.
 
