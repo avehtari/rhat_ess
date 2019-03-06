@@ -121,7 +121,7 @@
 \DeclareMathOperator{\Gam}{Gamma}
 \newcommand{\Rhat}{$\widehat{R}$}
 \newcommand{\sRhat}{split-$\widehat{R}$}
-
+\newtheorem{example}{Example}
 
  \title{$\widehat{R}$ does not work! Building better ways to assess the convergence of iterative algorithms}
     \pretitle{\vspace{\droptitle}\centering\huge}
@@ -152,54 +152,28 @@ show ways around them.  We also introduce
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
 
-Iterative simulations, particularly Markov chain Monte Carlo (MCMC), form the core
+ Markov chain Monte Carlo (MCMC) methods form the core
 of many methods in computational statistics, especially 
 in Bayesian applications where the goal is to represent
-posterior inference using a sample of posterior draws. While iterative
-simulation algorithms can usually be proven to converge
+posterior inference using a sample of posterior draws. While MCMC, 
+as well as more general iterative
+simulation algorithms, can usually be proven to converge
 to the target distribution as the number of draws approaches infinity,
 there are rarely strong guarantees about their behaviour after a 
 finite number of draws. In fact, decades of experience tell us that
 the finite sample behaviour of these algorithms can be almost arbitrarily bad.
 
 
-In an attempt to assuage our fear that our iterative simulation algorithm may
+In an attempt to assuage our fear that our MCMC algorithm may
 not have converged, we typically run multiple 
-independent chains of the iterative algorithm to see if the obtained 
+independent chains  to see if the obtained 
 distribution is similar across chains.  We typically also visually inspect
 the sample path of the chain as well as some summary statistics such as
 investigating the empirical autocorrelation function. 
 
-Probably the most widely-used attempt to construct a more formally justified 
-convergence diagnostic  is the  \(\widehat{R}\) statistic
-\citep{Gelman+Rubin:1992, Brooks+Gelman:1998} and
-split-\(\widehat{R}\) \citep{BDA3}.  These quantities monitor the ratio of
-the within-chain marginal variances and the between-chain marginal variances
-of the simulations. The idea is that if a chain has not converged to 
-stationarity, these quantities will be quite different.  The difference between
-the original $\widehat{R}$ and split-$\widehat{R}$ is that the latter also compares 
-the marginal distributions of the first half of each chain with the second
-half of each chain, to try to ensure that each chain has itself converged.
-
-The \sRhat\ is most effective if it is computed using multiple chains initialized at a 
-diverse set of starting points. This is to reduce the dependence of diagnostic
-on the starting point of the chain and reduce the chance that we falsely diagnose
-the chain as converging when beginning at a different point would lead to a 
-qualitatively different posterior.
-
-In the context of Markov chain Monte Carlo, one can interpret \sRhat\ 
-with diverse seeding as an operationalization of the qualitative statement 
-that the Markov chain is relatively insensitive to the starting point (at least within a 
-reasonable part of the parameter space). This is the closest we can come to 
-verifying that the Markov chain is geometrically ergodic, which is a critical 
-property if we want  a central limit theorem to hold for the approximate
-posterior expectations. Without this, we have no control over the large
-deviation behaviour of the estimates and the constructed Markov chains will
-be useless for practical purposes.
-
- Figure
+Running multiple chains is critical to any MCMC convergence diagnostic. Figure
 \ref{converge.challenge} illustrates two ways in which sequences of
-iterative simulations can fail to mix. In the first example, two chains
+iterative simulations can fail to converge.  In the first example, two chains
 are in different parts of the target distribution, in the second
 example, the chains move but have not attained stationarity. Slow mixing can arise with multimodal target distributions or when a chain is
 stuck in a region of high curvature with a step size too large to make an
@@ -220,23 +194,68 @@ juxtaposition makes it clear that they have not converged to a common
 distribution. (b) In the right plot, the two sequences happen to cover a common
 distribution but neither sequence appears stationary. These graphs demonstrate
 the need to use between-sequence and also within-sequence information when
-assessing convergence. From Gelman et al. (2013).}
+assessing convergence. From \citet{BDA3}).}
 \label{converge.challenge}
 \end{figure}
-
-
-The problem is that \Rhat\ and \sRhat\ do not reliably work when analyzing generic iterative algorithms.  This is particularly a problem when we use them within generic software packages like \texttt{Stan} or analysis tools like \texttt{R}'s \texttt{coda} library.  We have identified two problems with \sRhat : 
-\begin{enumerate}
-\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others;
-\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$.
-\end{enumerate}
-This is bad. It means that if we rely on the standard \sRhat\ estimate, we incorrectly conclude that the chain is behaving well even when it is not.
 
 As we are often fitting models with large
 numbers of parameters, it is not realistic to expect to make and interpret
 trace plots such as in Figure \ref{converge.challenge} for all
 quantities of interest. Hence we need numerical summaries that can flag
 potential problems. 
+
+
+Probably the most widely-used attempt to construct a more formally justified 
+convergence diagnostic  is the  \(\widehat{R}\) statistic
+\citep{Gelman+Rubin:1992, Brooks+Gelman:1998} and
+split-\(\widehat{R}\) \citep{BDA3}.  These quantities monitor the ratio of
+the within-chain marginal variances and the between-chain marginal variances
+of the simulations. The idea is that if a chain has not converged to 
+stationarity, these quantities will be quite different.  The difference between
+the original $\widehat{R}$ and split-$\widehat{R}$ is that the latter also compares 
+the marginal distributions of the first half of each chain with the second
+half of each chain, to try to ensure that each chain has itself converged.  In this
+paper we will only consider \sRhat .
+
+The \sRhat\ is most effective if it is computed using multiple chains initialized at a 
+diverse set of starting points. This is to reduce the dependence of diagnostic
+on the starting point of the chain and reduce the chance that we falsely diagnose
+the chain as converging when beginning at a different point would lead to a 
+qualitatively different posterior.
+
+In the context of Markov chain Monte Carlo, one can interpret \sRhat\ 
+with diverse seeding as an operationalization of the qualitative statement 
+that the convergence of the Markov chain is relatively insensitive to the starting point (at least within a 
+reasonable part of the parameter space). This is the closest we can come to 
+verifying empirically that the Markov chain is geometrically ergodic, which is a critical 
+property if we want  a central limit theorem to hold for the approximate
+posterior expectations. Without this, we have no control over the large
+deviation behaviour of the estimates and the constructed Markov chains will
+be useless for practical purposes.
+
+ 
+The problem is that \Rhat\ and \sRhat\ do not reliably work when analyzing generic iterative algorithms.  This is particularly a problem when we use them within generic software packages like \texttt{Stan} or analysis tools like \texttt{R}'s \texttt{coda} library.  The following example shows how the failure occurs.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{graphics/simple_rhat_compare.png}
+\caption{ Caption. \label{fig:simple_example}}
+\end{figure}
+\begin{example}
+Figure~\ref{fig:simple_example} shows the distribution of \sRhat\  values over $1000$ replications for four different scenarios where four chains are run for $1000$ iterations. The chains on the top row are independent AR(1) processes with autoregressive parameter $\rho=0.3$. The figure in the top left column reports the distribution of the \sRhat\ statistics  when the variance of one of the four chains is $1/3$ of the variance of the others. This corresponds to a scenario where one chain fails to correctly explore the parameter space. The \sRhat\ statistic defined in \citet{BDA3}  does not detect the poor mixing, while the new variant of \sRhat\ defined later in this paper does. The second column of the top row is the same scenario but with all the chains having the same variance and both \sRhat\ values correctly identify that mixing occurs.
+
+
+\end{example}
+
+We have identified two problems with \sRhat : 
+\begin{enumerate}
+\item If the the chains don't have finite mean, $\widehat{R} \approx 1$ even if one of the chains has a different location parameter to the others;
+\item If two of the chains have different variances but the same mean parameters, $\widehat{R} \approx 1$.
+\end{enumerate}
+This is bad. It means that if we rely on the standard \sRhat\ estimate, we incorrectly conclude that the chain is behaving well even when it is not.
+
+
+
 
 In this paper, we propose improvements of 
 \sRhat\ that overcome the two 
