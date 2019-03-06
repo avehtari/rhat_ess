@@ -1,8 +1,11 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+theme_set(bayesplot::theme_default(base_family = "sans"))
 
-source('~/Documents/rhat/code/monitornew.R')
+
+source(here::here("code/monitornew.R"))
+
 set.seed(666)
 nreps = 1000
 nchains=4;
@@ -43,19 +46,15 @@ for (rep in 1:nreps) {
   Rhat$neff_tail[index_start:index_end] = c(rep(NA,npars), monitor_new$Tail_ESS)
 }
 
-Rhat %>% ggplot(aes(rhat,colour=version, fill=version)) + 
-  geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) +
-  theme_minimal() + 
-  theme(strip.text = element_text(size=16),axis.title = element_text(size=16), 
-        axis.text = element_text(size=16),
-        legend.text = element_text(size=16),
-        legend.title = element_text(size=16),
-        axis.title.x = element_text(size=16)) +
-  scale_fill_discrete(name=paste("Version of Rhat"),
+Rhat %>% ggplot(aes(rhat,colour=NULL, fill=version)) + 
+  geom_histogram(position="identity", alpha=0.9) + facet_wrap(~par,nrow = 2,ncol = 2) +
+  scale_fill_manual(name=paste("Version of Rhat"),
                       breaks=c("new", "old"),
-                      labels=c("This paper","Gelman et al. (2013)")) +
-  guides(colour=FALSE) + labs(y="", x="Rhat")
+                      labels=c("This paper","Gelman et al. (2013)"),
+                      values=c("new" = "#d1e1ec", "old" ="#a25050")) +
+  guides(colour=FALSE) + labs(y="", x="Rhat")+ labs(y="", x="Rhat")
 ggsave(file="simple_rhat_compare.png",width=12, height = 7.5, units="in")
+ggsave(file="../paper/graphics/simple_rhat_compare.png",width=12, height = 7.5, units="in")
 Rhat %>% ggplot(aes(neff,colour=version, fill=version)) + geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) + theme_minimal() + theme(strip.text = element_text(size=16),axis.title = element_text(size=16), axis.text = element_text(size=16)) 
 ggsave(file="simple_neff_compare.png",width=12, height = 7.5, units="in")
 Rhat %>% select(neff_bulk,neff_tail,par) %>% gather(`neff_bulk`,`neff_tail`,key="type",value="neff") %>% drop_na() %>%
