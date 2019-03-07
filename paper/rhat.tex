@@ -362,18 +362,9 @@ from a \emph{normalized} version of the parameter, that is the parameter
 transformed to normality. This is still indicative of the number of effective 
 samples for computing means and, in particular, if it is low the computed
 expectations are unlikely to be good approximations to the actual
-target expectations.  
-
-The required  rank-normalized ESS can be ultimately decided based on how
- the fitted model will be used. However, there are two reasons to look at
-the rank-normalized ESS before looking at the Monte-Carlo standard error (MCSE) 
-for the quantity of interest.
- Firstly, the formula for rank-normalized ESS requires the estimation of means
- and variances of the rank-normalized parameter. To ensure the stability of 
- these calculations, we recommend requiring that the rank-normalized ESS is 
+target expectations.  We recommend requiring that the rank-normalized ESS is 
  greater than $400$. When running four chains, this corresponds to having
-a rank-normalized effective sample size of at least 50 per split chain to be used
-for estimating means, variances and autocorrelations. 
+a rank-normalized effective sample size of at least 50 per split chain.
 
 Only when the rank-normalized and folded \Rhat\ values are less than the
 prescribed threshold and the rank-normalized ESS is greater than $400$ do we recommend
@@ -382,8 +373,7 @@ quantity of interest. This can then be used to assess the MCSE for the quantity
 of interest. Application specific information is needed to 
 assess if the MCSE is small enough to answer the question at hand.
 
-Finally, if you plan to report quantile estimates, for instance for the purpose
-of obtaining uncertainty intervals, we 
+Finally, if you plan to report quantile estimates or credible intervals, we 
 strongly suggest assessing the convergence of the chains for these quantiles.
 In Section \ref{convergence-diagnostics-for-quantiles} we show that
 convergence of Markov chains is not uniform across the parameter space
