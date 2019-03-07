@@ -461,6 +461,12 @@ have been split in half so that \(M\) is twice the number of actual
 chains. Without splitting, \(\widehat{R}\) would get fooled by
 non-stationary chains as in Figure \ref{converge.challenge}b.
 
+The value of \Rhat\ requires reliable estimates of variances and autocorrelations, which can
+only occur if the chain has enough independent replicates in it. In particular, we only recommend 
+relying on the \Rhat\ estimate to make decisions about the quality of the chain if each of the 
+split chains has an ESS estimate of at least 50. In the our minimum recommended setup of four
+parallel chains, the total ESS should be at least 400 before we expect the \Rhat value to be useful.
+
 
 \hypertarget{improving-convergence-diagnostics}{%
 \section{Improving convergence
@@ -1488,13 +1494,13 @@ are still able to show the problem.
 \addcontentsline{toc}{subsection}{Appendix E: Eight Schools with Jags}
 
 So far, we have run all models in Stan, but here we demonstrate that
-these diagnostics are useful also for sampler other than 
+these diagnostics are  also usefult for samplers other than 
 Hamiltonian Monte Carlo.  We fit the eight schools models also with
  Jags \citep{plummer2003jags}, which uses a dialect of the BUGS
 language \citep{lunn2009bugs} to specify models. Jags uses a clever
 mix of Gibbs and Metropolis-Hastings sampling. This kind of sampling
-does not usually scale well to high-dimensional posteriors of strongly
-interdependent parameters \citep[see, e.g.][]{Hoffman+Gelman:2014}, but it can work fine for relatively simple models such as in this case study.
+does not usually scale well to high-dimensional posteriors with strongly
+dependent parameters \citep[see, e.g.][]{Hoffman+Gelman:2014}, but it can work fine for relatively simple models such as in this case study.
 
 
 First, we sample 1000 iterations for each of the 4 chains for easy
