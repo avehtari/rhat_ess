@@ -1,6 +1,9 @@
 library(tidyverse)
 theme_set(bayesplot::theme_default(base_family = "sans"))
 
+blues <- bayesplot::color_scheme_get(scheme = "blue", i = c(4, 2))
+blues <- unname(unlist(blues))
+
 set.seed(12345)
 dat <- data.frame(
   Iteration = rep(1:1000, 4),
@@ -23,8 +26,8 @@ ggplot(dat, aes(Iteration, Simulation, color = Chain)) +
     strip.background = element_blank(),
     strip.text.x = element_blank()
   ) + 
-  scale_color_manual(values = c("1" = "black", "2" = "grey"),
+  scale_color_manual(values = blues,
                      guide = FALSE)
 
-ggsave(file = "code/convergechallenge.png", 
+ggsave(file = "code/convergechallenge.pdf", 
        height = 4, width = 8, units = "in")
