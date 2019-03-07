@@ -4,7 +4,7 @@ library(tidyr)
 theme_set(bayesplot::theme_default(base_family = "sans"))
 
 
-source(here::here("code/monitornew.R"))
+source(here::here("monitornew.R"))
 
 set.seed(666)
 nreps = 1000
