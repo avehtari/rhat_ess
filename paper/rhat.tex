@@ -340,7 +340,7 @@ funnel-shaped distributions that arise with hierarchical models, differences
 in step size adaptation can lead to chains to have
 different behavior reaching the narrow part of the funnel. For multimodal 
 distributions with well-separated modes, the split-\(\widehat{R}\)
-adjustment of the ESS leads to an ESS estimate the is close to the number of
+adjustment of the ESS leads to an ESS estimate that is close to the number of
 distinct modes that are found (i.e., very small). 
 In this situation, ESS computed on from a single chain will most likely 
 overestimate the ESS. The robustness of a split-\(\widehat{R}\) adjusted
@@ -473,8 +473,8 @@ following \citet{BDA3}, but using the notation of
 standard in convergence diagnostics for iterative simulations. In the
 equations below, \(N\) is the number of draws per chain, \(M\) is the
 number of chains, and \(S=MN\) is the total number of draws from all
-chains. For each scalar summary of interest \(\theta\), we compute \(B\)
-and \(W\), the between- and within-chain variances:
+chains. For each scalar summary of interest \(\theta,\) we compute \(B\)
+and \(W,\) the between- and within-chain variances:
 
 \begin{align}
 B &= \frac{N}{M-1}\sum_{m=1}^{M}(\overline{\theta}^{(.m)} - 
@@ -488,7 +488,7 @@ s_m^2=\frac{1}{N-1} \sum_{n=1}^N (\theta^{(nm)}-\overline{\theta}^{(.m)})^2.
 
 The between-chain variance, \(B\), also contains the factor \(N\)
 because it is based on the variance of the within-chain means,
-\(\overline{\theta}^{(.m)}\), each of which is an average of \(N\)
+\(\overline{\theta}^{(.m)},\) each of which is an average of \(N\)
 values \(\theta^{(nm)}\). We can estimate \(\mbox{var}(\theta | y)\),
 the marginal posterior variance of the estimand, by a weighted average
 of \(W\) and \(B\), namely,
@@ -1433,8 +1433,7 @@ More experiments can be found in Appendix D and E as well as in the online appen
   \begin{minipage}{0.48\textwidth}
   \includegraphics[width=0.98\textwidth]{graphics/quantile-ess-fit-cp-1.pdf}
   \caption{Efficiency of quantile estimates for the eight schools model with 
-  centered parameterization. Red ticks show divergent transitions. Red ticks 
-  show divergent transitions.}
+  centered parameterization. Red ticks show divergent transitions.\\~}
   \label{fig:quantile-ess-fit-cp-1}
  \end{minipage}
 \end{figure}
@@ -1597,7 +1596,7 @@ One way to define effective sample size for correlated simulation draws
 is to consider the statistical efficiency of the average of the
 simulations \(\bar{\theta}^{(..)}\) as an estimate of the posterior mean
 \(\mbox{E}(\theta | y)\). This also generalizes to posterior
-expectations of functionals of parameters \(\mbox{E}(g(\theta) | y)\).
+expectations of functionals of parameters \(\mbox{E}\left(g(\theta) | y\right)\).
 Section \ref{convergence-diagnostics-for-quantiles} deals with 
 estimating the effective sample size of
 quantiles, which cannot be presented as expectations. For simplification,
@@ -1697,7 +1696,7 @@ more conservative claims (lower values of \(S_{\rm eff}\)) compared to
 single chain estimates, especially when mixing of the chains is poor. If
 the chains are not mixing at all (e.g., if the posterior is multimodal and
 the chains are stuck in different modes), then our \(S_{\rm eff}\) is
-close to the number of chains.
+close to the number of distinct modes that are found (i.e., very small).
 
 
 % \hypertarget{AppendixA}{%
@@ -2156,7 +2155,7 @@ rank normalized split-\(\widehat{R}\), and rank normalized
 folded-split-\(\widehat{R}\) for all 50 parameters. Classic split-\(\widehat{R}\), which is
 not well-defined in this case, has much higher variability than rank
 normalized split-\(\widehat{R}\).  Rank normalized
-folded-split-\(\widehat{R}\) has higher values than Rank normalized
+folded-split-\(\widehat{R}\) has higher values than rank normalized
 split-\(\widehat{R}\) indicating slow mixing especially in tails.
 % For one parameter, Rhats exceed the classic threshold of 1.1. Depending
 % on the Rhat estimate, a few others also exceed the threshold of 1.01.
@@ -3680,13 +3679,13 @@ are still able to show the problem.
 \addcontentsline{toc}{subsection}{Appendix E: Eight Schools with Jags}
 
 So far, we have run all models in Stan, but here we demonstrate that
-these diagnostics are useful also sampler other than 
-Hamiltonian Monte Carlo.  We will fit the eight schools models also
+these diagnostics are useful also for sampler other than 
+Hamiltonian Monte Carlo.  We fit the eight schools models also with
  Jags \citep{plummer2003jags}, which uses a dialect of the BUGS
 language \citep{lunn2009bugs} to specify models. Jags uses a clever
 mix of Gibbs and Metropolis-Hastings sampling. This kind of sampling
 does not usually scale well to high-dimensional posteriors of strongly
-interdependent parameters, but it can work fine for relatively simple models such as in this case study.
+interdependent parameters \citep[see, e.g.][]{Hoffman+Gelman:2014}, but it can work fine for relatively simple models such as in this case study.
 
 % \hypertarget{centered-eight-schools-model-1}{%
 % \paragraph{Centered Eight Schools
@@ -3809,7 +3808,7 @@ probability interval estimates, efficiency of quantile estimates, and
 change of Bulk-SS and Tail-ESS with increasing number of
 iterations. The relative efficiency is low, but ESS for all small
 probability intervals, quantiles and bulk are above the recommend
-threshold. Notably, however, the increase in effective sample size for
+threshold. Notably, the increase in effective sample size for
 $\tau$ is linear in the total number of draws.  Gibbs sampler can
 reach the narrow part of the funnel, although the sampling efficiency
 is affected by the funnel. In this simple case the inefficiency of the
