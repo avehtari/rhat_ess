@@ -41,6 +41,7 @@ in the paper:
 
 - [Cauchy: A distribution with infinite mean and variance](#cauchy)
 - [Hierarchical model: Eight schools](#eightschools)
+- [Appendix A: Computing the effective sample size](#AppendixA)
 - [Appendix B: Normal distributions with additional trend, shift or scaling](#AppendixB)
 - [Appendix C: More experiments with the Cauchy distribution](#AppendixC)
 - [Appendix D: A centered eight schools model with very long chains and thinning](#AppendixD)
@@ -71,16 +72,17 @@ source('monitorplot.R')
 
 ## Cauchy: A distribution with infinite mean and variance {#cauchy}
 
+This section relates to the examples presented in Section 5.1 of the paper. 
+
 The classic *split*-$\widehat{R}$ is based on calculating within and between
 chain variances. If the marginal distribution of a chain is such that the
 variance is not defined (i.e., infinite), the classic *split*-$\widehat{R}$ is
 not well justified. In this section, we will use the Cauchy distribution as an
-example of such a distribution. [Appendix C](#AppendixC) contains more 
-detailed analysis of different algorithm variants and further Cauchy 
-examples.
-
+example of such a distribution.
 The following Cauchy models are from Michael Betancourt's case study
-[Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html)
+[Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html).
+[Appendix C](#AppendixC) contains more detailed analysis of different algorithm
+variants and further Cauchy examples.
 
 ### Nominal parameterization of Cauchy
 
@@ -274,14 +276,15 @@ different parameterizations of the half-Cauchy distribution can be found in
 
 ## Hierarchical model: Eight Schools {#eightschools}
 
+This section relates to the examples presented in Section 5.2 of the paper. 
+
 The Eight Schools data is a classic example for hierarchical models [see Section
 5.5 in @BDA3], which despite the apparent simplicity nicely illustrates
 the typical problems in inference for hierarchical models. The Stan
 models below are from Michael Betancourt's case study on [Diagnosing
 Biased Inference with
 Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
-[Appendix D](#AppendixD) contains more 
-detailed analysis of different algorithm variants.
+[Appendix D](#AppendixD) contains more detailed analysis of different algorithm variants.
 
 ### A Centered Eight Schools model
 
@@ -438,9 +441,6 @@ mcmc_hist_r_scale(samp_ncp2[, , 2])
 
 # Appendices {.unnumbered}
 
-
-## Appendix A: Abbreviations {#AppendixA .unnumbered}
-
 The following abbreviations are used throughout the appendices:
 
  - N = total number of draws
@@ -470,8 +470,12 @@ The following abbreviations are used throughout the appendices:
  - madsseff = mad split effective sample size
     + estimates the efficiency of the median absolute deviation
  - madsreff = madsseff / N
- 
- 
+
+
+## Appendix A: Computing the effective sample size {#AppendixA .unnumbered}
+
+There are no examples or numerical experiments related to Appendix A.
+
  
 ## Appendix B: Normal distributions with additional trend, shift or scaling {#AppendixB .unnumbered}
 
