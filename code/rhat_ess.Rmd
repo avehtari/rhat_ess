@@ -37,22 +37,21 @@ experiments not discussed in the paper itself.
 
 To help you finding your way through all the examples presented in this online
 appendix, below please find a list of links to the examples discussed
-in the paper (the names correspond to the section headers used in the paper):
+in the paper:
 
 - [Cauchy: A distribution with infinite mean and variance](#cauchy)
 - [Hierarchical model: Eight schools](#eightschools)
-- [Appendix B: Normal distributions with additional trend, shift or scaling](#AppendixD)
-- [Appendix C: More experiments with the Cauchy distribution](#AppendixE)
-- [Appendix D: A centered eight schools model with very long chains and thinning](#AppendixF)
-- [Appendix E: A centered eight schools model fit using a Gibbs sampler](#eightschoolsJAGS)
+- [Appendix B: Normal distributions with additional trend, shift or scaling](#AppendixB)
+- [Appendix C: More experiments with the Cauchy distribution](#AppendixC)
+- [Appendix D: A centered eight schools model with very long chains and thinning](#AppendixD)
+- [Appendix E: A centered eight schools model fit using a Gibbs sampler](#AppendixE)
 
 # Examples
 
 In this section, we will go through some examples to demonstrate the
 usefulness of our proposed methods as well as the associated workflow
-in determining convergence. [Appendices D-G](#AppendixD) contain more
-detailed analysis of different algorithm variants and further
-examples.
+in determining convergence. [Appendices B-E](#AppendixB) contain more
+detailed analysis of different algorithm variants and further examples.
 
 First, we load all the necessary R packages and additional functions.
 
@@ -76,7 +75,7 @@ The classic *split*-$\widehat{R}$ is based on calculating within and between
 chain variances. If the marginal distribution of a chain is such that the
 variance is not defined (i.e., infinite), the classic *split*-$\widehat{R}$ is
 not well justified. In this section, we will use the Cauchy distribution as an
-example of such a distribution. [Appendix E](#AppendixE) contains more 
+example of such a distribution. [Appendix C](#AppendixC) contains more 
 detailed analysis of different algorithm variants and further Cauchy 
 examples.
 
@@ -113,7 +112,7 @@ which_min_ess <- which.min(mon[1:50, 'Tail_ESS'])
 ```
 
 Several Rhat > 1.01 and some ESS < 400 indicate also that the results
-should not be trusted. The [Appendix E](#AppendixE) has more results
+should not be trusted. The [Appendix C](#AppendixC) has more results
 with longer chains as well.
 
 We can further analyze potential problems using local efficiency and
@@ -201,7 +200,7 @@ which_min_ess <- which.min(mon[101:150, 'Tail_ESS'])
 ```
 
 All Rhat < 1.01 and ESS > 400 indicate the sampling worked much better
-with the alternative parameterization. [Appendix E](#AppendixE) has
+with the alternative parameterization. [Appendix C](#AppendixC) has
 more results using other alternative parameterizations. The `x_a` and
 `x_b` used to form the Cauchy distributed `x` have stable quantile,
 mean and sd values. As `x` is Cauchy distributed it has only stable
@@ -270,7 +269,7 @@ All Rhat < 1.01 and ESS > 400 indicate good performance of the sampler. We see
 that the Stan's automatic (and implicit) transformation of constraint parameters
 can have a big effect on the sampling performance. More experiments with
 different parameterizations of the half-Cauchy distribution can be found in
-[Appendix E](#AppendixE).
+[Appendix C](#AppendixC).
 
 
 ## Hierarchical model: Eight Schools {#eightschools}
@@ -281,7 +280,7 @@ the typical problems in inference for hierarchical models. The Stan
 models below are from Michael Betancourt's case study on [Diagnosing
 Biased Inference with
 Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
-[Appendix F](#AppendixF) contains more 
+[Appendix D](#AppendixD) contains more 
 detailed analysis of different algorithm variants.
 
 ### A Centered Eight Schools model
@@ -315,7 +314,7 @@ mon <- monitor(fit_cp)
 print(mon)
 ```
 
-See [Appendix F](#AppendixF) for results of longer chains.
+See [Appendix D](#AppendixD) for results of longer chains.
 
 Bulk-ESS and Tail-ESS for the between school standard deviation `tau`
 are `r mon['tau', 'Bulk_ESS']` and `r mon['tau', 'Tail_ESS']`
@@ -356,7 +355,7 @@ Most of the quantile estimates have worryingly low effective sample size.
 
 Let's see how the estimated effective sample size changes when we use
 more and more draws. Here we don't see sudden changes, but both
-bulk-ESS and tail-ESS are too low. See [Appendix F](#AppendixF) for
+bulk-ESS and tail-ESS are too low. See [Appendix D](#AppendixD) for
 results of longer chains.
 
 ```{r, cache=FALSE}
@@ -431,11 +430,14 @@ samp_ncp2 <- as.array(fit_ncp2)
 mcmc_hist_r_scale(samp_ncp2[, , 2])
 ```
 
+
 # References {.unnumbered}
 
 <div id="refs"></div>
 
+
 # Appendices {.unnumbered}
+
 
 ## Appendix A: Abbreviations {#AppendixA .unnumbered}
 
@@ -468,107 +470,10 @@ The following abbreviations are used throughout the appendices:
  - madsseff = mad split effective sample size
     + estimates the efficiency of the median absolute deviation
  - madsreff = madsseff / N
-
-
-## Appendix B: Examples of rank normalization {#AppendixB .unnumbered}
-
-We will illustrate the rank normalization with a few examples. First, we plot
-histograms, and empirical cumulative distribution functions (ECDF)  with respect
-to the original parameter values ($\theta$), scaled ranks (ranks divided by the
-maximum rank), and rank normalized values (z). We used scaled ranks to make the
-plots look similar for different number of draws.
-
-100 draws from Normal(0, 1):
-```{r, message=FALSE}
-n <- 100
-theta <- rnorm(n)
-plot_ranknorm(theta, n)
-```
-
-100 draws from Exponential(1):
-```{r, message=FALSE}
-theta <- rexp(n)
-plot_ranknorm(theta, n)
-```
-
-100 draws from Cauchy(0, 1):
-```{r, message=FALSE}
-theta <- rcauchy(n)
-plot_ranknorm(theta, n)
-```
-
-In the above plots, the ECDF with respect to scaled rank and rank normalized
-$z$-values look exactly the same for all distributions. In *Split*-$\widehat{R}$
-and effective sample size computations, we rank all draws jointly, but then
-compare ranks and ECDF of individual split chains. To illustrate the variation
-between chains, we draw 8 batches of 100 draws each from Normal(0, 1):
-
-```{r, message=FALSE}
-n <- 100
-m <- 8
-theta <- rnorm(n * m)
-plot_ranknorm(theta, n, m)
-```
-
-The variation in ECDF due to the variation ranks is now visible also in scaled 
-ranks and rank normalized $z$-values from different batches (chains).
-
-The benefit of rank normalization is more obvious for non-normal distribution 
-such as Cauchy:
-
-```{r, message=FALSE}
-theta <- rcauchy(n * m)
-plot_ranknorm(theta, n, m)
-```
-
-Rank normalization makes the subsequent computations well defined and
-invariant under bijective transformations. This means that we get the
-same results, for example, if we use unconstrained or constrained
-parameterisations in a model. 
-
-
-## Appendix C: Variance of the cumulative distribution function  {#AppendixC .unnumbered}
-
-In the paper, we had defined the empirical CDF (ECDF) for any $\theta_\alpha$ as
-$$
-p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
-I(\theta^{(s)} \leq\theta_\alpha),
-$$
-
-For independent draws, $\bar{I}_\alpha$ has a 
-${\rm Beta}(\bar{I}_\alpha+1, S - \bar{I}_\alpha + 1)$ 
-distribution. Thus we can easily examine the variation of the ECDF for any
-$\theta_\alpha$ value from a single chain. If $\bar{I}_\alpha$ is not very close
-to $1$ or $S$ and $S$ is large, we can use the variance of Beta distribution
-
-$$
-{\rm Var}[p(\theta \leq \theta_\alpha)] =
-\frac{(\bar{I}_\alpha+1)*(S-\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
-$$
-We illustrate uncertainty intervals of the Beta distribution and normal
-approximation of ECDF for 100 draws from Normal(0, 1):
-```{r, message=FALSE}
-n <- 100
-m <- 1
-theta <- rnorm(n * m)
-plot_ranknorm(theta, n, m, interval = TRUE)
-```
-
-Uncertainty intervals of ECDF for draws from Cauchy(0, 1) illustrate again the 
-improved visual clarity in plotting when using scaled ranks:
-
-```{r, message=FALSE}
-n <- 100
-m <- 1
-theta <- rcauchy(n * m)
-plot_ranknorm(theta, n, m, interval = TRUE)
-```
-
-The above plots illustrate that the normal approximation is accurate for
-practical purposes in MCMC diagnostics.
-
-
-## Appendix D: Normal distributions with additional trend, shift or scaling {#AppendixD .unnumbered}
+ 
+ 
+ 
+## Appendix B: Normal distributions with additional trend, shift or scaling {#AppendixB .unnumbered}
 
 This part focuses on diagnostics for
 
@@ -830,7 +735,8 @@ mcmc_hist_r_scale(r)
 Although folded Rhat is $1.06$, the rank plots clearly show that the first
 chains behaves differently.
 
-## Appendix E: Cauchy: A distribution with infinite mean and variance {#AppendixE .unnumbered}
+
+## Appendix C: More experiments with the Cauchy distribution {#AppendixC .unnumbered}
 
 The classic split-Rhat is based on calculating within and between chain
 variances. If the marginal distribution of a chain is such that
@@ -1600,7 +1506,7 @@ mcmc_hist_r_scale(samp_jags_nom[, , xmin])
 the Cauchy distribution just fine.
 
 
-## Appendix F: Hierarchical model: Eight Schools {#AppendixF .unnumbered}
+## Appendix D: A centered eight schools model with very long chains and thinning {#AppendixD .unnumbered}
 
 We continue with our discussion about hierarchical models on the Eight Schools
 data, which we started in [Section Eight Schools](#eightschools). We also analyse
@@ -1861,7 +1767,7 @@ parameterization can cause problems that are not simply solved by tuning the
 sampler. Instead, we have to adjust our model to achieve trustworthy inference.
 
 
-### Eight Schools with Jags {#eightschoolsJAGS .unnumbered}
+## Appendix E: A centered eight schools model fit using a Gibbs sampler {#AppendixE .unnumbered}
 
 We will also run the centered and non-centered parameterizations of
 the eight schools model with Jags.
@@ -2002,7 +1908,105 @@ plot_change_ess(samp_jags_ncp, par = "tau")
 parameterization of the eight schools model much better than from the centered parameterization.
 
 
-## Appendix G: Dynamic HMC and effective sample size {#AppendixG .unnumbered}
+## Appendix F: Examples of rank normalization {#AppendixF .unnumbered}
+
+We will illustrate the rank normalization with a few examples. First, we plot
+histograms, and empirical cumulative distribution functions (ECDF)  with respect
+to the original parameter values ($\theta$), scaled ranks (ranks divided by the
+maximum rank), and rank normalized values (z). We used scaled ranks to make the
+plots look similar for different number of draws.
+
+100 draws from Normal(0, 1):
+```{r, message=FALSE}
+n <- 100
+theta <- rnorm(n)
+plot_ranknorm(theta, n)
+```
+
+100 draws from Exponential(1):
+```{r, message=FALSE}
+theta <- rexp(n)
+plot_ranknorm(theta, n)
+```
+
+100 draws from Cauchy(0, 1):
+```{r, message=FALSE}
+theta <- rcauchy(n)
+plot_ranknorm(theta, n)
+```
+
+In the above plots, the ECDF with respect to scaled rank and rank normalized
+$z$-values look exactly the same for all distributions. In *Split*-$\widehat{R}$
+and effective sample size computations, we rank all draws jointly, but then
+compare ranks and ECDF of individual split chains. To illustrate the variation
+between chains, we draw 8 batches of 100 draws each from Normal(0, 1):
+
+```{r, message=FALSE}
+n <- 100
+m <- 8
+theta <- rnorm(n * m)
+plot_ranknorm(theta, n, m)
+```
+
+The variation in ECDF due to the variation ranks is now visible also in scaled 
+ranks and rank normalized $z$-values from different batches (chains).
+
+The benefit of rank normalization is more obvious for non-normal distribution 
+such as Cauchy:
+
+```{r, message=FALSE}
+theta <- rcauchy(n * m)
+plot_ranknorm(theta, n, m)
+```
+
+Rank normalization makes the subsequent computations well defined and
+invariant under bijective transformations. This means that we get the
+same results, for example, if we use unconstrained or constrained
+parameterisations in a model. 
+
+
+## Appendix G: Variance of the cumulative distribution function  {#AppendixG .unnumbered}
+
+In the paper, we had defined the empirical CDF (ECDF) for any $\theta_\alpha$ as
+$$
+p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
+I(\theta^{(s)} \leq\theta_\alpha),
+$$
+
+For independent draws, $\bar{I}_\alpha$ has a 
+${\rm Beta}(\bar{I}_\alpha+1, S - \bar{I}_\alpha + 1)$ 
+distribution. Thus we can easily examine the variation of the ECDF for any
+$\theta_\alpha$ value from a single chain. If $\bar{I}_\alpha$ is not very close
+to $1$ or $S$ and $S$ is large, we can use the variance of Beta distribution
+
+$$
+{\rm Var}[p(\theta \leq \theta_\alpha)] =
+\frac{(\bar{I}_\alpha+1)*(S-\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
+$$
+We illustrate uncertainty intervals of the Beta distribution and normal
+approximation of ECDF for 100 draws from Normal(0, 1):
+```{r, message=FALSE}
+n <- 100
+m <- 1
+theta <- rnorm(n * m)
+plot_ranknorm(theta, n, m, interval = TRUE)
+```
+
+Uncertainty intervals of ECDF for draws from Cauchy(0, 1) illustrate again the 
+improved visual clarity in plotting when using scaled ranks:
+
+```{r, message=FALSE}
+n <- 100
+m <- 1
+theta <- rcauchy(n * m)
+plot_ranknorm(theta, n, m, interval = TRUE)
+```
+
+The above plots illustrate that the normal approximation is accurate for
+practical purposes in MCMC diagnostics.
+
+
+## Appendix H: Dynamic HMC and effective sample size {#AppendixH .unnumbered}
 
 We have already seen that the effective sample size of dynamic HMC can be higher
 than with independent draws. The next example illustrates interesting relative
