@@ -39,7 +39,7 @@
 \usepackage{natbib}
 \bibliographystyle{plainnat}
 \usepackage{placeins}
-\usepackage{graphicx,grffile}
+\usepackage{graphicx,grffile,subcaption}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
 \def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
@@ -194,8 +194,13 @@ any method for assessing mixing and effective sample size should use information
 between and within chains.
 
 \begin{figure}
-  \center
-\includegraphics[width=0.7\textwidth]{graphics/convergechallenge.pdf}
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{graphics/convergechallenge1.pdf}
+  \end{subfigure}
+  \hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{graphics/convergechallenge2.pdf}
+\end{subfigure}
 \caption{ Examples of two challenges in assessing convergence of iterative
 simulations. (a) In the left plot, either sequence alone looks stable, but the
 juxtaposition makes it clear that they have not converged to a common
