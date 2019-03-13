@@ -447,8 +447,16 @@ have been split in half so that \(M\) is twice the number of simulated
 chains. Without splitting, \(\widehat{R}\) would get fooled by
 non-stationary chains as in Figure \ref{converge.challenge}b.
 
-The value of \Rhat\ requires reliable estimates of variances and autocorrelations, which can
-only occur if the chain has enough independent replicates in it. In particular, we only recommend 
+The effective sample size is defined as 
+\begin{equation}
+S_{\rm eff} = \frac{N \, M}{\hat{\tau}},
+\end{equation}
+where $\hat{\tau}$ combines the potential scale reduction and the
+autocorrelations within the chains at different lags as described in
+detail in Appendix~A.
+
+The value of \Rhat\ and ESS require reliable estimates of variances and autocorrelations, which can
+only occur if the chains have enough independent replicates. In particular, we only recommend 
 relying on the \Rhat\ estimate to make decisions about the quality of the chain if each of the 
 split chains has an ESS estimate of at least 50. In the our minimum recommended setup of four
 parallel chains, the total ESS should be at least 400 before we expect  \Rhat\ to be useful.
