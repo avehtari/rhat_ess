@@ -22,3 +22,5 @@ _region_.*
 #*
 .#*
 *#
+rhat_before_moving_to_tex.Rmd
+rhat_before_moving_to_tex.tex

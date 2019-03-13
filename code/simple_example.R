@@ -4,7 +4,7 @@ library(tidyr)
 theme_set(bayesplot::theme_default(base_family = "sans"))
 
 
-source(here::here("monitornew.R"))
+source("code/monitornew.R")
 
 set.seed(666)
 nreps = 1000
@@ -47,17 +47,61 @@ for (rep in 1:nreps) {
 }
 
 Rhat %>% ggplot(aes(rhat,colour=NULL, fill=version)) + 
-  geom_histogram(position="identity", alpha=0.9) + facet_wrap(~par,nrow = 2,ncol = 2) +
-  scale_fill_manual(name=paste("Version of Rhat"),
-                      breaks=c("new", "old"),
-                      labels=c("This paper","Gelman et al. (2013)"),
-                      values=c("new" = "#d1e1ec", "old" ="#a25050")) +
-  guides(colour=FALSE) + labs(y="", x="Rhat")+ labs(y="", x="Rhat")
-ggsave(file="simple_rhat_compare.png",width=12, height = 7.5, units="in")
-ggsave(file="../paper/graphics/simple_rhat_compare.png",width=12, height = 7.5, units="in")
-Rhat %>% ggplot(aes(neff,colour=version, fill=version)) + geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) + theme_minimal() + theme(strip.text = element_text(size=16),axis.title = element_text(size=16), axis.text = element_text(size=16)) 
-ggsave(file="simple_neff_compare.png",width=12, height = 7.5, units="in")
-Rhat %>% select(neff_bulk,neff_tail,par) %>% gather(`neff_bulk`,`neff_tail`,key="type",value="neff") %>% drop_na() %>%
-  ggplot(aes(x=neff,colour=type,fill=type)) + geom_histogram() + facet_wrap(~par,nrow = 2,ncol = 2) + theme_minimal()+ theme(strip.text = element_text(size=16),axis.title = element_text(size=16), axis.text = element_text(size=16))
-ggsave(file="simple_bulk_vs_tail.png",width=12, height = 7.5, units="in")
+  geom_histogram(position="identity", alpha=0.9) + 
+  facet_wrap(~par,nrow = 2,ncol = 2, scales = "free") +
+  scale_fill_manual(
+    name=paste("Version of Rhat"),
+    breaks=c("new", "old"),
+    labels=c("This paper","Gelman et al. (2013)"),
+    values=c("new" = "#d1e1ec", "old" ="#a25050")
+  ) +
+  guides(colour=FALSE) + 
+  labs(y="", x="Rhat") +
+  xlim(c(0.99, 1.15)) +
+  theme(
+    text = element_text(size=16),
+    strip.text = element_text(size=16),
+    axis.title = element_text(size=16), 
+    axis.text = element_text(size=16),
+    axis.line = element_line(),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+ggsave(file="code/simple_rhat_compare.png",width=12, height = 7.5, units="in")
+ggsave(file="paper/graphics/simple_rhat_compare.png",width=12, height = 7.5, units="in")
+
+Rhat %>% ggplot(aes(neff,colour=version, fill=version)) + 
+  geom_histogram() + 
+  facet_wrap(~par,nrow = 2,ncol = 2) + 
+  labs(y = "") +
+  theme_minimal() + 
+  theme(
+    strip.text = element_text(size=16),
+    axis.title = element_text(size=16), 
+    axis.text = element_text(size=16),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  ) 
+ggsave(file="code/simple_neff_compare.png",width=12, height = 7.5, units="in")
+
+Rhat %>% 
+  select(neff_bulk,neff_tail,par) %>% 
+  gather(`neff_bulk`,`neff_tail`,key="type",value="neff") %>% 
+  drop_na() %>%
+  ggplot(aes(x=neff,colour=type,fill=type)) + 
+  geom_histogram() + 
+  facet_wrap(~par,nrow = 2,ncol = 2) + 
+  labs(y = "") +
+  theme_minimal() + 
+  theme(
+    strip.text = element_text(size=16),
+    axis.title = element_text(size=16), 
+    axis.text = element_text(size=16),
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+ggsave(file="code/simple_bulk_vs_tail.png",width=12, height = 7.5, units="in")
 

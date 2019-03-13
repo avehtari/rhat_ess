@@ -19,15 +19,31 @@ dat <- data.frame(
     )
   )
 
-ggplot(dat, aes(Iteration, Simulation, color = Chain)) +
-  facet_wrap("Cond") +
+dat %>% filter(Cond == 1) %>%
+  ggplot(aes(Iteration, Simulation, color = Chain)) +
   geom_line(cex = 0.5) + 
   theme(
     strip.background = element_blank(),
     strip.text.x = element_blank()
   ) + 
-  scale_color_manual(values = blues,
-                     guide = FALSE)
+  ylim(c(-3, 3)) +
+  labs(y = "") +
+  scale_color_manual(values = blues, guide = FALSE)
 
-ggsave(file = "code/convergechallenge.pdf", 
-       height = 4, width = 8, units = "in")
+ggsave(file = "paper/graphics/convergechallenge1.pdf", 
+       height = 4, width = 4, units = "in")
+
+
+dat %>% filter(Cond == 2) %>%
+  ggplot(aes(Iteration, Simulation, color = Chain)) +
+  geom_line(cex = 0.5) + 
+  theme(
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  ) + 
+  ylim(c(-3, 3)) +
+  labs(y = "") +
+  scale_color_manual(values = blues, guide = FALSE)
+
+ggsave(file = "paper/graphics/convergechallenge2.pdf", 
+       height = 4, width = 4, units = "in")

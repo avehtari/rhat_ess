@@ -56,7 +56,8 @@ mcmc_hist_r_scale <- function(x, nbreaks = 50, ...) {
     r_scale(x), 
     breaks = seq(0, max, by = max / nbreaks) + 0.5,
     ...
-  )
+  ) +
+    theme(axis.line.y = element_blank())
 }
 
 plot_rhat <- function(res) {
