@@ -167,8 +167,6 @@ propose an alternative that fixes them. We also introduce
 \hypertarget{introduction}{%
 \section{Introduction}\label{introduction}}
 
-\subsection{Monitoring convergence using multiple chains}
-
 Markov chain Monte Carlo (MCMC) methods are important in computational statistics, especially 
 in Bayesian applications where the goal is to represent
 posterior inference using a sample of posterior draws. While MCMC, 
@@ -178,6 +176,9 @@ to the target distribution as the number of draws approaches infinity,
 there are rarely strong guarantees about their behavior after a 
 finite number of draws. Indeed, decades of experience tell us that
 the finite sample behavior of these algorithms can be almost arbitrarily bad.
+
+
+\subsection{Monitoring convergence using multiple chains}
 
 
 In an attempt to assuage concerns of poor convergence, we typically run multiple 
