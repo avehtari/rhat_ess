@@ -1,4 +1,4 @@
-This repository contains tex, code, and oneline appendix for 
+This repository contains tex, code, and online appendix for 
 
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter,
 Paul-Christian Bürkner: Rank-normalization, folding, and localization:
