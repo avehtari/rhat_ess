@@ -913,7 +913,7 @@ Instead of the default options, we run the centered parameterization
 model with more conservative settings of the HMC sample to reduce the
 probability of getting divergent transitions. Still, we observe a lot of divergent
 transitions, which in itself is already a sufficient indicator of
-convergence problems. We can also use split-\(\widehat{R}\) and ESS
+convergence problems. We can also use \Rhat\ and ESS
 diagnostics to recognize problematic parts of the posterior. The latter
 two have the advantage over the divergent transitions diagnostic that they
 can be used with all MCMC algorithms not only with HMC.
@@ -988,7 +988,7 @@ parameterization often works better. For reasons of comparability, we use the
 same conservative sampler setting as for the centered parameterization model. 
 For the non-centered parameterization, we do not observe divergences or 
 other warnings.
-All split-\(\widehat{R}<1.01\) and ESS \(>400\) indicate a much
+All values of \Rhat\ are less than 1.01 and ESS exceeds 400, indicating a much
 better efficiency of the non-centered parameterization.
 Figures~\ref{fig:local-ess-fit-ncp2-1} and
 \ref{fig:quantile-ess-fit-ncp2-1} show the efficiency of small interval
@@ -1415,7 +1415,7 @@ iterations per chain, first half removed as warm-up, and thinned by taking every
 
 We observe several divergent transitions and the estimated Bayesian
 fraction of missing information is also low, which can indicate
-convergence problems. % and potentially biased estimates.
+convergence problems.
 
 Figures \ref{fig:local-ess-fit-cp4-tau-1},
 \ref{fig:quantile-ess-fit-cp4-tau-1}, and
