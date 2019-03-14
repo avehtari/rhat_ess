@@ -1354,19 +1354,19 @@ to interpret possible convergence.
   \label{fig:trace-fit-nom-td20-1}
 \end{figure}
 %
-Figure~\ref{fig:rhat-fit-nom-td20-1} shows classic split-\(\widehat{R}\) ,
-rank normalized split-\(\widehat{R}\), and rank normalized
-folded-split-\(\widehat{R}\) for all 50 parameters. Classic split-\(\widehat{R}\), which is
+Figure~\ref{fig:rhat-fit-nom-td20-1} shows traditional \sRhat,
+rank normalized \sRhat, and rank normalized
+folded-split-\(\widehat{R}\) for all 50 parameters. Traditional \sRhat, which is
 not well-defined in this case, has much higher variability than rank
-normalized split-\(\widehat{R}\).  Rank normalized
+normalized \sRhat.  Rank normalized
 folded-split-\(\widehat{R}\) has higher values than rank normalized
-split-\(\widehat{R}\) indicating slow mixing especially in tails.
+\sRhat indicating slow mixing especially in tails.
 % 
 \begin{figure}[tp]
   \centering
   \begin{minipage}{0.48\textwidth}
   \includegraphics[width=0.98\textwidth]{graphics/rhat-fit-nom-td20-1.pdf}
-  \caption{Classic split-\(\widehat{R}\), rank normalized
+  \caption{Traditional split-\(\widehat{R}\), rank normalized
     split-\(\widehat{R}\), and rank normalized
     folded-split-\(\widehat{R}\) for Cauchy model with nominal
     parameterization and \texttt{max\_treedepth}=20.}
@@ -1375,14 +1375,14 @@ split-\(\widehat{R}\) indicating slow mixing especially in tails.
 \hfill
   \begin{minipage}{0.48\textwidth}
   \includegraphics[width=0.98\textwidth]{graphics/ess-fit-nom-td20-1.pdf}
-  \caption{Classic ESS, bulk-ESS, tail-ESS, median-ESS and MAD-ESS for
+  \caption{Traditional ESS, bulk-ESS, tail-ESS, median-ESS and MAD-ESS for
     Cauchy model with nominal parameterization \texttt{max\_treedepth}=20.}
   \label{fig:ess-fit-nom-td20-1}
 \end{minipage}
 \end{figure}
 Figure~\ref{fig:rhat-fit-nom-td20-1} shows different effective sample
-size estimates for all 50 parameters. Classic ESS, which is not well
-defined in this case, has  high variability. Bulk ESS is much more
+size estimates for all 50 parameters. Traditional ESS, which is not well
+defined in this case, has high variability. Bulk-ESS is much more
 stable, and indicates that we can get reliable estimates for the
 location of the posterior (except for mean). Median ESS is even more
 stable with relatively high values, indicating that we can estimate
@@ -1391,7 +1391,7 @@ indicating still too slow mixing in tails for reliable tail quantile
 estimates. MAD ESS values are just above our recommend threshold,
 indicating practically useful MAD estimates, too. The online appendix
 has additional results with longer chains, showing that all other ESS
-values except classic ESS (which is not well defined) keep improving
+values except traditional ESS (which is not well defined) keep improving
 with more iterations. It is however recommended to use more efficient
 parameterization especially if the tail quantiles are quantities of
 interest.
