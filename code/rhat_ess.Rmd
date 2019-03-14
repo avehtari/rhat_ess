@@ -1,5 +1,5 @@
 ---
-title: "Rank-normalization, folding, and localization: A version of $\\widehat{R}$ that successfully assesses the convergence of iterative simulation algorithms (online appendix)"
+title: "Rank-normalization, folding, and localization: An improved $\\widehat{R}$ for assessing convergence of MCMC (online appendix)"
 author: "Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul-Christian Bürkner"
 date: "First version 2017-05-23. Last modified `r format(Sys.Date())`."
 encoding: "UTF-8"
@@ -29,9 +29,9 @@ options(width = 100)
 # Overview
 
 This is the online appendix of the paper 
-*Rank-normalization, folding, and localization: A version of* $\widehat{R}$
-*that successfully assesses the convergence of iterative simulation algorithms* 
-available on Github (https://github.com/avehtari/rhat). Here, we provide all the
+*Rank-normalization, folding, and localization: An improved* $\widehat{R}$
+*for assessing convergence of MCMC* 
+available on Github (https://github.com/avehtari/rhat_ess). Here, we provide all the
 compute code related to the examples presented in the paper and more numerical
 experiments not discussed in the paper itself.
 
@@ -74,11 +74,10 @@ source('monitorplot.R')
 
 This section relates to the examples presented in Section 5.1 of the paper. 
 
-The classic *split*-$\widehat{R}$ is based on calculating within and between
+Traditional $\widehat{R}$ is based on calculating within and between
 chain variances. If the marginal distribution of a chain is such that the
-variance is not defined (i.e., infinite), the classic *split*-$\widehat{R}$ is
-not well justified. In this section, we will use the Cauchy distribution as an
-example of such a distribution.
+variance is infinite, this approach is
+not well justified, as we demonstrate here with a Cauchy-distributed example.
 The following Cauchy models are from Michael Betancourt's case study
 [Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html).
 [Appendix C](#AppendixC) contains more detailed analysis of different algorithm
@@ -99,13 +98,11 @@ Run the nominal model:
 fit_nom <- stan(file = 'cauchy_nom.stan', seed = 7878, refresh = 0)
 ```
 
-Treedepth exceedence and Bayesian fraction of missing information are
-dynamic HMC specific diagnostics [@betancourt2017conceptual]. We get
-warnings about a very large number of transitions after
-warmup that exceeded the maximum treedepth, which is likely due to
-very long tails of the Cauchy distribution. All chains have low 
-estimated Bayesian fraction of missing information also indicating
-slow mixing.
+We get HMC specific diagnostic [@betancourt2017conceptual] warnings
+about a very large number of transitions after warmup that exceed the
+maximum treedepth and low estimated Bayesian fraction of missing
+information, indicating slow mixing likely due to very long tails of
+the Cauchy distribution.
 
 ```{r}
 mon <- monitor(fit_nom)
@@ -113,12 +110,11 @@ print(mon)
 which_min_ess <- which.min(mon[1:50, 'Tail_ESS'])
 ```
 
-Several Rhat > 1.01 and some ESS < 400 indicate also that the results
-should not be trusted. The [Appendix C](#AppendixC) has more results
-with longer chains as well.
+Several values of Rhat greater than 1.01 and some ESS less than 400 also indicate convergence propblems. The [Appendix C](#AppendixC) contains more results
+with longer chains.
 
 We can further analyze potential problems using local efficiency and
-rank plots. We specifically investigate x[`r which_min_ess`], which has the
+rank plots. We specifically investigate x[`r which_min_ess`], which, in this specific run, had the
 smallest tail-ESS of `r round(min(mon[,'Tail_ESS']), 2)`. 
 
 We examine the sampling efficiency in different parts of the posterior by
@@ -134,12 +130,13 @@ which does not depend on the shape of the distribution.
 plot_local_ess(fit = fit_nom, par = which_min_ess, nalpha = 20)
 ```
 
-We see that the efficiency of our posterior draws is worryingly low in the tails
-(which is caused by slow mixing in long tails of Cauchy). Orange ticks
+The efficiency of sampling is low in the tails, which is clearly
+caused by slow mixing in long tails of the Cauchy distribution.  
+Orange ticks
 show iterations that exceeded the maximum treedepth.
 
 An alternative way to examine the efficiency in different parts of the
-posterior is to compute efficiencies estimates for quantiles (see Section
+posterior is to compute efficiency estimates for quantiles (see Section
 [Efficiency for quantiles](#quantile_S_eff)). Each interval has a
 specified proportion of draws, and the efficiency measures mixing of a function
 which indicates when the values are smaller than or equal to the corresponding
@@ -149,13 +146,12 @@ quantile.
 plot_quantile_ess(fit = fit_nom, par = which_min_ess, nalpha = 40)
 ```
 
-Similar as above, we see that the efficiency of our posterior draws is worryingly
-low in the tails. Again, orange ticks show iterations that exceeded the maximum
+Similar as above, we see that the efficiency of sampling is low in the tails. Orange ticks show iterations that exceeded the maximum
 treedepth.
 
 We may also investigate how the estimated effective sample sizes
-change when we use more and more draws (@Brooks+Gelman:1998 proposed
-to use similar graph for $\widehat{R}$). If the effective sample size
+change when we use more and more draws; @Brooks+Gelman:1998 proposed
+to use similar graph for $\widehat{R}$. If the effective sample size
 is highly unstable, does not increase proportionally with more draws,
 or even decreases, this indicates that simply running longer chains
 will likely not solve the convergence issues.  In the plot below, we
@@ -165,8 +161,9 @@ see how unstable both bulk-ESS and tail-ESS are for this example.
 plot_change_ess(fit = fit_nom, par = which_min_ess)
 ```
 
-We can further analyze potential problems using rank plots in which we clearly
-see differences between chains.
+We can further analyze potential problems using rank plots which
+clearly show the mixing problem between chains. In case of good mixing
+all rank plots should be close to uniform.
 
 ```{r}
 samp <- as.array(fit_nom)
@@ -177,9 +174,9 @@ mcmc_hist_r_scale(samp[, , xmin])
 
 ### Alternative parameterization of Cauchy
 
-Next we examine an alternative parameterization that considers the Cauchy
-distribution as a scale mixture of Gaussian distributions. The model has two
-parameters and the Cauchy distributed $x$'s can be computed from those. In
+Next, we examine an alternative parameterization  of the
+Cauchy as a scale mixture of Gaussians. The model has two
+parameters, and the Cauchy distributed $x$ can be computed deterministically from those. In
 addition to improved sampling performance, the example illustrates that focusing
 on diagnostics matters.
 
@@ -201,16 +198,14 @@ print(mon)
 which_min_ess <- which.min(mon[101:150, 'Tail_ESS'])
 ```
 
-All Rhat < 1.01 and ESS > 400 indicate the sampling worked much better
-with the alternative parameterization. [Appendix C](#AppendixC) has
-more results using other alternative parameterizations. The `x_a` and
-`x_b` used to form the Cauchy distributed `x` have stable quantile,
-mean and sd values. As `x` is Cauchy distributed it has only stable
-quantiles, but wildly varying mean and sd estimates as the true values
-are not finite.
+For all parameters, Rhat is less than 1.01 and ESS exceeds 400, indicating that sampling worked much better
+with this alternative parameterization. [Appendix C](#AppendixC) has
+more results using other parameterizations of the Cauchy distribution. The vectors `x_a` and
+`x_b` used to form the Cauchy-distributed `x` have stable quantile,
+mean and sd values. The quantiles of each `x_j` are stable too, but the mean and variance estimates are widely varying.
 
 We can further analyze potential problems using local efficiency estimates and
-rank plots. We take a detailed look at x[`r which_min_ess`], which has the 
+rank plots. For this example. we take a detailed look at x[`r which_min_ess`], which had the 
 smallest bulk-ESS of `r round(mon[which_min_ess, 'Tail_ESS'], 2)`.
 
 We examine the sampling efficiency in different parts of the
@@ -228,7 +223,8 @@ examine the sampling efficiency of different quantile estimates.
 plot_quantile_ess(fit = fit_alt1, par = which_min_ess + 100, nalpha = 40)
 ```
 
-Rank plots also look rather similar across chains.
+The rank plots also look close to
+uniform across chains, which is consistent with good mixing.
 
 ```{r}
 samp <- as.array(fit_alt1)
@@ -243,34 +239,35 @@ in the tails, which we also identified via the tail-ESS.
 
 ### Half-Cauchy with nominal parameterization
 
-Half-Cauchy priors are common and, for example, in Stan usually set
-using the nominal parameterization. However, when the constraint 
-`<lower=0>` is used, Stan does the sampling automatically
-in the unconstrained `log(x)` space, which changes the geometry
+Half-Cauchy priors for non-negative parameters are common and, at least in Stan, 
+usually specified via the nominal parameterization. In this example, we set independent half-Cauchy distributions on each element
+of the 50-dimensional vector $x$ constrained to be positive
+(in Stan, `<lower=0>`).  Stan then
+automatically switches to the unconstrained `log(x)` space, which changes the geometry
 crucially.
 
 ```{r}
 writeLines(readLines("half_cauchy_nom.stan"))
 ```
 
-Run the half-Cauchy with nominal parameterization (and positive constraint):
+Run the half-Cauchy with nominal parameterization and positive constraint:
 
 ```{r fit_half_nom, cache=TRUE, comment=NA, results='hide'}
 fit_half_nom <- stan(file = 'half_cauchy_nom.stan', seed = 7878, refresh = 0)
 ```
 
 There are no warnings, and the sampling is much faster than for the
-Cauchy nominal model.
+Cauchy nominal model without the constraint.
 
 ```{r, cache=FALSE}
 mon <- monitor(fit_half_nom)
 print(mon)
 ```
 
-All Rhat < 1.01 and ESS > 400 indicate good performance of the sampler. We see
-that the Stan's automatic (and implicit) transformation of constraint parameters
-can have a big effect on the sampling performance. More experiments with
-different parameterizations of the half-Cauchy distribution can be found in
+All values of Rhat are less than 1.01 and ESS exceeds 400 for all
+parameters, indicating good performance of the sampler despite using
+the nominal parameterization of the Cauchy distribution.  More
+experiments with the half-Cauchy distribution can be found in
 [Appendix C](#AppendixC).
 
 
@@ -279,9 +276,9 @@ different parameterizations of the half-Cauchy distribution can be found in
 This section relates to the examples presented in Section 5.2 of the paper. 
 
 The Eight Schools data is a classic example for hierarchical models [see Section
-5.5 in @BDA3], which despite the apparent simplicity nicely illustrates
+5.5 in @BDA3], which even in its simplicity illustrates
 the typical problems in inference for hierarchical models. The Stan
-models below are from Michael Betancourt's case study on [Diagnosing
+models are adapted from Michael Betancourt's case study on [Diagnosing
 Biased Inference with
 Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
 [Appendix D](#AppendixD) contains more detailed analysis of different algorithm variants.
@@ -306,11 +303,12 @@ fit_cp <- stan(
 )
 ```
 
-Despite an increased `adapt_delta`, we still observe a lot of
+Still, we observe a lot of
 divergent transitions, which in itself is already sufficient indicator
-to not trust the results.  We can use Rhat and ESS diagnostics to
-recognize problematic parts of the posterior and they could be used in
-cases when other MCMC algorithms than HMC is used.
+of convergence problems.  We can use Rhat and ESS diagnostics to
+recognize problematic parts of the posterior. The latter
+two have the advantage over the divergent transitions diagnostic that they
+can be used with all MCMC algorithms not only with HMC.
 
 ```{r, cache=FALSE}
 mon <- monitor(fit_cp)
@@ -321,7 +319,7 @@ See [Appendix D](#AppendixD) for results of longer chains.
 
 Bulk-ESS and Tail-ESS for the between school standard deviation `tau`
 are `r mon['tau', 'Bulk_ESS']` and `r mon['tau', 'Tail_ESS']`
-respectively. Both are less than 400, indicating we should investigate that
+respectively. Both are much less than 400, indicating we should investigate that
 parameter more carefully.  We thus examine the sampling efficiency in
 different parts of the posterior by computing the efficiency estimate
 for small interval estimates for `tau`. These plots may either show
@@ -338,10 +336,10 @@ plot_local_ess(fit = fit_cp, par = "tau", nalpha = 20, rank = FALSE)
 
 We see that the sampler has difficulties in exploring small `tau` values. As
 the sampling efficiency for estimating small `tau` values is practically zero,
-we may assume that we may miss substantial amount of posterior mass
+we may assume that we miss substantial amount of posterior mass
 and get biased estimates. Red ticks, which show iterations with divergences,
-have concentrated to small `tau` values, indicate also problems exploring
-small values which is likely to cause bias.
+have concentrated to small `tau` values, which gives us another indication
+of problems in exploring small values.
 
 We examine also the sampling efficiency of different quantile estimates. Again,
 these plots may either show quantiles or parameter values at the vertical axis.
@@ -356,17 +354,19 @@ plot_quantile_ess(fit = fit_cp, par = "tau", nalpha = 40, rank = FALSE)
 
 Most of the quantile estimates have worryingly low effective sample size.
 
-Let's see how the estimated effective sample size changes when we use
-more and more draws. Here we don't see sudden changes, but both
-bulk-ESS and tail-ESS are too low. See [Appendix D](#AppendixD) for
+Next we examine how the estimated effective sample size changes when we use
+more and more draws. Here we do not see sudden changes, but both
+bulk-ESS and tail-ESS are consistently low. See [Appendix D](#AppendixD) for
 results of longer chains.
 
 ```{r, cache=FALSE}
 plot_change_ess(fit = fit_cp, par = "tau")
 ```
 
-In lines with these findings, the rank plots of `tau` clearly show problems
-in the mixing of the chains.
+In line with the other findings, rank plots of `tau` clearly show problems
+in the mixing of the chains. In particular, the rank plot for the first chain indicates that it was unable to 
+explore the lower-end of the posterior range, while the spike in the rank plot 
+for chain 2 indicates that it spent too much time stuck in these values.
 
 ```{r}
 samp_cp <- as.array(fit_cp)
@@ -413,7 +413,7 @@ plot_local_ess(fit = fit_ncp2, par = 2, nalpha = 20)
 ```
 
 Small `tau` values are still more difficult to explore, but the relative
-efficiency is in a good range. We may also check this with a finer resolution:
+efficiency is good. We may also check this with a finer resolution:
 
 ```{r}
 plot_local_ess(fit = fit_ncp2, par = 2, nalpha = 50)
@@ -425,8 +425,7 @@ The sampling efficiency for different quantile estimates looks good as well.
 plot_quantile_ess(fit = fit_ncp2, par = 2, nalpha = 40)
 ```
 
-In line with these findings, the rank plots of `tau` show no substantial 
-differences between chains.
+The rank plots of `tau` show no substantial differences between chains.
 
 ```{r}
 samp_ncp2 <- as.array(fit_ncp2)
@@ -474,7 +473,7 @@ The following abbreviations are used throughout the appendices:
 
 ## Appendix A: Computing the effective sample size {#AppendixA .unnumbered}
 
-There are no examples or numerical experiments related to Appendix A.
+There are no examples or numerical experiments related to Appendix A in the paper.
 
  
 ## Appendix B: Normal distributions with additional trend, shift or scaling {#AppendixB .unnumbered}
