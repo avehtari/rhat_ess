@@ -868,7 +868,7 @@ In this example, we set independent half-Cauchy distributions on each element
 of the 50-dimensional vector $x$ constrained to be positive
 (in Stan, \texttt{\textless{}lower=0\textgreater{}}). Stan then
 automatically switches to the unconstrained \(\log(x)\) space, which
-changes the geometry crucially. With this transformations, \sRhat\ is less than 1.01 and ESS exceeds 400 for all parameters, indicating good performance of the sampler despite using the nominal parameterization of
+changes the geometry crucially. With this transformations, all values of \Rhat\ are less than 1.01 and ESS exceeds 400 for all parameters, indicating good performance of the sampler despite using the nominal parameterization of
 the Cauchy distribution. More experiments for the half-Cauchy distribution 
 can be found in the online appendix.
 
