@@ -138,7 +138,8 @@ Aki Vehtari\footnote{Helsinki Institute for Information Technology HIIT,
   Department of Computer Science, Aalto University, Finland.},
    Andrew Gelman\footnote{Department of Statistics, Columbia University, New York.},
  Daniel Simpson\footnote{Department of Statistical Sciences, University of Toronto, Canada.},
- Bob Carpenter$^{\dagger}$,
+ Bob Carpenter\footnote{Applied Statistics Center, Columbia
+   University, New York.}
 and Paul-Christian B\"{u}rkner\footnote{Department of Psychology, University of M\"{u}nster, Germany}
 }
     
@@ -336,7 +337,7 @@ When there might be difficulties with mixing, it is important to use between-cha
 information in computing the ESS. For instance, in the sorts of
 funnel-shaped distributions that arise with hierarchical models, differences 
 in step size adaptation can lead to chains to have
-different behavior reaching the narrow part of the funnel. For multimodal 
+different behavior in the neighborhood of the narrow part of the funnel. For multimodal
 distributions with well-separated modes, the split-\(\widehat{R}\)
 adjustment leads to an ESS estimate that is close to the number of
 distinct modes that are found. 
@@ -392,7 +393,7 @@ We will refer to this particular ESS measure as \(S_{\rm eff}\).
 %
 Here we present split-\(\widehat{R}\),
 following \citet{BDA3}, but using the notation of
-\citet{StanManual.2.18.0}. This implementation represents the current 
+\citet{StanManual.2.18.0}. This formulation represents the current 
 standard in convergence diagnostics for iterative simulations. In the
 equations below, \(N\) is the number of draws per chain, \(M\) is the
 number of chains, and \(S=MN\) is the total number of draws from all
@@ -430,7 +431,7 @@ Meanwhile, for any finite \(N\), the within-chain variance \(W\) should
 individual chains haven't had the time to explore all of the target
 distribution and, as a result, will have less variability. In the limit
 as \(N\rightarrow\infty\), the expectation of \(W\) also approaches
-\(\mbox{var}(\theta |y)\). \citet{vats2018revisiting} propose a different variance estimator that is more efficient for single chains, however we are willing to trade off a slightly higher variance for the increase diagnostic sensitivity (described in the Introduction) that running multiple chains brings.
+\(\mbox{var}(\theta |y)\). \citet{vats2018revisiting} propose a different variance estimator that is more efficient for single chains, however we are willing to trade off a slightly higher variance for increased diagnostic sensitivity (as described in the introduction) that running multiple chains brings.
 
 We monitor convergence of the iterative simulations to the target
 distribution by estimating the factor by which the scale of the current
@@ -457,7 +458,7 @@ detail in Appendix~A.
 The value of \Rhat\ and ESS require reliable estimates of variances and autocorrelations, which can
 only occur if the chains have enough independent replicates. In particular, we only recommend 
 relying on the \Rhat\ estimate to make decisions about the quality of the chain if each of the 
-split chains has an ESS estimate of at least 50. In the our minimum recommended setup of four
+split chains has an average ESS estimate of at least 50. In the our minimum recommended setup of four
 parallel chains, the total ESS should be at least 400 before we expect  \Rhat\ to be useful.
 
 
@@ -477,11 +478,11 @@ Rank normalized split-\(\widehat{R}\) and \(S_{\rm eff}\) are
 computed using the equations in Section \ref{SplitRhat} and Appendix~A, but
 replacing the original parameter values \(\theta^{(nm)}\) with their
 corresponding rank normalized values denoted as \(z^{(nm)}\). Rank
-normalization is done a follows: First, replace each value
-\(\theta^{(nm)}\) by its rank \(r^{(nm)}\) within the pooled draws from all chains.
- Average rank for ties are
-used to conserve the number of unique values of discrete quantities.
- Second, normalize ranks via the inverse normal transformation,
+normalization proceeds as follows.  First, replace each value
+\(\theta^{(nm)}\) by its rank \(r^{(nm)}\) within the pooled draws
+from all chains.  Average rank for ties are used to conserve the
+number of unique values of discrete quantities.  Second, normalize
+ranks via the inverse normal transformation,
 \begin{equation}
 z^{(nm)} = \Phi^{-1}((r^{(nm)}-0.5)/S).
 \end{equation}
@@ -542,20 +543,20 @@ is below or above a fixed value (for example, if a posterior interval contains z
 
 The \(\alpha\)-quantile
 is defined as the parameter value \(\theta_\alpha\) for which
-\(p(\theta \leq \theta_\alpha) = \alpha\). An estimate
+\(\Pr(\theta \leq \theta_\alpha) = \alpha\). An estimate
 \(\hat{\theta}_\alpha\) of \(\theta_\alpha\) can thus be obtained by
 finding the \(\alpha\)-quantile of the empirical cumulative distribution function (ECDF) of the
 posterior draws \(\theta^{(s)}\). However, quantiles cannot be written
 as an expectation, and thus the above equations for \(\widehat{R}\) and
 \(S_{\rm eff}\) are not directly applicable. Thus, we first focus on the
 efficiency estimate for the cumulative probability
-\(p(\theta \leq \theta_\alpha)\) for different values of
+\(\Pr(\theta \leq \theta_\alpha)\) for different values of
 \(\theta_\alpha\).
 
 For any \(\theta_\alpha\), the ECDF gives an estimate of the cumulative
 probability,
 \begin{equation}
-p(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
+\Pr(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
 I(\theta^{(s)} \leq\theta_\alpha),
 \end{equation}
 where \(I(\cdot)\) is the indicator function. The indicator function
@@ -571,7 +572,7 @@ the delta method to compute a variance estimate for
 \(F^{-1}(\bar{I}_\alpha)\). Although we don't usually know \(F\), the
 delta method approach reveals that the variance of \(\bar{I}_\alpha\)
 for some \(\theta_\alpha\) is scaled by the (usually unknown) density
-\(f(\theta_\alpha)\), but the efficiency depends only on the ratio of variances, which means that the efficiency of \(F^{-1}(\bar{I}_\alpha)\) is well approximated asymptotically by the  efficiency
+\(f(\theta_\alpha)\), but the efficiency depends only on the ratio of variances. This means that the efficiency of \(F^{-1}(\bar{I}_\alpha)\) is well approximated asymptotically by the  efficiency
 of \(\bar{I}_\alpha\). Thus, we can use the effective sample size for
 the ECDF (computed using the indicator function
 \(I(\theta^{(s)} \leq \theta_\alpha)\)) also for the corresponding
@@ -585,9 +586,8 @@ sample sizes of the 5\% and 95\% quantiles, which we will call
 Tail-ESS can help diagnosing problems due to different scales of the
 chains (see Appendix~B).
 
-
 Since the marginal posterior distributions might not have finite mean
-and variance, by default \texttt{rstan} \citep{RStan.2.17} and \texttt{rstanarm}
+and variance, by default \texttt{rstanarm}
 \citep{RStanARM.2.17} report median and median absolute deviation (MAD)
 instead of mean and standard error. Median and MAD are well defined
 even when the marginal distribution does not have finite mean and
@@ -599,7 +599,7 @@ absolute deviation by computing the efficiency estimate of an
 indicator function based on the folded parameter values \(\zeta\) (see
 Equation (\ref{zeta})):
 \begin{equation}
-p(\zeta \leq \zeta_{0.5}) \approx \bar{I}_{\zeta,0.5} = \frac{1}{S}\sum_{s=1}^S
+\Pr(\zeta \leq \zeta_{0.5}) \approx \bar{I}_{\zeta,0.5} = \frac{1}{S}\sum_{s=1}^S
 I(\zeta^{(s)} \leq \zeta_{0.5}),
 \end{equation}
 where \(\zeta_{0.5}\) is the median of the folded values. The efficiency estimate for the MAD is obtained by applying the same
@@ -611,7 +611,7 @@ We can get more local efficiency estimates by considering small
 probability intervals. We propose to compute the efficiency estimates
 for
 \begin{equation}
-\bar{I}_{\alpha,\delta} = p(\hat{Q}_\alpha < \theta \leq \hat{Q}_{\alpha+\delta}),
+\bar{I}_{\alpha,\delta} = \Pr(\hat{Q}_\alpha < \theta \leq \hat{Q}_{\alpha+\delta}),
 \end{equation}
 
 where \(\hat{Q}_\alpha\) is an empirical \(\alpha\)-quantile,
@@ -656,7 +656,7 @@ Carlo standard errors of quantiles:
 \hypertarget{diagnostic-visualizations}{%
 \subsection{Diagnostic visualizations}\label{diagnostic-visualizations}}
 
-In order to intuitively grasp convergence of iterative algorithms, we
+In order to develop intuitions around the convergence of iterative algorithms, we
 propose several new diagnostic visualizations in addition to the numerical
 convergence diagnostics discussed above. We illustrate with several examples in Section
 \ref{examples}.
@@ -664,7 +664,7 @@ convergence diagnostics discussed above. We illustrate with several examples in 
 \hypertarget{rank-plots}{%
 \paragraph{Rank plots.}\label{rank-plots}}
 Extending the idea of using ranks instead of the original parameter
-values, we propose to use rank plots for each chain instead
+values, we propose using rank plots for each chain instead
 of trace plots. Rank plots are histograms of the
 ranked posterior draws (ranked over all chains) plotted separately for
 each chain. If all of the chains are targeting the same posterior, we expect the 
@@ -709,8 +709,9 @@ small.
 We now demonstrate our approach and recommended workflow on several small examples.
 Unless mentioned otherwise, we use dynamic Hamiltonian Monte Carlo with
 multinomial sampling \citep{betancourt2017conceptual} as implemented
-in Stan \citep{StanManual.2.18.0} and run 4 chains each with 1000
-warmup iterations and 1000 post-warmup iterations used for inference.
+in Stan \citep{StanManual.2.18.0}. We run 4 chains, each with 1000
+warmup iterations, which do not form a Markov chain and are discarded, and
+1000 post-warmup iterations, which are saved and used for inference.
 
 \hypertarget{cauchy-a-distribution-with-infinite-mean-and-variance}{%
 \subsection{Cauchy: A distribution with infinite mean and
@@ -882,24 +883,30 @@ The eight schools problem is a classic example
 \citep[see Section 5.5 in][]{BDA3}, which even in its
 simplicity illustrates the typical problems in inference for
 hierarchical models. We can parameterize this simple model
-in at least two ways. The centered parameterization looks as follows:
+in at least two ways. The centered parameterization $(\theta, \mu,
+\tau, \sigma)$ looks as follows:
 \begin{align*}
 \theta_j &\sim \text{normal}(\mu, \tau) \\
 y_j &\sim \text{normal}(\theta_j, \sigma_j).
 \end{align*}
 
-In contrast, the non-centered parameterization can be written as:
+In contrast, the non-centered parameterization
+$(\tilde{\theta}, \mu, tau, \sigma)$ can be written as:
 \begin{align*}
 \tilde{\theta}_j &\sim \text{normal}(0, 1) \\
 \theta_j &= \mu + \tau \tilde{\theta}_j \\
 y_j &\sim \text{normal}(\theta_j, \sigma_j).
 \end{align*}
-In both parameterizations, $\theta_j$ are the treatment effects in the eight schools,
+In both cases, $\theta_j$ are the treatment effects in the eight schools,
 and $\mu, \tau$ represent the population mean and standard deviation 
-of the distribution of these effects.
+of the distribution of these effects. In the non-centered
+parameterization, the $\theta$ are parameters, whereas in the
+non-centered parameterization, the $\tilde{\theta}$ are parameters and
+$\theta$ is a derived quantity.
 
 Geometrically, the centered parameterization exhibits a funnel shape
-that contracts into a region of strong curvature around small
+that contracts into a region of strong curvature around the population
+mean when faced with small
 values of the population standard deviation $\tau$, making it difficult for many simple
 Markov chain methods to adequately explore the full distribution of this
 paramater. The online appendix contains more detailed analysis of different 
@@ -985,7 +992,7 @@ model}\label{non-centered-eight-schools-model}}
 
 For hierarchical models, the corresponding non-centered
 parameterization often works better. For reasons of comparability, we use the 
-same conservative sampler setting as for the centered parameterization model. 
+same conservative sampler settings as for the centered parameterization model. 
 For the non-centered parameterization, we do not observe divergences or 
 other warnings.
 All values of \Rhat\ are less than 1.01 and ESS exceeds 400, indicating a much
@@ -1392,8 +1399,8 @@ estimates. MAD ESS values are just above our recommend threshold,
 indicating practically useful MAD estimates, too. The online appendix
 has additional results with longer chains, showing that all other ESS
 values except traditional ESS (which is not well defined) keep improving
-with more iterations. It is however recommended to use more efficient
-parameterization especially if the tail quantiles are quantities of
+with more iterations. It is however recommended to use a more efficient
+parameterization especially if the tail quantiles are of
 interest.
 
 
@@ -1414,8 +1421,8 @@ eight schools model with centered parameterization , run with $4\times 10^5$
 iterations per chain, first half removed as warm-up, and thinned by taking every 200th iteration.
 
 We observe several divergent transitions and the estimated Bayesian
-fraction of missing information is also low, which can indicate
-convergence problems.
+fraction of missing information \citep{betancourt2017conceptual} is
+also low, which can indicate convergence problems.
 
 Figures \ref{fig:local-ess-fit-cp4-tau-1},
 \ref{fig:quantile-ess-fit-cp4-tau-1}, and
@@ -1464,13 +1471,13 @@ are still able to show the problem.
 
 \hypertarget{eight-schools-with-jags}{%
 \subsection*{Appendix E: A centered eight schools model fit using a Gibbs sampler}\label{eight-schools-with-jags}}
-\addcontentsline{toc}{subsection}{Appendix E: Eight Schools with Jags}
+\addcontentsline{toc}{subsection}{Appendix E: Eight Schools with JAGS}
 
 So far, we have run all models in Stan, but here we demonstrate that
 these diagnostics are  also useful for samplers other than 
 Hamiltonian Monte Carlo.  We fit the eight schools models also with
- Jags \citep{plummer2003jags}, which uses a dialect of the BUGS
-language \citep{lunn2009bugs} to specify models. Jags uses a clever
+ JAGS \citep{plummer2003jags}, which uses a dialect of the BUGS
+language \citep{lunn2009bugs} to specify models. JAGS uses a clever
 mix of Gibbs and Metropolis-Hastings sampling. This kind of sampling
 does not usually scale well to high-dimensional posteriors with strongly
 dependent parameters \citep[see, e.g.][]{Hoffman+Gelman:2014}, but it can work fine for relatively simple models such as in this case study.
@@ -1494,12 +1501,12 @@ change of bulk-SS and tail-ESS with increasing number of
 iterations. The relative efficiency is low, but ESS for all small
 probability intervals, quantiles and bulk are above the recommend
 threshold. Notably, the increase in effective sample size for
-$\tau$ is linear in the total number of draws.  Gibbs sampler can
+$\tau$ is linear in the total number of draws.  A Gibbs sampler can
 reach the narrow part of the funnel, although the sampling efficiency
 is affected by the funnel. In this simple case the inefficiency of the
 Gibbs sampling is not dominating and good results can be achieved in
 reasonable time. The online appendix shows additional results for Gibbs
-sampling with more efficient non-centered parameterization.
+sampling with a more efficient non-centered parameterization.
 \begin{figure}[tp]
   \centering
   \begin{minipage}{0.48\textwidth}
