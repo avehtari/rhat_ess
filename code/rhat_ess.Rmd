@@ -1,7 +1,7 @@
 ---
 title: "Rank-normalization, folding, and localization: An improved $\\widehat{R}$ for assessing convergence of MCMC (online appendix)"
 author: "Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul-Christian Bürkner"
-date: "First version 2017-05-23. Last modified `r format(Sys.Date())`."
+date: "Major version 2019-03-19. Minor modifications `r format(Sys.Date())`."
 encoding: "UTF-8"
 output:
   html_document:
