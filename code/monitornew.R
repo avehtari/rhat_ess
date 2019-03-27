@@ -263,15 +263,22 @@ mcse_sd <- function(sims) {
   sd(sims) * sqrt(exp(1) * (1 - 1 / ess_sd)^(ess_sd - 1) - 1)
 }
 
+#' Summary of General Simulation Results 
+#' 
+#' Create a summary for general simulation results 
+#' 
+#' @param sims A 3-dimensional array of simulation results. The first dimension
+#'   is the number of iterations per chain, the second its the number of chains
+#'   and the third is the number of parameters. Alternatively, \code{sims} can
+#'   be a \code{stanfit} object from which the simulation results will be
+#'   extracted.
+#' @param warmup ...
+#' @param probs ...
+#' 
+#' @return A \code{simsummary} object which inherits from
+#' class \code{data.frame}.
+#' 
 monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) { 
-  # print a summary for general simulation results 
-  # of 3D array: # iter * # chains * # parameters 
-  # Args:
-  #   sims: a 3D array described above 
-  #   warmup: the number of iterations used for warmup 
-  #   probs: probs of summarizing quantiles 
-  # Return: 
-  #   A summary data.frame of class 'simsummary'
   if (inherits(sims, "stanfit")) {
     chains <- sims@sim$chains
     iter <- sims@sim$iter
