@@ -1,5 +1,5 @@
 # This file is part of RStan
-# Copyright (C) 2012, 2013, 2014, 2015, 2016, 2017 Trustees of Columbia University
+# Copyright (C) 2012, 2013, 2014, 2015, 2016, 2017, 2018 Trustees of Columbia University
 # Copyright (C) 2018, 2019 Aki Vehtari, Paul Bürkner
 #
 # RStan is free software; you can redistribute it and/or
@@ -705,8 +705,8 @@ print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   if (!isTRUE(atts$extra)) {
     cat(
       "\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
-      "effective sample size for bulk and tail quantities respectively (good values is \n",
-      "ESS > 400), and Rhat is the potential scale reduction factor on rank normalized\n",
+      "effective sample size for bulk and tail quantities respectively (an ESS > 400\n",
+      "is considered good), and Rhat is the potential scale reduction factor on rank normalized\n",
       "split chains (at convergence, Rhat = 1).\n", sep = ""
     )
   }
