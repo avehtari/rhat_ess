@@ -45,11 +45,6 @@ fft_next_good_size <- function(N) {
 #' @param y A numeric vector forming a sequence of values.
 #'
 #' @return A numeric vector of autocovariances at every lag (scaled by N-lag).
-#'
-#' @details Details if required
-#'
-#' @examples Examples if required
-#'
 autocovariance <- function(y) {
   N <- length(y)
   M <- fft_next_good_size(N)
@@ -161,11 +156,16 @@ is_constant <- function(x, tol = .Machine$double.eps) {
 #'
 #' Compute the Rhat convergence diagnostic for a single parameter
 #' For split-Rhat, call this with split chains.
-#' See details in Section 3 of Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for Rhat.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 rhat_rfun <- function(sims) {
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
@@ -187,11 +187,16 @@ rhat_rfun <- function(sims) {
 #'
 #' Compute the effective sample size estimate for a sample of several chains
 #' for one parameter. For split-ESS, call this with split chains.
-#' See details in Appendix A of Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the effective sample size.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_rfun <- function(sims) {
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
@@ -245,11 +250,16 @@ ess_rfun <- function(sims) {
 #'
 #' Compute Rhat convergence diagnostic as the maximum of rank normalized
 #' split-Rhat and rank normalized folded-split-Rhat for one parameter.
-#' See details in Sections 3 and 4 of Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the effective sample size.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 rhat <- function(sims) {
   bulk_rhat <- rhat_rfun(z_scale(split_chains(sims)))
   sims_folded <- abs(sims - median(sims))
@@ -263,11 +273,16 @@ rhat <- function(sims) {
 #' Bulk-ESS is useful as a generic diagnostic for the sampling
 #' efficiency in the bulk of the posterior. It is defined as the
 #' effective sample size for rank normalized values using split chains.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the bulk effective sample size.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_bulk <- function(sims) {
   ess_rfun(z_scale(split_chains(sims)))
 }
@@ -278,11 +293,16 @@ ess_bulk <- function(sims) {
 #' Tail-ESS is useful for generic diagnostic for the sampling
 #' efficiency in the tails of the posterior. It is defined as
 #' the minimum of the effective sample sizes for 5% and 95% quantiles.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the tail effective sample size.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_tail <- function(sims) {
   I05 <- sims <= quantile(sims, 0.05)
   q05_ess <- ess_rfun(z_scale(split_chains(I05)))
@@ -295,13 +315,18 @@ ess_tail <- function(sims) {
 #'
 #' Compute effective sample size estimate for a quantile estimate of
 #' one parameter.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #' @param prob A single numeric value of probability.
 #'
 #' @return A single numeric value for the effective sample size for a
 #'     quantile estimate corresponding to the probability.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_quantile <- function(sims, prob) {
   I <- sims <= quantile(sims, prob)
   ess_rfun(z_scale(split_chains(I)))
@@ -311,12 +336,17 @@ ess_quantile <- function(sims, prob) {
 #'
 #' Compute effective sample size estimate for a mean (expectation)
 #' estimate of one parameter.
-#' See details in Appendix A of Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the effective sample size
 #'     estimate for mean estimate.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_mean <- function(sims) {
   ess_rfun(sims)
 }
@@ -326,12 +356,17 @@ ess_mean <- function(sims) {
 #' Compute effective sample size estimate for standard deviation (s)
 #' estimate of one parameter. This is defined as minimum of effective
 #' sample size estimate for mean and mean of squared value.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for the effective sample size
 #'     estimate for standard deviation estimate.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_sd <- function(sims) {
   min(ess_rfun(sims), ess_rfun(sims^2))
 }
@@ -341,7 +376,6 @@ ess_sd <- function(sims) {
 #' Compute Monte Carlo standard error, 5%-quantile, 95%-quantile, and
 #' effective sample size estimate for a quantile estimate of a single
 #' parameter.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #' @param prob A single numeric value of probability.
@@ -349,6 +383,12 @@ ess_sd <- function(sims) {
 #' @return A data frame with Monte Carlo standard error (mcse),
 #'     5%-quantile (Q05), 95%-quantile (Q95), and effective sample
 #'     size estimate (ess).
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 conv_quantile <- function(sims, prob) {
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
@@ -370,13 +410,18 @@ conv_quantile <- function(sims, prob) {
 #'
 #' Compute Monte Carlo standard error for a quantile estimate of a
 #' single parameter.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #' @param prob A single numeric value of probability.
 #'
 #' @return A single numeric value for Monte Carlo standard error for a
 #'     quantile estimate corresponding to the probability.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 mcse_quantile <- function(sims, prob) {
   conv_quantile(sims, prob)$mcse
 }
@@ -385,12 +430,23 @@ mcse_quantile <- function(sims, prob) {
 #'
 #' Compute Monte Carlo standard error for mean (expectation) of a
 #' single parameter.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for Monte Carlo standard error
 #'     for mean estimate.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 mcse_mean <- function(sims) {
   sd(sims) / sqrt(ess_mean(sims))
 }
@@ -400,12 +456,17 @@ mcse_mean <- function(sims) {
 #' Compute Monte Carlo standard error for standard deviation (sd) of a
 #' single parameter using Stirling's approximation and assuming
 #' approximate normality.
-#' See details in Vehtari et al (2019), arXiv:1903.08008.
 #'
 #' @param sims A 2D array _without_ warmup samples (# iter * # chains).
 #'
 #' @return A single numeric value for Monte Carlo standard error
 #'     for standard deviation estimate.
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 mcse_sd <- function(sims) {
   # assumes normality of sims and uses Stirling's approximation
   ess_sd <- ess_sd(sims)
@@ -431,7 +492,12 @@ mcse_sd <- function(sims) {
 #'
 #' @return A \code{simsummary} object which inherits from
 #' class \code{data.frame}.
-#'
+#' 
+#' @references
+#' Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
+#' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
+#' localization: An improved R-hat for assessing convergence of
+#' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
   if (inherits(sims, "stanfit")) {
     chains <- sims@sim$chains
