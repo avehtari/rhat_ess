@@ -1,7 +1,7 @@
 ---
 title: "Rank-normalization, folding, and localization: An improved $\\widehat{R}$ for assessing convergence of MCMC (online appendix)"
 author: "Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, Paul-Christian Bürkner"
-date: "First version 2017-05-23. Last modified `r format(Sys.Date())`."
+date: "Major version 2019-03-19. Minor modifications `r format(Sys.Date())`."
 encoding: "UTF-8"
 output:
   html_document:
@@ -28,12 +28,15 @@ options(width = 100)
 
 # Overview
 
-This is the online appendix of the paper 
-*Rank-normalization, folding, and localization: An improved* $\widehat{R}$
-*for assessing convergence of MCMC* 
-available on Github (https://github.com/avehtari/rhat_ess). Here, we provide all the
-compute code related to the examples presented in the paper and more numerical
-experiments not discussed in the paper itself.
+This is the online appendix of the paper
+
+- Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter,
+Paul-Christian Bürkner (2019): Rank-normalization, folding, and localization: An improved $\widehat{R}$ for assessing convergence of MCMC. [arXiv preprint arXiv:1903.08008](http://arxiv.org/abs/1903.08008).
+
+The code for the paper is available on Github
+(https://github.com/avehtari/rhat_ess). Here, we introduce all the
+code related to the examples presented in the paper and more
+numerical experiments not discussed in the paper itself.
 
 To help you finding your way through all the examples presented in this online
 appendix, below please find a list of links to the examples discussed
