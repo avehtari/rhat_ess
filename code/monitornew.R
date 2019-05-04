@@ -54,7 +54,7 @@ autocovariance <- function(y) {
   transform <- fft(yc)
   ac <- fft(Conj(transform) * transform, inverse = TRUE)
   # use "biased" estimate as recommended by Geyer (1992)
-  ac <- Re(ac)[1:N] / (N * 2 * N-1)
+  ac <- Re(ac)[1:N] / (N * N * 2)
   ac
 }
 
@@ -145,6 +145,7 @@ split_chains <- function(sims) {
     dim(sims) <- c(length(sims), 1)
   }
   niter <- dim(sims)[1]
+  if (niter == 1L) return(sims)
   half <- niter / 2
   cbind(sims[1:floor(half), ], sims[ceiling(half + 1):niter, ])
 }
@@ -168,6 +169,10 @@ is_constant <- function(x, tol = .Machine$double.eps) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 rhat_rfun <- function(sims) {
+  if (any(!is.finite(sims)))
+    return(NaN)
+  else if (is_constant(sims))
+    return(1)
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
   }
@@ -204,7 +209,10 @@ ess_rfun <- function(sims) {
   }
   chains <- ncol(sims)
   n_samples <- nrow(sims)
-
+  if (any(!is.finite(sims)) || n_samples < 3L)
+    return(NaN)
+  else if (is_constant(sims))
+    return(chains*n_samples)
   acov <- lapply(seq_len(chains), function(i) autocovariance(sims[, i]))
   acov <- do.call(cbind, acov)
   chain_mean <- apply(sims, 2, mean)
@@ -315,9 +323,9 @@ ess_bulk <- function(sims) {
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_tail <- function(sims) {
   I05 <- sims <= quantile(sims, 0.05)
-  q05_ess <- ess_rfun(z_scale(split_chains(I05)))
+  q05_ess <- ess_rfun(split_chains(I05))
   I95 <- sims <= quantile(sims, 0.95)
-  q95_ess <- ess_rfun(z_scale(split_chains(I95)))
+  q95_ess <- ess_rfun(split_chains(I95))
   min(q05_ess, q95_ess)
 }
 
@@ -339,7 +347,7 @@ ess_tail <- function(sims) {
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_quantile <- function(sims, prob) {
   I <- sims <= quantile(sims, prob)
-  ess_rfun(z_scale(split_chains(I)))
+  ess_rfun(split_chains(I))
 }
 
 #' Effective sample size
@@ -358,7 +366,7 @@ ess_quantile <- function(sims, prob) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_mean <- function(sims) {
-  ess_rfun(sims)
+  ess_rfun(split_chains(sims))
 }
 
 #' Effective sample size
@@ -378,7 +386,7 @@ ess_mean <- function(sims) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_sd <- function(sims) {
-  min(ess_rfun(sims), ess_rfun(sims^2))
+  min(ess_rfun(split_chains(sims)), ess_rfun(split_chains(sims^2)))
 }
 
 #' Monte Carlo diagnostics for a quantile
@@ -403,7 +411,7 @@ conv_quantile <- function(sims, prob) {
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
   }
-  ess <- ess_quantile(sims, prob)
+  ess <- ess_quantile(split_chains(sims), prob)
   p <- c(0.1586553, 0.8413447, 0.05, 0.95)
   a <- qbeta(p, ess * prob + 1, ess * (1 - prob) + 1)
   ssims <- sort(sims)
@@ -508,7 +516,10 @@ mcse_sd <- function(sims) {
 #' Paul-Christian Bürkner (2019). Rank-normalization, folding, and
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
-monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
+#' 
+#' @export
+monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95), 
+                    se = FALSE, print = TRUE, digits = 1, ...) { 
   if (inherits(sims, "stanfit")) {
     chains <- sims@sim$chains
     iter <- sims@sim$iter
@@ -540,6 +551,7 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
 
   out <- vector("list", length(parnames))
   out <- setNames(out, parnames)
+  # loop over parameters
   for (i in seq_along(out)) {
     sims_i <- sims[, , i]
     valid <- all(is.finite(sims_i))
@@ -569,12 +581,14 @@ monitor <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
 
   # replace NAs with appropriate values if draws are valid
   S <- prod(dim(sims)[1:2])
-  out$Rhat[out$valid & !is.finite(out$Rhat)] <- 1
-  out$Bulk_ESS[out$valid & !is.finite(out$Bulk_ESS)] <- S
-  out$Tail_ESS[out$valid & !is.finite(out$Tail_ESS)] <- S
+  valid <- out[, 1]
+  out <- out[, -1, drop = FALSE]
+  out[valid & !is.finite(out[, "Rhat"]), "Rhat"] <- 1
+  out[valid & !is.finite(out[, "Bulk_ESS"]), "Bulk_ESS"] <- S
+  out[valid & !is.finite(out[, "Tail_ESS"]), "Tail_ESS"] <- S
   SE_vars <- colnames(out)[grepl("^SE_", colnames(out))]
   for (v in SE_vars) {
-    out[[v]][out$valid & !is.finite(out[[v]])] <- 0
+  	out[valid & !is.finite(out[, v]), v] <- 0
   }
   out$valid <- NULL
 
@@ -713,12 +727,12 @@ print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   )
   print(px, ...)
   if (!isTRUE(atts$extra)) {
-    cat(
-      "\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
-      "effective sample size for bulk and tail quantities respectively (an ESS > 400\n",
-      "is considered good), and Rhat is the potential scale reduction factor on rank normalized\n",
-      "split chains (at convergence, Rhat = 1).\n", sep = ""
-    )
+  	cat(
+  		"\nFor each parameter, Bulk_ESS and Tail_ESS are crude measures of \n",
+  		"effective sample size for bulk and tail quantities respectively (an ESS > 100 \n",
+  		"per chain is considered good), and Rhat is the potential scale reduction \n",
+  		"factor on rank normalized split chains (at convergence, Rhat <= 1.01).\n", sep = ""
+  	)
   }
   invisible(x)
 }
