@@ -314,7 +314,7 @@ plot_change_ess <- function(fit, par, breaks = seq(0.1, 1, 0.05),
     sims_i <- sims[seq_len(iter_breaks[i]), ]
     nsamples <- prod(dim(sims_i))
     bulk_seff[i] <- ess_rfun(z_scale(split_chains(sims_i)))
-    tail_seff[i] <- tail_ess(sims_i)
+    tail_seff[i] <- ess_tail(sims_i)
     bulk_reff[i] <- bulk_seff[i] / nsamples
     tail_reff[i] <- tail_seff[i] / nsamples
   }
