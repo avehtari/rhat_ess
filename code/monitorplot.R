@@ -172,7 +172,7 @@ plot_local_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
     I <- sims > quantile(sims, alpha) & sims <= quantile(sims, alpha + delta)
-    zsseffs[i] <- ess_rfun(z_scale(split_chains(I)))
+    zsseffs[i] <- ess_rfun(split_chains(I))
   }
   S <- prod(dim(I))
   
@@ -248,7 +248,7 @@ plot_quantile_ess <- function(fit, par, nalpha = 20, rank = TRUE) {
   for (i in seq_along(alphas)) {
     alpha <- alphas[i]
     I <- sims <= quantile(sims, alpha)
-    zsseffs[i] <- ess_rfun(z_scale(split_chains(I)))
+    zsseffs[i] <- ess_rfun(split_chains(I))
   }
   S <- prod(dim(I))
   
