@@ -1980,14 +1980,14 @@ I(\theta^{(s)} \leq\theta_\alpha),
 $$
 
 For independent draws, $\bar{I}_\alpha$ has a 
-${\rm Beta}(\bar{I}_\alpha+1, S - \bar{I}_\alpha + 1)$ 
+${\rm Beta}(S\bar{I}_\alpha+1, S - S\bar{I}_\alpha + 1)$ 
 distribution. Thus we can easily examine the variation of the ECDF for any
 $\theta_\alpha$ value from a single chain. If $\bar{I}_\alpha$ is not very close
 to $1$ or $S$ and $S$ is large, we can use the variance of Beta distribution
 
 $$
 {\rm Var}[p(\theta \leq \theta_\alpha)] =
-\frac{(\bar{I}_\alpha+1)*(S-\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
+\frac{(S\bar{I}_\alpha+1)*(S-S\bar{I}_\alpha+1)}{(S+2)^2(S+3)}.
 $$
 We illustrate uncertainty intervals of the Beta distribution and normal
 approximation of ECDF for 100 draws from Normal(0, 1):
