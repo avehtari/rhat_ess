@@ -54,7 +54,7 @@ autocovariance <- function(y) {
   transform <- fft(yc)
   ac <- fft(Conj(transform) * transform, inverse = TRUE)
   # use "biased" estimate as recommended by Geyer (1992)
-  ac <- Re(ac)[1:N] / N / N / 2
+  ac <- Re(ac)[1:N] / (N^2 * 2)
   ac
 }
 
@@ -322,9 +322,9 @@ ess_bulk <- function(sims) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_tail <- function(sims) {
-  I05 <- sims <= quantile(sims, 0.05)
+  I05 <- (sims <= quantile(sims, 0.05)) + 0
   q05_ess <- ess_rfun(split_chains(I05))
-  I95 <- sims <= quantile(sims, 0.95)
+  I95 <- (sims <= quantile(sims, 0.95)) + 0
   q95_ess <- ess_rfun(split_chains(I95))
   min(q05_ess, q95_ess)
 }
@@ -346,7 +346,7 @@ ess_tail <- function(sims) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 ess_quantile <- function(sims, prob) {
-  I <- sims <= quantile(sims, prob)
+  I <- (sims <= quantile(sims, prob)) + 0
   ess_rfun(split_chains(I))
 }
 
