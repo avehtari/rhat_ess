@@ -1625,8 +1625,8 @@ reduced the MCSE to one third as would be expected without problems in
 the mixing of the chains.
 
 ```{r}
-round(quantile_mcse(samp_cp2[ , , "mu"], prob = 0.5), 2)
-round(quantile_mcse(samp_cp2[ , , "tau"], prob = 0.5), 2)
+round(mcse_quantile(samp_cp2[ , , "mu"], prob = 0.5), 2)
+round(mcse_quantile(samp_cp2[ , , "tau"], prob = 0.5), 2)
 ```
 
 #### Centered parameterization with very long chains {.unnumbered}
