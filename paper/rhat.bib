@@ -1,20 +1,12 @@
-@article{lunn2009bugs,
-  title={The {BUGS} project: Evolution, critique and future directions},
-  author={Lunn, David and Spiegelhalter, David and Thomas, Andrew and Best, Nicky},
-  journal={Statistics in Medicine},
-  volume={28},
-  number={25},
-  pages={3049--3067},
-  year={2009}
+@incollection{Betancourt+Girolami:2019,
+  title={{Hamiltonian} {Monte} {Carlo} for hierarchical models},
+  author={Betancourt, Michael and Girolami, Mark},
+  booktitle={Current Trends in Bayesian Methodology with Applications},
+  pages={79--101},
+  year={2019},
+  publisher={Chapman and Hall/CRC}
 }
 
-@inproceedings{plummer2003jags,
-  title={{JAGS}: A program for analysis of {Bayesian} graphical models using {Gibbs} sampling},
-  author={Plummer, Martyn},
-  booktitle={Proceedings of the 3rd International Workshop on Distributed Statistical Computing},
-  volume=124,
-  year=2003
-}
 
 @Misc{StanBook,
   author = 	 {{Stan Development Team}},
@@ -52,8 +44,7 @@
    keywords = {probabilistic programming; Bayesian inference; algorithmic differentiation; Stan},
    abstract = {Stan is a probabilistic programming language for specifying statistical models. A Stan program imperatively defines a log probability function over parameters conditioned on specified data and constants. As of version 2.14.0, Stan provides full Bayesian inference for continuous-variable models through Markov chain Monte Carlo methods such as the No-U-Turn sampler, an adaptive form of Hamiltonian Monte Carlo sampling. Penalized maximum likelihood estimates are calculated using optimization methods such as the limited memory Broyden-Fletcher-Goldfarb-Shanno algorithm. Stan is also a platform for computing log densities and their gradients and Hessians, which can be used in alternative algorithms such as variational Bayes, expectation propagation, and marginal inference using approximate integration. To this end, Stan is set up so that the densities, gradients, and Hessians, along with intermediate quantities of the algorithm such as acceptance probabilities, are easily accessible. Stan can be called from the command line using the cmdstan package, through R using the rstan package, and through Python using the pystan package. All three interfaces support sampling and optimization-based inference with diagnostics and posterior analysis. rstan and pystan also provide access to log probabilities, gradients, Hessians, parameter transforms, and specialized plotting.},
    pages = {1--32},
-   doi = {10.18637/jss.v076.i01},
-   url = {https://www.jstatsoft.org/v076/i01}
+   doi = {10.18637/jss.v076.i01}
 }
 
 @article{Kucukelbir+etal:ADVI:2017,
@@ -65,6 +56,26 @@
     year={2017},
     url={http://jmlr.org/papers/v18/16-107.html}
   }
+  
+@article{pymc3,
+  title={Probabilistic programming in {Python} using {PyMC3}},
+  author={Salvatier, John and Wiecki, Thomas V. and Fonnesbeck, Christopher},
+  journal={PeerJ Computer Science},
+  volume={2},
+  pages={e55},
+  year={2016}
+}
+
+@article{nimble,
+  title={Programming with models: Writing statistical algorithms for general model structures with {NIMBLE}},
+  author={de Valpine, Perry and Turek, Daniel and Paciorek, Christopher J. and Anderson-Bergman, Clifford and Lang, Duncan Temple and Bodik, Rastislav},
+  journal={Journal of Computational and Graphical Statistics},
+  volume={26},
+  number={2},
+  pages={403--413},
+  year={2017}
+}
+
   
 @Manual{R2018,
     title = {R: A Language and Environment for Statistical Computing},
@@ -90,7 +101,7 @@
 @article{betancourt2017conceptual,
   title={A conceptual introduction to {Hamiltonian Monte Carlo}},
   author={Betancourt, Michael},
-  journal={arXiv:1701.02434},
+  journal={arXiv preprint arXiv:1701.02434},
   year={2017}
 }
 
@@ -100,9 +111,17 @@ author={Gelman, Andrew and Carlin, John B. and Stern, Hal S. and Dunson, David B
 publisher={CRC Press},
 year={2013}}
 
+@Book{BDA2,
+ author	     = {Andrew Gelman and John B. Carlin and Hal S. Stern
+                and Donald R. Rubin},
+ title	     = {Bayesian Data Analysis, second edition},
+ publisher   = {Chapman \& Hall},
+ year	     = {2003}
+}
+
 @article{Gelman+Rubin:1992,
   title={Inference from iterative simulation using multiple sequences (with discussion)},
-  author={Gelman, Andrew and Rubin, Donald B},
+  author={Gelman, Andrew and Rubin, Donald B.},
   journal={Statistical Science},
   volume={7},
   number={4},
@@ -116,7 +135,7 @@ title = {General Methods for Monitoring Convergence of Iterative Simulations},
 journal = {Journal of Computational and Graphical Statistics},
 volume = {7},
 number = {4},
-pages = {434-455},
+pages = {434--455},
 year  = {1998}
 }
 
@@ -144,7 +163,7 @@ year  = {1998}
 
 @Misc{StanManual.2.18.0,
   author = 	 {{Stan Development Team}},
-  title = 	 {Stan Modeling Language Users Guide and Reference Manual. Version 2.18.0},
+  title = 	 {{Stan Modeling Language Users Guide and Reference Manual}. Version 2.18.0},
   year = 	 2018,
   url = {http://mc-stan.org}
 }
@@ -173,7 +192,7 @@ year  = {1998}
   journal = {Journal of Machine Learning Research},
   year    = {2014},
   volume  = {15},
-  pages   = {1593-1623},
+  pages   = {1593--1623},
   url     = {http://jmlr.org/papers/v15/hoffman14a.html}
 }
 
@@ -188,6 +207,289 @@ year  = {1998}
 @article{vats2018revisiting,
   title={Revisiting the {Gelman}-{Rubin} Diagnostic},
   author={Vats, Dootika and Knudson, Christina},
-  journal={arXiv:1812.09384},
+  journal={arXiv preprint arXiv:1812.09384},
   year={2018}
+}
+
+@article{Flegal+Jones:2010,
+  title={Batch means and spectral variance estimators in {Markov} chain {Monte} {Carlo}},
+  author={Flegal, James M. and Jones, Galin L.},
+  journal={Annals of Statistics},
+  volume={38},
+  number={2},
+  pages={1034--1070},
+  year={2010}
+}
+
+@article{Hastings:1970,
+ author = {W. K. Hastings},
+ title={{Monte} {Carlo} sampling methods using {Markov} chains and their applications},
+ journal = {Biometrika},
+ year = {1970},
+ volume = {57},
+ number = {1},
+ pages = {97--109}
+}
+
+@article{Cowles+Carlin:1996,
+  title={{Markov} chain {Monte} {Carlo} convergence diagnostics: A comparative review},
+  author={Cowles, Mary Kathryn and Carlin, Bradley P.},
+  journal={Journal of the American Statistical Association},
+  volume={91},
+  number={434},
+  pages={883--904},
+  year={1996}
+}
+
+@InProceedings{Mengersen+etal:1999,
+ author	     = {Kerrie L. Mengersen and Christian P. Robert and
+                Chantal Guihenneuc-Jouyaux},
+ title	     = {{MCMC} convergence diagnostics: A review},
+ booktitle   = {Bayesian Statistics 6},
+ year	     = {1999},
+ pages	     = {415--440},
+ editor	     = {Jose M. Bernardo and James O. Berger and A. P.
+                Dawid},
+ publisher   = {Oxford University Press}
+}
+
+@Book{Robert+Casella:2004,
+ author	     = {Christian P. Robert and George Casella},
+ title	     = {Monte Carlo Statistical Methods},
+ publisher   = {Springer},
+ year	     = {2004},
+ edition     = {Second}
+}
+
+@article{Friedman:1937,
+  title={The use of ranks to avoid the assumption of normality implicit in the analysis of variance},
+  author={Friedman, Milton},
+  journal={Journal of the American Statistical Association},
+  volume={32},
+  number={200},
+  pages={675--701},
+  year={1937}
+}
+
+@Book{Fisher+Yates:1938,
+ author	     = {Fisher, Ronald A. and Yates, Frank},
+ title	     = {Statistical Tables for Biological, Agricultural, and Medical Research},
+ publisher   = {Oliver \& Boyd; Edinburgh},
+ year	     = {1938}
+}
+
+@Book{Blom:1958,
+ author	     = {Blom, Gunnar},
+ title	     = {Statistical Estimates and Transformed Beta-Variables},
+ publisher   = {Wiley; New York},
+ year	     = {1958}
+}
+
+@article{Chernoff+Savage:1958,
+  title={Asymptotic normality and efficiency of certain nonparametric test statistics},
+  author={Chernoff, Herman and Savage, I. Richard},
+  journal={Annals of Mathematical Statistics},
+  volume={29},
+  number={4},
+  pages={972--994},
+  year={1958}
+}
+
+@article{Laurmann+Gates:1977,
+  title={Statistical considerations in the evaluation of climatic experiments with atmospheric general circulation models},
+  author={Laurmann, John A. and Gates, W. Lawrence},
+  journal={Journal of the Atmospheric Sciences},
+  volume={34},
+  number={8},
+  pages={1187--1199},
+  year={1977}
+}
+
+@Article{Kong+Liu+Wong:1994,
+ author	     = {Augustine Kong and Jun S. Liu and Wing Hung Wong},
+ title	     = {Sequential Imputations and {Bayesian} Missing Data
+                Problems},
+ journal     = {Journal of the American Statistical Association},
+ year	     = {1994},
+ volume	     = {89},
+ number	     = {425},
+ pages	     = {278--288}
+}
+
+@article{Sorensen+etal:1995,
+  title={Bayesian inference in threshold models using {Gibbs} sampling},
+  author={Sorensen, D. A. and Andersen, S. and Gianola, D. and Korsgaard, I.},
+  journal={Genetics Selection Evolution},
+  volume={27},
+  number={3},
+  pages={229},
+  year={1995}
+}
+
+@article{Uimari+etal:1996,
+  title={The use of multiple markers in a {Bayesian} method for mapping quantitative trait loci},
+  author={Uimari, Pekka and Thaller, Georg and Hoeschele, Ina},
+  journal={Genetics},
+  volume={143},
+  number={4},
+  pages={1831--1842},
+  year={1996}
+}
+
+@Article{Plummer+etal:2006:CODA,
+    title = {{CODA}: Convergence Diagnosis and Output Analysis for {MCMC}},
+    author = {Martyn Plummer and Nicky Best and Kate Cowles and Karen Vines},
+    journal = {R News},
+    year = {2006},
+    volume = {6},
+    number = {1},
+    pages = {7--11}
+  }
+
+  @Article{Smith:2007:boa,
+    title = {{boa}: An {R} Package for {MCMC} Output Convergence Assessment and Posterior Inference},
+    author = {Brian J. Smith},
+    year = {2007},
+    journal = {Journal of Statistical Software},
+    volume = {21},
+    number = {11},
+    pages = {1--37}
+  }
+
+@article{arviz:2019,
+        title = {{ArviZ} a unified library for exploratory analysis of {Bayesian} models in {Python}},
+        author = {Kumar, Ravin and Carroll, Colin and Hartikainen, Ari and Martin, Osvaldo A.},
+        journal = {The Journal of Open Source Software},
+        year = {2019}
+}
+
+  @Article{brms:2017,
+    title = {{brms}: An {R} Package for {Bayesian} Multilevel Models Using {Stan}},
+    author = {Paul-Christian Bürkner},
+    journal = {Journal of Statistical Software},
+    year = {2017},
+    volume = {80},
+    number = {1},
+    pages = {1--28}
+  }
+
+@article{WinBUGS:2000,
+  title={{WinBUGS}---a {Bayesian} modelling framework: Concepts, structure, and extensibility},
+  author={Lunn, David J and Thomas, Andrew and Best, Nicky and Spiegelhalter, David},
+  journal={Statistics and Computing},
+  volume={10},
+  number={4},
+  pages={325--337},
+  year={2000}
+}
+
+@article{BUGSproject:2009,
+  title={The {BUGS} project: Evolution, critique and future directions},
+  author={Lunn, David and Spiegelhalter, David and Thomas, Andrew and Best, Nicky},
+  journal={Statistics in Medicine},
+  volume={28},
+  number={25},
+  pages={3049--3067},
+  year={2009},
+  publisher={Wiley Online Library}
+}
+
+@inproceedings{plummer2003jags,
+  title={{JAGS}: A program for analysis of {Bayesian} graphical models using {Gibbs} sampling},
+  author={Plummer, Martyn},
+  booktitle={Proceedings of the 3rd International Workshop on Distributed Statistical Computing},
+  volume=124,
+  year=2003
+}
+
+@article{Doss+etal:2014:MCMC-quantiles,
+  title={{Markov} chain {Monte} {Carlo} estimation of quantiles},
+  author={Doss, Charles R. and Flegal, James M. and Jones, Galin L. and Neath, Ronald C.},
+  journal={Electronic Journal of Statistics},
+  volume={8},
+  number={2},
+  pages={2448--2478},
+  year={2014}
+}
+
+@article{Liu+etal:2016:MCMC-quantiles,
+  title={The number of {MCMC} draws needed to compute {Bayesian} credible bounds},
+  author={Liu, Jia and Nordman, Daniel J. and Meeker, William Q.},
+  journal={The American Statistician},
+  volume={70},
+  number={3},
+  pages={275--284},
+  year={2016}
+}
+
+@incollection{Flegal+Jones:2011,
+  title={Implementing {MCMC}: Estimating with Confidence},
+  author={Flegal, James M. and Jones, Galin L.},
+  booktitle={Handbook of Markov Chain Monte Carlo},
+  pages={201--224},
+  year={2011},
+  publisher={Chapman and Hall/CRC}
+}
+
+@article{Beasly+etal:2009:INT,
+  title={Rank-based inverse normal transformations are increasingly used, but are they merited?},
+  author={Beasley, T Mark and Erickson, Stephen and Allison, David B},
+  journal={Behavior genetics},
+  volume={39},
+  number={5},
+  pages={580--595},
+  year={2009}
+}
+
+@InProceedings{Raftery+Lewis:1992a,
+ author	     = {Adrian E. Raftery and Steven M. Lewis},
+ title	     = {How many Iterations in the {Gibbs} Sampler?},
+ booktitle   = {Bayesian Statistics 4},
+ pages	     = {763--773},
+ year	     = {1992},
+ editor	     = {J. M. Bernardo and J. O. Berger and A. P. Dawid and
+                A. F. M. Smith},
+ publisher   = {Oxford University Press}
+}
+
+@book{Wellek:2010:testing,
+  title={Testing Statistical Hypotheses of Equivalence and Noninferiority},
+  author={Wellek, Stefan},
+  year={2010},
+  publisher={Chapman and Hall/CRC}
+}
+
+@Article{Neal:2003,
+ author	     = {Radford M. Neal},
+ title	     = {Slice Sampling},
+ journal     = {Annals of Statistics},
+ year	     = {2003},
+ volume	     = {31},
+ number	     = {3},
+ pages	     = {705--767}
+}
+
+@Article{Gelman+Huang+vanDyk+Boscardin:2008,
+ author	     = {Andrew Gelman and Zaiying Huang and David van Dyk and W. John Boscardin},
+ title	     = {Using redundant parameters to fit hierarchical models},
+ journal     = {Journal of Computational and Graphical Statistics},
+ year	     = {2008},
+ volume	     = {17},
+ pages	     = {95--122}
+}
+
+@article{jacob2017unbiased,
+  title={Unbiased {Markov} chain {Monte} {Carlo} with couplings},
+  author={Jacob, Pierre E. and O'Leary, John and Atchad{\'e}, Yves F.},
+  journal={arXiv preprint arXiv:1708.03625},
+  year=2017
+}
+
+@inproceedings{wan2000unscented,
+  title={The unscented {Kalman} filter for nonlinear estimation},
+  author={Wan, Eric A and Van Der Merwe, Rudolph},
+  booktitle={Proceedings of the IEEE 2000 Adaptive Systems for Signal Processing, Communications, and Control Symposium},
+  pages={153--158},
+  year={2000},
+  organization={IEEE}
 }
