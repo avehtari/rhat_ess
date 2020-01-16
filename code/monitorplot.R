@@ -67,21 +67,27 @@ plot_rhat <- function(res) {
     ggtitle('Classic split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
-    ylim(c(.99 ,1.26))
+    ylim(c(.99 ,1.26)) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
 
   p2 <- ggplot(res, aes(x = par, y = zsRhat)) + 
     geom_point() + 
     ggtitle('Rank normalized split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
-    ylim(c(.99,1.26))
+    ylim(c(.99,1.26)) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   p3 <- ggplot(res, aes(x = par, y = zfsRhat)) + 
     geom_point() + 
     ggtitle('Folded rank norm. split-Rhat') + 
     geom_hline(yintercept = 1.005, linetype = 'dashed') + 
     geom_hline(yintercept = 1) + 
-    ylim(c(.99,1.26))
+    ylim(c(.99,1.26)) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
 }
@@ -102,35 +108,45 @@ plot_ess <- function(res) {
     ggtitle('Classic ESS') + 
     geom_hline(yintercept = 0) +
     geom_hline(yintercept = 400, linetype = 'dashed') + 
-    scale_y_continuous(limits = ylimits) 
+    scale_y_continuous(limits = ylimits) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   p2 <- ggplot(res, aes(x = par, y = zsseff)) + 
     geom_point() + 
     ggtitle('Bulk-ESS') + 
     geom_hline(yintercept = 0) + 
     geom_hline(yintercept = 400, linetype = 'dashed') + 
-    scale_y_continuous(limits = ylimits) 
+    scale_y_continuous(limits = ylimits) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   p3 <- ggplot(res, aes(x = par, y = tailseff)) + 
     geom_point() + 
     ggtitle('Tail-ESS') + 
     geom_hline(yintercept = 0) + 
     geom_hline(yintercept = 400, linetype = 'dashed') + 
-    scale_y_continuous(limits = ylimits) 
+    scale_y_continuous(limits = ylimits) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   p4 <- ggplot(res, aes(x = par, y = medsseff)) + 
     geom_point() + 
     ggtitle('Median-ESS') + 
     geom_hline(yintercept = 0) + 
     geom_hline(yintercept = 400, linetype = 'dashed') + 
-    scale_y_continuous(limits = ylimits) 
+    scale_y_continuous(limits = ylimits) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   p5 <- ggplot(res, aes(x = par, y = madsseff)) + 
     geom_point() + 
     ggtitle('MAD-ESS') + 
     geom_hline(yintercept = 0) + 
     geom_hline(yintercept = 400, linetype = 'dashed') + 
-    scale_y_continuous(limits = ylimits) 
+    scale_y_continuous(limits = ylimits) +
+    xlab("Parameters") +
+    theme(axis.text = element_blank())
   
   blank <- grid::grid.rect(gp = grid::gpar(col = "white"), draw = FALSE)
   gridExtra::grid.arrange(p1, p2, p3, blank, p4, p5, nrow = 2)

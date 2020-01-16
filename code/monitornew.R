@@ -84,9 +84,9 @@ autocorrelation <- function(y) {
 #' @return A numeric array of rank normalized values with the same
 #'     size as input.
 z_scale <- function(x) {
-  S <- length(x)
   r <- rank(x, ties.method = 'average')
-  z <- qnorm((r - 1 / 2) / S)
+  z <- qnorm(backtransform_ranks(r, c=3/8))
+  z[is.na(x)] <- NA
   if (!is.null(dim(x))) {
     # output should have the input dimension
     z <- array(z, dim = dim(x), dimnames = dimnames(x))
@@ -106,9 +106,9 @@ z_scale <- function(x) {
 #' @return A numeric array of rank uniformized values with the same
 #'     size as input.
 u_scale <- function(x) {
-  S <- length(x)
   r <- rank(x, ties.method = 'average')
-  u <- (r - 1 / 2) / S
+  u <- backtransform_ranks(r)
+  u[is.na(x)] <- NA
   if (!is.null(dim(x))) {
     # output should have the input dimension
     u <- array(u, dim = dim(x), dimnames = dimnames(x))
@@ -128,13 +128,21 @@ u_scale <- function(x) {
 #' @return A numeric array of ranked values with the same
 #'     size as input.
 r_scale <- function(x) {
-  S <- length(x)
   r <- rank(x, ties.method = 'average')
+  r[is.na(x)] <- NA
   if (!is.null(dim(x))) {
     # output should have the input dimension
     r <- array(r, dim = dim(x), dimnames = dimnames(x))
   }
   r
+}
+
+#' Backtransformation of ranks
+#' @param r array of ranks
+#' @param c fractional offset; defaults to c = 3/8 as recommend by Bloom (1985)
+backtransform_ranks <- function(r, c = 3/8) {
+  S <- length(r)
+  (r - c) / (S - 2 * c + 1)
 }
 
 split_chains <- function(sims) {
@@ -169,10 +177,15 @@ is_constant <- function(x, tol = .Machine$double.eps) {
 #' localization: An improved R-hat for assessing convergence of
 #' MCMC. \emph{arXiv preprint} \code{arXiv:1903.08008}.
 rhat_rfun <- function(sims) {
-  if (any(!is.finite(sims)))
+  if (anyNA(sims)) {
+    return(NA)
+  }
+  if (any(!is.finite(sims))) {
     return(NaN)
-  else if (is_constant(sims))
-    return(1)
+  }
+  if (is_constant(sims)) {
+    return(NA)
+  }
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
   }
@@ -207,16 +220,25 @@ ess_rfun <- function(sims) {
   if (is.vector(sims)) {
     dim(sims) <- c(length(sims), 1)
   }
+  # chains = M and n_samples = N in the paper
   chains <- ncol(sims)
   n_samples <- nrow(sims)
-  if (any(!is.finite(sims)) || n_samples < 3L)
+  if (n_samples < 3L || anyNA(sims)) {
+    return(NA)
+  }
+  if (any(!is.finite(sims))) {
     return(NaN)
-  else if (is_constant(sims))
-    return(chains*n_samples)
+  }
+  if (is_constant(sims)) {
+    return(NA)
+  }
+  # acov[t,m] = s_m^2 \rho_{m,t} in the paper
   acov <- lapply(seq_len(chains), function(i) autocovariance(sims[, i]))
-  acov <- do.call(cbind, acov)
+  acov <- do.call(cbind, acov) * n_samples / (n_samples - 1)
   chain_mean <- apply(sims, 2, mean)
-  mean_var <- mean(acov[1, ]) * n_samples / (n_samples - 1)
+  # mean_var = W in the paper
+  mean_var <- mean(acov[1, ]) 
+  # var_plus = \hat{var}^{+} in the paper
   var_plus <- mean_var * (n_samples - 1) / n_samples
   if (chains > 1)
     var_plus <- var_plus + var(chain_mean)
@@ -239,7 +261,7 @@ ess_rfun <- function(sims) {
     }
   }
   max_t <- t
-  # this is used in the improved estimate
+  # this is used in the improved estimate (see below)
   if (rho_hat_even>0)
       rho_hat_t[max_t + 1] <- rho_hat_even
   
@@ -253,14 +275,17 @@ ess_rfun <- function(sims) {
       rho_hat_t[t + 2] = rho_hat_t[t + 1];
     }
   }
-  ess <- chains * n_samples
-  # Geyer's truncated estimate
-  # tau_hat <- -1 + 2 * sum(rho_hat_t[1:max_t])
-  # Improved estimate reduces variance in antithetic case
+  # nominal sample size S=MN
+  S <- chains * n_samples
+  # Geyer's truncated estimate is
+  #   tau_hat <- -1 + 2 * sum(rho_hat_t[1:max_t])
+  # We use an improved estimate, which is equivalent to taking average
+  # of truncation with lag max_t and with max_t+1 and which reduces
+  # variance in antithetic case
   tau_hat <- -1 + 2 * sum(rho_hat_t[1:max_t]) + rho_hat_t[max_t+1]
   # Safety check for negative values and with max ess equal to ess*log10(ess)
-  tau_hat <- max(tau_hat, 1/log10(ess))
-  ess <- ess / tau_hat
+  tau_hat <- max(tau_hat, 1/log10(S))
+  ess <- S / tau_hat
   ess
 }
 
@@ -416,11 +441,11 @@ conv_quantile <- function(sims, prob) {
   a <- qbeta(p, ess * prob + 1, ess * (1 - prob) + 1)
   ssims <- sort(sims)
   S <- length(ssims)
-  th1 <- ssims[max(round(a[1] * S), 1)]
-  th2 <- ssims[min(round(a[2] * S), S)]
+  th1 <- ssims[max(floor(a[1] * S), 1)]
+  th2 <- ssims[min(ceiling(a[2] * S), S)]
   mcse <- (th2 - th1) / 2
-  th1 <- ssims[max(round(a[3] * S), 1)]
-  th2 <- ssims[min(round(a[4] * S), S)]
+  th1 <- ssims[max(floor(a[3] * S), 1)]
+  th2 <- ssims[min(ceiling(a[4] * S), S)]
   data.frame(mcse = mcse, Q05 = th1, Q95 = th2, ess = ess)
 }
 
@@ -709,10 +734,10 @@ monitor_extra <- function(sims, warmup = 0, probs = c(0.05, 0.50, 0.95)) {
 print.simsummary <- function(x, digits = 3, se = FALSE, ...) {
   atts <- attributes(x)
   px <- x
+  class(px) <- "data.frame"
   if (!se) {
     px <- px[, !grepl("^MCSE_", colnames(px))]
   }
-  class(px) <- "data.frame"
   decimal_places <- max(1, digits - 1)
   px$Rhat <- round(px$Rhat, digits = max(2, decimal_places))
   estimates <- setdiff(names(px), c("Rhat", "Bulk_ESS", "Tail_ESS"))
