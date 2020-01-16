@@ -31,7 +31,7 @@ options(width = 100)
 This is the online appendix of the paper
 
 - Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter,
-Paul-Christian Bürkner (2019): Rank-normalization, folding, and localization: An improved $\widehat{R}$ for assessing convergence of MCMC. [arXiv preprint arXiv:1903.08008](http://arxiv.org/abs/1903.08008).
+Paul-Christian Bürkner (2020): Rank-normalization, folding, and localization: An improved $\widehat{R}$ for assessing convergence of MCMC. [arXiv preprint arXiv:1903.08008](http://arxiv.org/abs/1903.08008).
 
 The code for the paper is available on Github
 (https://github.com/avehtari/rhat_ess). Here, we introduce all the
@@ -44,17 +44,16 @@ in the paper:
 
 - [Cauchy: A distribution with infinite mean and variance](#cauchy)
 - [Hierarchical model: Eight schools](#eightschools)
-- [Appendix A: Computing the effective sample size](#AppendixA)
-- [Appendix B: Normal distributions with additional trend, shift or scaling](#AppendixB)
-- [Appendix C: More experiments with the Cauchy distribution](#AppendixC)
-- [Appendix D: A centered eight schools model with very long chains and thinning](#AppendixD)
-- [Appendix E: A centered eight schools model fit using a Gibbs sampler](#AppendixE)
+- [Appendix A: Normal distributions with additional trend, shift or scaling](#AppendixB)
+- [Appendix B: More experiments with the Cauchy distribution](#AppendixC)
+- [Appendix C: A centered eight schools model with very long chains and thinning](#AppendixD)
+- [Appendix D: A centered eight schools model fit using a Gibbs sampler](#AppendixE)
 
 # Examples
 
 In this section, we will go through some examples to demonstrate the
 usefulness of our proposed methods as well as the associated workflow
-in determining convergence. [Appendices B-E](#AppendixB) contain more
+in determining convergence. [Appendices A-D](#AppendixA) contain more
 detailed analysis of different algorithm variants and further examples.
 
 First, we load all the necessary R packages and additional functions.
@@ -83,7 +82,7 @@ variance is infinite, this approach is
 not well justified, as we demonstrate here with a Cauchy-distributed example.
 The following Cauchy models are from Michael Betancourt's case study
 [Fitting The Cauchy Distribution](https://betanalpha.github.io/assets/case_studies/fitting_the_cauchy.html).
-[Appendix C](#AppendixC) contains more detailed analysis of different algorithm
+[Appendix B](#AppendixB) contains more detailed analysis of different algorithm
 variants and further Cauchy examples.
 
 ### Nominal parameterization of Cauchy
@@ -113,7 +112,7 @@ print(mon)
 which_min_ess <- which.min(mon[1:50, 'Tail_ESS'])
 ```
 
-Several values of Rhat greater than 1.01 and some ESS less than 400 also indicate convergence propblems. The [Appendix C](#AppendixC) contains more results
+Several values of Rhat greater than 1.01 and some ESS less than 400 also indicate convergence propblems. The [Appendix B](#AppendixB) contains more results
 with longer chains.
 
 We can further analyze potential problems using local efficiency and
@@ -122,8 +121,7 @@ smallest tail-ESS of `r round(min(mon[,'Tail_ESS']), 2)`.
 
 We examine the sampling efficiency in different parts of the posterior by
 computing the efficiency of small interval probability estimates (see
-Section [Efficiency estimate for small interval probability
-estimates](#small_interval_S_eff)). Each interval contains $1/k$ of the draws
+Section 4.3 in the paper). Each interval contains $1/k$ of the draws
 (e.g., $5\%$ each, if $k=20$). The small interval efficiency measures mixing of
 an function which indicates when the values are inside or outside the specific
 small interval. As detailed above, this gives us a local efficiency measure
@@ -140,7 +138,7 @@ show iterations that exceeded the maximum treedepth.
 
 An alternative way to examine the efficiency in different parts of the
 posterior is to compute efficiency estimates for quantiles (see Section
-[Efficiency for quantiles](#quantile_S_eff)). Each interval has a
+4.3 in the paper). Each interval has a
 specified proportion of draws, and the efficiency measures mixing of a function
 which indicates when the values are smaller than or equal to the corresponding
 quantile.
@@ -149,8 +147,8 @@ quantile.
 plot_quantile_ess(fit = fit_nom, par = which_min_ess, nalpha = 40)
 ```
 
-Similar as above, we see that the efficiency of sampling is low in the tails. Orange ticks show iterations that exceeded the maximum
-treedepth.
+Similar as above, we see that the efficiency of sampling is low in the tails.
+Orange ticks show iterations that exceeded the maximum treedepth.
 
 We may also investigate how the estimated effective sample sizes
 change when we use more and more draws; @Brooks+Gelman:1998 proposed
@@ -202,7 +200,7 @@ which_min_ess <- which.min(mon[101:150, 'Tail_ESS'])
 ```
 
 For all parameters, Rhat is less than 1.01 and ESS exceeds 400, indicating that sampling worked much better
-with this alternative parameterization. [Appendix C](#AppendixC) has
+with this alternative parameterization. [Appendix B](#AppendixB) has
 more results using other parameterizations of the Cauchy distribution. The vectors `x_a` and
 `x_b` used to form the Cauchy-distributed `x` have stable quantile,
 mean and sd values. The quantiles of each `x_j` are stable too, but the mean and variance estimates are widely varying.
@@ -271,7 +269,7 @@ All values of Rhat are less than 1.01 and ESS exceeds 400 for all
 parameters, indicating good performance of the sampler despite using
 the nominal parameterization of the Cauchy distribution.  More
 experiments with the half-Cauchy distribution can be found in
-[Appendix C](#AppendixC).
+[Appendix B](#AppendixB).
 
 
 ## Hierarchical model: Eight Schools {#eightschools}
@@ -284,7 +282,7 @@ the typical problems in inference for hierarchical models. The Stan
 models are adapted from Michael Betancourt's case study on [Diagnosing
 Biased Inference with
 Divergences](http://mc-stan.org/users/documentation/case-studies/divergences_and_bias.html).
-[Appendix D](#AppendixD) contains more detailed analysis of different algorithm variants.
+[Appendix C](#AppendixC) contains more detailed analysis of different algorithm variants.
 
 ### A Centered Eight Schools model
 
@@ -318,7 +316,7 @@ mon <- monitor(fit_cp)
 print(mon)
 ```
 
-See [Appendix D](#AppendixD) for results of longer chains.
+See [Appendix C](#AppendixC) for results of longer chains.
 
 Bulk-ESS and Tail-ESS for the between school standard deviation `tau`
 are `r mon['tau', 'Bulk_ESS']` and `r mon['tau', 'Tail_ESS']`
@@ -359,7 +357,7 @@ Most of the quantile estimates have worryingly low effective sample size.
 
 Next we examine how the estimated effective sample size changes when we use
 more and more draws. Here we do not see sudden changes, but both
-bulk-ESS and tail-ESS are consistently low. See [Appendix D](#AppendixD) for
+bulk-ESS and tail-ESS are consistently low. See [Appendix C](#AppendixC) for
 results of longer chains.
 
 ```{r, cache=FALSE}
@@ -474,12 +472,7 @@ The following abbreviations are used throughout the appendices:
  - madsreff = madsseff / N
 
 
-## Appendix A: Computing the effective sample size {#AppendixA .unnumbered}
-
-There are no examples or numerical experiments related to Appendix A in the paper.
-
- 
-## Appendix B: Normal distributions with additional trend, shift or scaling {#AppendixB .unnumbered}
+## Appendix A: Normal distributions with additional trend, shift or scaling {#AppendixA .unnumbered}
 
 This part focuses on diagnostics for
 
@@ -742,7 +735,7 @@ Although folded Rhat is $1.06$, the rank plots clearly show that the first
 chains behaves differently.
 
 
-## Appendix C: More experiments with the Cauchy distribution {#AppendixC .unnumbered}
+## Appendix B: More experiments with the Cauchy distribution {#AppendixB .unnumbered}
 
 The classic split-Rhat is based on calculating within and between chain
 variances. If the marginal distribution of a chain is such that
@@ -828,8 +821,7 @@ the smallest tail-ESS of `r round(min(res$zsseff), 2)`.
 
 We examine the sampling efficiency in different parts of the
 posterior by computing the effective sample size for small interval
-probability estimates (see [Section Efficiency for small
-interval probability estimates](#small_interval_S_eff)).  Each
+probability estimates (see Section 4.3 in the paper).  Each
 interval contains $1/k$ of the draws (e.g., with $k=20$).
 The small interval efficiency measures mixing of an indicator
 function which indicates when the values are inside the specific
@@ -1512,7 +1504,7 @@ mcmc_hist_r_scale(samp_jags_nom[, , xmin])
 the Cauchy distribution just fine.
 
 
-## Appendix D: A centered eight schools model with very long chains and thinning {#AppendixD .unnumbered}
+## Appendix C: A centered eight schools model with very long chains and thinning {#AppendixC .unnumbered}
 
 We continue with our discussion about hierarchical models on the Eight Schools
 data, which we started in [Section Eight Schools](#eightschools). We also analyse
@@ -1773,7 +1765,7 @@ parameterization can cause problems that are not simply solved by tuning the
 sampler. Instead, we have to adjust our model to achieve trustworthy inference.
 
 
-## Appendix E: A centered eight schools model fit using a Gibbs sampler {#AppendixE .unnumbered}
+## Appendix D: A centered eight schools model fit using a Gibbs sampler {#AppendixD .unnumbered}
 
 We will also run the centered and non-centered parameterizations of
 the eight schools model with Jags.
