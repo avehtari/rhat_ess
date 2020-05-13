@@ -128,6 +128,9 @@
 \DeclareMathOperator{\Gam}{Gamma}
 \DeclareMathOperator{\Beta}{Beta}
 \DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\E}{E}
+\DeclareMathOperator{\I}{I}
 \newcommand{\Rhat}{$\widehat{R}$}
 \newcommand{\sRhat}{split-$\widehat{R}$}
 \theoremstyle{definition}
@@ -135,7 +138,7 @@
 
 
 \title{Rank-normalization, folding, and localization:\\
-  An improved $\widehat{R}$ for assessing convergence of MCMC\footnote{We thank Ben Bales, Ian Langmore, the editor, and anonymous reviewers for useful comments. We also thank Academy of Finland, the U.S. Office of Naval Research, National Science Foundation, Institute for Education Sciences, and the Natural Science and Engineering Research Council of Canada for partial support of this research.  All computer code and an 
+  An improved $\widehat{R}$ for assessing convergence of MCMC\footnote{We thank Ben Bales, Ian Langmore, the editor, and anonymous reviewers for useful comments. We also thank Academy of Finland, the U.S. Office of Naval Research, National Science Foundation, Institute for Education Sciences, the Natural Science and Engineering Research Council of Canada, Finnish Center for Artificial Intelligence, and Technology Industries of Finland Centennial Foundation for partial support of this research.  All computer code and an 
 even larger variety of numerical experiments are available in the online 
 appendix at \url{https://avehtari.github.io/rhat_ess/rhat_ess.html}.}\vspace{.1in}}
     \pretitle{\vspace{\droptitle}\centering\huge}
@@ -146,8 +149,7 @@ appendix at \url{https://avehtari.github.io/rhat_ess/rhat_ess.html}.}\vspace{.1i
 Aki Vehtari\footnote{Department of Computer Science, Aalto University, Finland.},
    Andrew Gelman\footnote{Department of Statistics, Columbia University, New York.},
  Daniel Simpson\footnote{Department of Statistical Sciences, University of Toronto, Canada.},
- Bob Carpenter\footnote{Applied Statistics Center, Columbia
-   University, New York.},
+ Bob Carpenter\footnote{Center for Computational Mathematics, Flatiron Institute, New York.},
 and Paul-Christian B\"{u}rkner$^\dagger$
 }
     
@@ -240,7 +242,7 @@ is the potential scale reduction factor \Rhat\
 It is recommended as the primary convergence diagnostic in widely applied
 software packages for MCMC sampling such as Stan \citep{Stan:JSS:2017}, 
 JAGS \citep{plummer2003jags}, WinBUGS \citep{WinBUGS:2000}, OpenBUGS \citep{BUGSproject:2009}, PyMC3 \citep{pymc3}, 
-and NIMBLE \citep{nimble}, which together are estimated to have hundreds of thousand of users. 
+and NIMBLE \citep{nimble}, which together are estimated to have hundreds of thousands of users. 
 \Rhat\ is computed for each scalar quantity of interest, as the standard deviation of that quantity from all the chains included together, divided by the root mean square of the separate within-chain standard deviations.
 The idea is that if a set of simulations have not mixed well, the variance of
 all the chains mixed together should be higher than the variance of individual chains.
@@ -349,8 +351,8 @@ developed in this paper. In the interest of specificity, we have
 provided numerical targets for both \Rhat\ and effective sample size (ESS),
 which are useful as first level checks when analyzing reliability of inference for
 many quantities. However, these values should be adapted as necessary for the given
-application, and ultimately domain expertise should be use to check that Monte Carlo
-standard error (MCSE) for all quantities of interest are small enough.
+application, and ultimately domain expertise should be used to check that Monte Carlo
+standard errors (MCSE) for all quantities of interest are small enough.
 
 In Section \ref{improving-convergence-diagnostics}, we propose modifications to  
 \Rhat\ based on rank-normalizing and folding the posterior draws, only using the sample if  $\widehat{R} < 1.01$. 
@@ -456,9 +458,12 @@ following \citet{BDA3} but using the notation of
 \citet{StanManual.2.18.0}. This formulation represents the current 
 standard in convergence diagnostics for iterative simulations. In the
 equations below, \(N\) is the number of draws per chain, \(M\) is the
-number of chains, and \(S=MN\) is the total number of draws from all
-chains. For each scalar summary of interest \(\theta,\) we compute \(B\)
-and \(W,\) the between- and within-chain variances:
+number of chains, \(S=MN\) is the total number of draws from all
+chains, \(\theta^{(nm)}\) is $n$th draw of $m$th chain,
+\(\theta^{(.m)}\) is the average of draws from $m$th chain, and
+\(\theta^{(..)}\) is average of all draws. For each scalar summary of
+interest \(\theta,\) we compute \(B\) and \(W,\) the between- and
+within-chain variances:
 \begin{align}
 B &= \frac{N}{M-1}\sum_{m=1}^{M}(\overline{\theta}^{(.m)} - 
 \overline{\theta}^{(..)})^2, \quad \mbox{where} \quad 
@@ -471,11 +476,11 @@ s_m^2=\frac{1}{N-1} \sum_{n=1}^N (\theta^{(nm)}-\overline{\theta}^{(.m)})^2.
 The between-chain variance, \(B\), also contains the factor \(N\)
 because it is based on the variance of the within-chain means,
 \(\overline{\theta}^{(.m)},\) each of which is an average of \(N\)
-values \(\theta^{(nm)}\). We can estimate \(\mbox{var}(\theta | y)\),
+values \(\theta^{(nm)}\). We can estimate \(\var(\theta | y)\),
 the marginal posterior variance of the estimand, by a weighted average
 of \(W\) and \(B\), namely,
 \begin{equation}
-\widehat{\mbox{var}}^+(\theta| y) = \frac{N-1}{N}W + \frac{1}{N}B.
+\widehat{\var}^+(\theta| y) = \frac{N-1}{N}W + \frac{1}{N}B.
 \end{equation}
 This quantity \emph{overestimates} the marginal posterior variance
 assuming the starting distribution of the simulations is appropriately
@@ -487,18 +492,18 @@ independent Markov chains should be initialized with diffuse starting
 values for the parameters. 
 
 Meanwhile, for any finite \(N\), the within-chain variance \(W\) should
-\emph{underestimate} \(\mbox{var}(\theta |y)\) because the
+\emph{underestimate} \(\var(\theta |y)\) because the
 individual chains haven't had the time to explore all of the target
 distribution and, as a result, will have less variability. In the limit
 as \(N\rightarrow\infty\), the expectation of \(W\) also approaches
-\(\mbox{var}(\theta |y)\).
+\(\var(\theta |y)\).
 
 We monitor convergence of the iterative simulations to the target
 distribution by estimating the factor by which the scale of the current
 distribution for \(\theta\) might be reduced if the simulations were
 continued in the limit \(N\rightarrow\infty\). This leads to the estimator
 \begin{equation}
-\widehat{R} = \sqrt{\frac{\widehat{\mbox{var}}^+(\theta | y)}{W}},
+\widehat{R} = \sqrt{\frac{\widehat{\var}^+(\theta | y)}{W}},
 \end{equation}
 which for an ergodic process declines to 1 as \(N\rightarrow\infty\). We call this
 split-\(\widehat{R}\) because we are applying it to chains that
@@ -521,15 +526,17 @@ We estimate effective sample size by combining
 information from \Rhat\ and the autocorrelation estimates within the
 chains.
 
+\subsubsection*{The effective sample size and Monte Carlo standard error}
+
 Given $S$ independent simulation draws, the accuracy of average of the
 simulations \(\bar{\theta}\) as an estimate of the posterior mean
-\(\mbox{E}(\theta | y)\) can be estimated as
+\(\E(\theta | y)\) can be estimated as
 \begin{equation}
   \Var(\bar{\theta}) = \frac{\Var(\theta|y)}{S}.
   \label{MCSE}
 \end{equation}
 This generalizes to posterior expectations of functionals of
-parameters \(\mbox{E}\left(g(\theta) | y\right)\).  The square root of
+parameters \(\E\left(g(\theta) | y\right)\).  The square root of
 \eqref{MCSE} is called the Monte Carlo standard error (MCSE).
 
 In general, the simulations of \(\theta\) within each chain
@@ -568,15 +575,17 @@ impression that the dependent simulation sample would be equivalent to
 an independent simulation sample with size ESS, while the equivalence
 is only for the estimation efficiency of the posterior mean, and the efficiency of the same
 dependent simulation sample for estimating another posterior functional
-\(\mbox{E}\left(g(\theta) | y\right)\) or quantiles can be very
+\(\E\left(g(\theta) | y\right)\) or quantiles can be very
 different.
 %
 To simplify notation, in this section we consider the effective sample
-size for the posterior mean \(\mbox{E}\left(\theta | y\right)\). This can be 
-generalized in a straightforward manner to ESS estimates for \(\mbox{E}\left(g(\theta) | y\right)\).
+size for the posterior mean \(\E\left(\theta | y\right)\). This can be 
+generalized in a straightforward manner to ESS estimates for \(\E\left(g(\theta) | y\right)\).
 Section \ref{convergence-diagnostics-for-quantiles} deals with
 estimating the effective sample size of quantiles, which cannot be
 presented as expectations.
+
+\subsubsection*{Estimating the effective sample size}
 
 The first proposals of ESS estimates  used information only from
 a single chain \citep[see, e.g.][]{Sorensen+etal:1995}. The convergence
@@ -588,9 +597,9 @@ are not equal (e.g. when different step size is used in different
 chains) or if chains are not mixing well.  \citet{BDA2} proposed an
 ESS estimate,
 \begin{equation}
-S_{\rm eff,BDA2} = MN\frac{\widehat{\mbox{var}}^{+}}{B},
+S_{\rm eff,BDA2} = MN\frac{\widehat{\var}^{+}}{B},
 \end{equation}
-where $\widehat{\mbox{var}}^+$ is a marginal posterior variance
+where $\widehat{\var}^+$ is a marginal posterior variance
 estimate and $B$ is between-chain variance estimate as given in
 Section~\ref{SplitRhat}.  This corresponds to a batch means approach
 with each chain being one batch. As there are usually only a small
@@ -603,17 +612,17 @@ improvements, and the present article provides a further improved version.
 
 % If the \(N\) simulation draws within each chain were truly independent,
 % the between-chain variance \(B\) would be an unbiased estimate of the
-% posterior variance, \(\mbox{var}(\theta | y)\), and we would have a
+% posterior variance, \(\var(\theta | y)\), and we would have a
 % total of \(S = MN\) independent simulations from the \(M\) chains. In
 % general, however, the simulations of \(\theta\) within each chain will
 % be autocorrelated, and thus \(B\) will be larger than
-% \(\mbox{var}(\theta | y)\), in expectation.
+% \(\var(\theta | y)\), in expectation.
 
 % One way to define effective sample size for correlated simulation draws
 % is to consider the statistical efficiency of the average of the
 % simulations \(\bar{\theta}^{(..)}\) as an estimate of the posterior mean
-% \(\mbox{E}(\theta | y)\). This also generalizes to posterior
-% expectations of functionals of parameters \(\mbox{E}\left(g(\theta) | y\right)\).
+% \(\E(\theta | y)\). This also generalizes to posterior
+% expectations of functionals of parameters \(\E\left(g(\theta) | y\right)\).
 
 For a single chain of length $N$, the effective sample size of a
 chain can defined in terms of the autocorrelations within the chain at
@@ -659,12 +668,12 @@ The autocorrelation estimates \(\hat{\rho}_{t,m}\) at lag \(t\) from
 multiple chains \(m \in (1,\ldots,M)\) are combined with the
 within-chain variance estimate \(W= \frac{1}{M}\sum_{m=1}^{M}s_m^2\)
 and the multi-chain variance estimate
-\(\widehat{\mbox{var}}^{+} = W(N-1)/N+B/N\) to compute the combined
+\(\widehat{\var}^{+} = W(N-1)/N+B/N\) to compute the combined
 autocorrelation at lag \(t\) as,
 \begin{equation}
 \hat{\rho}_t
 = 1 - \frac{\displaystyle W - \textstyle \frac{1}{M} \sum_{m=1}^M
-s_m^2 \hat{\rho}_{t,m}}{\widehat{\mbox{var}}^{+}}. \label{rhohat}
+s_m^2 \hat{\rho}_{t,m}}{\widehat{\var}^{+}}. \label{rhohat}
 \end{equation}
 If $\hat{\rho}_{t,m}=0$ for all $m$, $\hat{\rho}_t=1-\widehat{R}^{-2}$.
 If in addition chains are mixing well so that
@@ -764,7 +773,7 @@ be also to diagnose multimodality.
 % \begin{equation}
 %   \hat{\tau} = 1 + 2 \sum_{t=1}^{T} \hat{\rho}_t \qquad \hat{\rho}_t
 % = 1 - \frac{\displaystyle W - \textstyle \frac{1}{M} \sum_{m=1}^M 
-% s_m^2 \hat{\rho}_{t,m}}{\widehat{\mbox{var}}^{+}},
+% s_m^2 \hat{\rho}_{t,m}}{\widehat{\var}^{+}},
 % \end{equation}
 % where $T$ is a truncation lag.
 % Details of ESS computation are
@@ -881,12 +890,13 @@ is defined as the parameter value \(\theta_\alpha\) for which
 finding the \(\alpha\)-quantile of the empirical cumulative distribution function (ECDF) of the
 posterior draws \(\theta^{(s)}\).
 
-The cumulative probabilities \(\Pr(\theta \leq \theta_\alpha)\) (ECDF) can be written as expectation
+The cumulative probabilities \(\Pr(\theta \leq \theta_\alpha)\) can be
+written as expectation which can be estimated with sample mean
 \begin{equation}
-\Pr(\theta \leq \theta_\alpha) \approx \bar{I}_\alpha = \frac{1}{S}\sum_{s=1}^S
-I(\theta^{(s)} \leq\theta_\alpha),
+\Pr(\theta \leq \theta_\alpha) = \E(\I(\theta \leq \theta_\alpha)) \approx \bar{\I}_\alpha = \frac{1}{S}\sum_{s=1}^S
+\I(\theta^{(s)} \leq\theta_\alpha),
 \end{equation}
-where \(I(\cdot)\) is the indicator function. The indicator function
+where \(\I(\cdot)\) is the indicator function. The indicator function
 transforms simulation draws to 0's and 1's, and thus the subsequent
 computations are bijectively invariant.
 %
@@ -909,11 +919,11 @@ quantile central limit theorem.
 Assuming that the CDF is a continuous function \(F\) which is smooth
 near an \(\alpha\)-quantile of interest, we could compute 
 \begin{equation}
-  \Var(\hat{\theta}_\alpha) = \Var(F^{-1}(\bar{I}_\alpha)) = \Var(\bar{I}_\alpha)/f(\theta_\alpha).
+  \Var(\hat{\theta}_\alpha) = \Var(F^{-1}(\bar{\I}_\alpha)) = \Var(\bar{\I}_\alpha)/f(\theta_\alpha).
 \end{equation}
 %
 Even if we do not usually know \(F\), this shows that the variance of
-\(\theta_\alpha\) is just the variance of \(\bar{I}_\alpha\) scaled by
+\(\theta_\alpha\) is just the variance of \(\bar{\I}_\alpha\) scaled by
 the unknown density \(f(\theta_\alpha)\), and thus the
 effective sample size for the quantile estimate
 \(\hat{\theta}_\alpha\) is the same as for the corresponding
@@ -939,8 +949,8 @@ absolute deviation by computing the efficiency estimate of an
 indicator function based on the folded parameter values \(\zeta\) (see
 (\ref{zeta})):
 \begin{equation}
-\Pr(\zeta \leq \zeta_{0.5}) \approx \bar{I}_{\zeta,0.5} = \frac{1}{S}\sum_{s=1}^S
-I(\zeta^{(s)} \leq \zeta_{0.5}),
+\Pr(\zeta \leq \zeta_{0.5}) \approx \bar{\I}_{\zeta,0.5} = \frac{1}{S}\sum_{s=1}^S
+\I(\zeta^{(s)} \leq \zeta_{0.5}),
 \end{equation}
 where \(\zeta_{0.5}\) is the median of the folded values. The efficiency estimate for the MAD is obtained by applying the same
 approach as for the median (and other quantiles) but with the folded
@@ -950,7 +960,7 @@ We can get more local efficiency estimates by considering small
 probability intervals. We propose to compute the efficiency estimates
 for
 \begin{equation}
-\bar{I}_{\alpha,\delta} = \Pr(\hat{Q}_\alpha < \theta \leq \hat{Q}_{\alpha+\delta}),
+\bar{\I}_{\alpha,\delta} = \Pr(\hat{Q}_\alpha < \theta \leq \hat{Q}_{\alpha+\delta}),
 \end{equation}
 where \(\hat{Q}_\alpha\) is an empirical \(\alpha\)-quantile,
 \(\delta=1/k\) is the length of the interval for some positive integer
@@ -986,44 +996,63 @@ To obtain the MCSE for
 \(\hat{\theta}_\alpha\), \citet{Doss+etal:2014:MCMC-quantiles} use a
 Gaussian kernel density estimate of \(f(\theta_\alpha)\) and
 batch means and subsampling bootstrap method for estimating
-\(\Var(\bar{I}_\alpha)\), and \citet{Liu+etal:2016:MCMC-quantiles} use a
+\(\Var(\bar{\I}_\alpha)\), and \citet{Liu+etal:2016:MCMC-quantiles} use a
 flat top kernel density estimate for \(f(\theta_\alpha)\) and a
-spectral variance approach for \(\Var(\bar{I}_\alpha)\).
+spectral variance approach for \(\Var(\bar{\I}_\alpha)\).
 
 We propose an alternative approach which avoids the need
-to estimate \(f(\theta_\alpha)\). For example,  here is how we estimate a central 90\% Monte
-Carlo error interval for \(\hat{\theta}_\alpha\):
+to estimate \(f(\theta_\alpha)\). Here is how we estimate, for example,
+a central 90\% Monte Carlo error interval for \(\hat{\theta}_\alpha\)
+(any quantiles or intervals can be computed using the same algorithm):
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\item Compute the effective sample size \(S_{\rm eff}\) for \(\Var(\bar{I}_\alpha)\).
-\item Compute sigma points \citep{wan2000unscented} \(a\) and \(b\) as \(5\%\) and \(95\%\) quantiles of
-  $\Beta(\beta_1,\beta_2)$ with shape parameters
+\item Compute the effective sample size \(S_{\rm eff}\) for estimating the expectation \(\E(\I(\theta \leq \hat{\theta}_\alpha))\).
+\item Compute \(a\) and \(b\) as \(5\%\) and \(95\%\) quantiles (for other than \(90\%\) interval use corresponding quantiles) of
   \begin{equation}
-    \beta_1 = S_{\rm eff} \bar{I}_\alpha+1 \quad \text{and} \quad
-    \beta_2 = S_{\rm eff} (1-\bar{I}_\alpha) + 1.
-  \end{equation}
+  \Beta\left(S_{\rm eff} \alpha+1,\, S_{\rm eff} (1-\alpha) + 1\right).
+\end{equation}
+  % $\Beta(\beta_1,\beta_2)$ with shape parameters
+  % \begin{equation}
+  %   \beta_1 = S_{\rm eff} \alpha+1 \quad \text{and} \quad
+  %   \beta_2 = S_{\rm eff} (1-\alpha) + 1.
+    % \beta_1 = S_{\rm eff} \bar{\I}_\alpha+1 \quad \text{and} \quad
+    % \beta_2 = S_{\rm eff} (1-\bar{\I}_\alpha) + 1.
+  % \end{equation}
   Using $S_{\rm eff}$ here takes into account the efficiency of the
   posterior draws. The variance of this beta distribution matches the
-  variance of normal approximation, but using quantiles as sigma
-  points instead of variance-based sigma points guarantees that
-  $0<a<1$ and $0<b<1$.  Asymptotically as
+  variance of normal approximation, but using quantiles guarantees
+  that $0<a<1$ and $0<b<1$.  Asymptotically as
   \(S_{\rm eff} \rightarrow \infty \), this beta distribution
-  converges towards a normal distribution.
-\item Propagate the sigma points through the nonlinear inverse transforms $A=(F^{-1}(a))$ and $B=(F^{-1}(b))$.
+  converges towards a normal distribution. Instead of drawing random
+  sample from the beta distribution, we get sufficient accuracy for
+  MCSE using just two deterministically chosen quantiles.
+\item Propagate $a$ and $b$ through the nonlinear inverse transforms
+  $A=(F^{-1}(a))$ and $B=(F^{-1}(b))$. Then $A$ and $B$ are
+  corresponding quantiles in the transformed scale.
   As we don't know $F$ for the quantity of interest, we use a simple numerical approximation:
   \begin{align*}
   \widehat{A} & = \theta^{(s')} \,\,\text{ where }\,  s' \leq Sa < s'+1 \\
-  \widehat{B} & = \theta^{(s'')}  \,\text{ where }\,  s''-1 < Sb \leq s''.
+  \widehat{B} & = \theta^{(s'')}  \,\text{ where }\,  s''-1 < Sb \leq s'',
   \end{align*}
-  $\widehat{A}$ and $\widehat{B}$ are then estimated \(5\%\) and \(95\%\) quantiles of the Monte Carlo
-  error interval for \(\hat{\theta}_\alpha\).
+  where $\theta^{(s)}$ have been sorted in ascending order.
+  $\widehat{A}$ and $\widehat{B}$ are then estimated \(5\%\) and
+  \(95\%\) quantiles (or other quantiles corresponding to which
+  quantiles $a$ and $b$ were chosen to be) of the Monte Carlo error
+  interval for \(\hat{\theta}_\alpha\).
 \end{enumerate}
 
 The Monte Carlo standard error for \(\hat{\theta}_\alpha\) can be
-approximated using the sigma point method \citep{wan2000unscented},
-for example, by computing $(\widehat{B}-\widehat{A})/2$, where $\widehat{A}$ and
-$\widehat{B}$ are estimated \(16\%\) and \(84\%\) Monte Carlo error
-quantiles computed with the above algorithm.
+approximated, for example, by computing $(\widehat{B}-\widehat{A})/2$,
+where $\widehat{A}$ and $\widehat{B}$ are estimated \(16\%\) and
+\(84\%\) Monte Carlo error quantiles computed with the above
+algorithm.
+%
+Use of deterministically chosen 16\% and 84\% quantiles $a$ and $b$,
+propagating them through the nonlinear transformation and estimating
+the standard error from the transformed quantiles, corresponds to
+unscented transformation which is known to estimate the variance of
+the transformed quantity correct to the second order
+\citep{Julier+Uhlman:1997:unscented}.
 
 The above algorithm is useful as a default, as it is more robust than
 density estimation based approaches for
