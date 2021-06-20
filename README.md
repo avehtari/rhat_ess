@@ -1,9 +1,9 @@
 This repository contains tex, code, and online appendix for 
 
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter,
-Paul-Christian Bürkner (2019): Rank-normalization, folding, and
+Paul-Christian Bürkner (2020): Rank-normalization, folding, and
 localization: An improved R-hat for assessing convergence of
-MCMC. [arXiv preprint arXiv:1903.08008](http://arxiv.org/abs/1903.08008).
+MCMC. *Bayesian analysis*, accepted for publication. [arXiv preprint arXiv:1903.08008](http://arxiv.org/abs/1903.08008).
 
 
 - [Paper PDF](http://arxiv.org/pdf/1903.08008.pdf)
