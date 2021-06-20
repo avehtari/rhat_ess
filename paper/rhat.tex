@@ -138,7 +138,7 @@
 
 
 \title{Rank-normalization, folding, and localization:\\
-  An improved $\widehat{R}$ for assessing convergence of MCMC\footnote{We thank Ben Bales, Ian Langmore, the editor, and anonymous reviewers for useful comments. We also thank Academy of Finland, the U.S. Office of Naval Research, National Science Foundation, Institute for Education Sciences, the Natural Science and Engineering Research Council of Canada, Finnish Center for Artificial Intelligence, and Technology Industries of Finland Centennial Foundation for partial support of this research.  All computer code and an 
+  An improved $\widehat{R}$ for assessing convergence of MCMC\footnote{To appear in Bayesian Analysis. We thank Ben Bales, Ian Langmore, the editor, and anonymous reviewers for useful comments. We also thank Academy of Finland, the U.S. Office of Naval Research, National Science Foundation, Institute for Education Sciences, the Natural Science and Engineering Research Council of Canada, Finnish Center for Artificial Intelligence, and Technology Industries of Finland Centennial Foundation for partial support of this research.  All computer code and an 
 even larger variety of numerical experiments are available in the online 
 appendix at \url{https://avehtari.github.io/rhat_ess/rhat_ess.html}.}\vspace{.1in}}
     \pretitle{\vspace{\droptitle}\centering\huge}
@@ -483,7 +483,8 @@ of \(W\) and \(B\), namely,
 \widehat{\var}^+(\theta| y) = \frac{N-1}{N}W + \frac{1}{N}B.
 \end{equation}
 This quantity \emph{overestimates} the marginal posterior variance
-assuming the starting distribution of the simulations is appropriately
+assuming the starting distributions and all intermediate distributions
+of the simulations are appropriately
 overdispersed compared to the target distribution, but is
 \emph{unbiased} under stationarity (that is, if the starting
 distribution equals the target distribution), or in the limit
@@ -820,7 +821,7 @@ number of unique values of discrete quantities.  Second, transform
 ranks to normal scores using the inverse normal transformation and
 a fractional offset \citep{Blom:1958}:
 \begin{equation}
-z^{(nm)} = \Phi^{-1}\left(\frac{r^{(nm)}-3/8}{S-1/4}\right).
+z^{(nm)} = \Phi^{-1}\left(\frac{r^{(nm)}-3/8}{S+1/4}\right).
 \end{equation}
 %For continuous variables and \(S = MN \rightarrow \infty\), the rank
 %normalized values are normally distributed.
