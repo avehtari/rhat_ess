@@ -261,7 +261,7 @@ ggplot(df, aes(x=phi, y=z,
   guides(linetype = guide_legend(title = "N"),
          color = guide_legend(title = "Method"))+
   scale_x_continuous(breaks=phis, labels = round(tess/40000,1))+
-  scale_color_manual(breaks=c("mcmcse::mcse.q","posterior::mcse_quantile"), labels=c('mcmcse: Batch means','posterior: Geyer + inv.prob.'), values=c(clr[2],clr[4]))+
+  scale_color_manual(breaks=c("mcmcse::mcse.q","posterior::mcse_quantile"), labels=c('mcmcse: Batch means','posterior: Geyer + inv.prob.'), values=c(clr[2],clr[3]))+
   facet_grid(cols=vars(S=S))
 #'
 #' The plots for `posterior: Geyer` and `mcmcse: batch means` look
