@@ -11,9 +11,9 @@
 #'     code_download: true
 #' ---
 #'
-#' ## Post Script Appendix
+#' ## Post script Appendix
 #' 
-#' This notebook is a post Script appendix to the paper <br>
+#' This notebook is a post script appendix to the paper <br>
 #'
 #' - Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter,
 #' Paul-Christian Bürkner (2021): Rank-normalization, folding, and
